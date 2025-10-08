@@ -32,14 +32,7 @@ target_include_directories(pygixml PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/pugixml/src
 )
 
-# Set output properties
-set_target_properties(pygixml PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${PYTHON_MODULE_OUTPUT_DIRECTORY}
-    PREFIX ""
-    SUFFIX "${Python_SOABI}${CMAKE_SHARED_LIBRARY_SUFFIX}"
-)
-
 # Install the module
 install(TARGETS pygixml
-    LIBRARY DESTINATION pygixml
+    DESTINATION .
 )
