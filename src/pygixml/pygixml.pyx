@@ -21,7 +21,6 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         bool load_string(const char* contents)
         bool load_file(const char* path)
         void save_file(const char* path, const char* indent) except +
-        string save_string(const char* indent) except +
         void reset()
         
     cdef cppclass xml_node:
@@ -98,11 +97,6 @@ cdef class XMLDocument:
         cdef bytes indent_bytes = indent.encode('utf-8')
         self._doc.save_file(path_bytes, indent_bytes)
     
-    def save_string(self, str indent="  "):
-        """Save XML to string"""
-        cdef bytes indent_bytes = indent.encode('utf-8')
-        cdef string result = self._doc.save_string(indent_bytes)
-        return result.decode('utf-8')
     
     def reset(self):
         """Reset the document"""
@@ -173,12 +167,15 @@ cdef class XMLNode:
     
     def child_value(self, str name=None):
         """Get child value"""
+        cdef string value
+        cdef bytes name_bytes
+        
         if name is None:
-            cdef string value = self._node.child_value()
+            value = self._node.child_value()
             return value.decode('utf-8') if not value.empty() else None
         else:
-            cdef bytes name_bytes = name.encode('utf-8')
-            cdef string value = self._node.child_value(name_bytes)
+            name_bytes = name.encode('utf-8')
+            value = self._node.child_value(name_bytes)
             return value.decode('utf-8') if not value.empty() else None
 
 cdef class XMLAttribute:
