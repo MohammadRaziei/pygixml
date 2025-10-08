@@ -146,7 +146,8 @@ cdef class XMLNode:
     def set_value(self, str value):
         """Set node value"""
         cdef bytes value_bytes = value.encode('utf-8')
-        return self._node.set_value(value_bytes)
+        success = self._node.set_value(value_bytes)
+        return success
     
     def first_child(self):
         """Get first child node"""
