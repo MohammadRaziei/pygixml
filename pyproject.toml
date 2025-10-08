@@ -1,12 +1,5 @@
 [build-system]
-requires = [
-    "setuptools>=45",
-    "wheel",
-    "scikit-build-core[pyproject]>=0.4",
-    "cmake>=3.15",
-    "ninja",
-    "cython>=0.29"
-]
+requires = ["scikit-build-core", "cython", "cython-cmake"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -45,12 +38,9 @@ packages = ["pygixml"]
 [tool.setuptools.package-dir]
 pygixml = "src/pygixml"
 
-[tool.scikit-build]
-cmake.minimum-version = "3.15"
-cmake.build-type = "Release"
+[tool.scikit-build.cmake]
+version = ">=3.15"
+build-type = "Release"
 
-[tool.cmake.build]
+[tool.scikit-build.build]
 targets = ["pygixml"]
-
-[tool.cmake.install]
-components = ["pygixml"]

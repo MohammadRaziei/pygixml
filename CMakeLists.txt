@@ -5,9 +5,12 @@ project(pygixml)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 # Find Python and Cython
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-find_package(Cython REQUIRED)
+find_package(Cython MODULE REQUIRED VERSION 3.0)
+include(UseCython)
 
 # Add pugixml
 add_subdirectory(src/third_party/pugixml)
@@ -15,8 +18,11 @@ add_subdirectory(src/third_party/pugixml)
 # Set Python module output directory
 set(PYTHON_MODULE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pygixml)
 
-# Create the Cython module
-cython_add_module(pygixml src/pygixml/pygixml.pyx)
+# Transpile Cython to C++
+cython_transpile(pygixml_cpp src/pygixml/pygixml.pyx LANGUAGE CXX OUTPUT_VARIABLE pygixml_cpp_file)
+
+# Create the Python extension module
+python_add_library(pygixml MODULE "${pygixml_cpp_file}" WITH_SOABI)
 
 # Link pugixml to our module
 target_link_libraries(pygixml PRIVATE pugixml)
@@ -25,9 +31,6 @@ target_link_libraries(pygixml PRIVATE pugixml)
 target_include_directories(pygixml PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/pugixml/src
 )
-
-# Python include directories
-target_include_directories(pygixml PRIVATE ${Python_INCLUDE_DIRS})
 
 # Set output properties
 set_target_properties(pygixml PROPERTIES
