@@ -177,6 +177,32 @@ cdef class XMLNode:
             name_bytes = name.encode('utf-8')
             value = self._node.child_value(name_bytes)
             return value.decode('utf-8') if not value.empty() else None
+    
+    def next_sibling(self):
+        """Get next sibling node"""
+        cdef xml_node node = self._node.next_sibling()
+        return XMLNode.create_from_cpp(node)
+    
+    def previous_sibling(self):
+        """Get previous sibling node"""
+        cdef xml_node node = self._node.previous_sibling()
+        return XMLNode.create_from_cpp(node)
+    
+    def parent(self):
+        """Get parent node"""
+        cdef xml_node node = self._node.parent()
+        return XMLNode.create_from_cpp(node)
+    
+    def first_attribute(self):
+        """Get first attribute"""
+        cdef xml_attribute attr = self._node.first_attribute()
+        return XMLAttribute.create_from_cpp(attr)
+    
+    def attribute(self, str name):
+        """Get attribute by name"""
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef xml_attribute attr = self._node.attribute(name_bytes)
+        return XMLAttribute.create_from_cpp(attr)
 
 cdef class XMLAttribute:
     cdef xml_attribute _attr
