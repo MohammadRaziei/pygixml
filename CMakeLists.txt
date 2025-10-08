@@ -19,7 +19,7 @@ add_subdirectory(src/third_party/pugixml)
 set(PYTHON_MODULE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pygixml)
 
 # Transpile Cython to C++
-cython_transpile(pygixml_cpp src/pygixml/pygixml.pyx LANGUAGE CXX OUTPUT_VARIABLE pygixml_cpp_file)
+cython_transpile(src/pygixml/pygixml.pyx LANGUAGE CXX OUTPUT_VARIABLE pygixml_cpp_file)
 
 # Create the Python extension module
 python_add_library(pygixml MODULE "${pygixml_cpp_file}" WITH_SOABI)
