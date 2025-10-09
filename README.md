@@ -3,9 +3,12 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/python.yml/badge.svg)](https://github.com/MohammadRaziei/pygixml/actions)
+[![Documentation Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/docs.yaml/badge.svg)](https://mohammadraziei.github.io/pygixml/)
 [![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
 
 A high-performance Python wrapper for [pugixml](https://pugixml.org/) using Cython, providing fast XML parsing and manipulation capabilities.
+
+📚 **[View Full Documentation](https://mohammadraziei.github.io/pygixml/)**
 
 
 
@@ -48,7 +51,7 @@ pip install ./pygixml
 pip install ./pygixml[test]
 ```
 
-## Quick SWtart
+## Quick Start
 
 ```python
 import pygixml
@@ -202,6 +205,17 @@ The benchmark suite compares pygixml against:
 - `benchmarks/clean_visualization.py` - Main benchmark runner
 - `benchmarks/benchmark_parsing.py` - Core benchmark logic
 - `benchmarks/results/` - Generated CSV data and SVG charts
+
+## Documentation
+
+📖 **Full documentation** is available at: [https://mohammadraziei.github.io/pygixml/](https://mohammadraziei.github.io/pygixml/)
+
+The documentation includes:
+- Complete API reference with examples
+- Installation guides for all platforms
+- Performance benchmarks and optimization tips
+- XPath 1.0 usage guide with comprehensive examples
+- Real-world usage scenarios
 
 ## License
 
