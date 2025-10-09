@@ -41,7 +41,7 @@ jobs:
 
     - name: Build documentation
       run: |
-        cd docs && make html BUILDDIR=../out
+        cd docs && sphinx-build -b html source ../out/html
 
     - name: Setup Pages
       uses: actions/configure-pages@v3
