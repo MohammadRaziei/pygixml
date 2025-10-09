@@ -14,6 +14,12 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
+# Read version from pyproject.toml
+import tomllib
+with open('../../pyproject.toml', 'rb') as f:
+    pyproject_data = tomllib.load(f)
+version = pyproject_data['project']['version']
+
 
 # -- Project information -----------------------------------------------------
 
@@ -22,7 +28,7 @@ copyright = '2025, Mohammad Raziei'
 author = 'Mohammad Raziei'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
