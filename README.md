@@ -18,7 +18,7 @@ pygixml delivers exceptional performance compared to other XML libraries:
 | **lxml** | 0.00407s | 3.0x faster |
 | **ElementTree** | 0.01220s | 1.0x (baseline) |
 
-![Performance Comparison](benchmarks/results/performance_comparison.svg)
+![Performance Comparison](https://raw.githubusercontent.com/MohammadRaziei/pygixml/refs/heads/master/benchmarks/results/performance_comparison.svg)
 
 ### Key Performance Highlights
 
@@ -31,9 +31,8 @@ pygixml delivers exceptional performance compared to other XML libraries:
 
 ### From Source
 ```bash
-git clone https://github.com/MohammadRaziei/pygixml.git
+git clone --recurse-submodules https://github.com/MohammadRaziei/pygixml.git
 cd pygixml
-git submodule update --init --recursive
 pip install -e .
 ```
 
