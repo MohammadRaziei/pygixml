@@ -182,6 +182,10 @@ cdef class XMLNode:
     def next_sibling(self):
         """Get next sibling node"""
         cdef xml_node node = self._node.next_sibling()
+        # Check if the node is empty (no more siblings) by checking if name is empty
+        cdef string node_name = node.name()
+        if node_name.empty():
+            return None
         return XMLNode.create_from_cpp(node)
     
     def previous_sibling(self):
