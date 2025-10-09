@@ -112,12 +112,12 @@ jobs:
           tag_name: ${{ env.RELEASE_NAME }}
           name: ${{ env.RELEASE_NAME }}
           draft: false
-          prerelease: env.IS_TAG == 'false'
+          prerelease: ${{ env.IS_TAG }} == 'false'
           files: dist/*
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publishing to PyPi
         uses: pypa/gh-action-pypi-publish@release/v1
-        if: env.IS_TAG == 'true'
+        if: ${{ env.IS_TAG }} == 'true'
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
