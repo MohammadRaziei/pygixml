@@ -81,7 +81,6 @@ jobs:
     name: Release Assets and Upload to PyPI
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
 
     steps:
       # Determine release type
@@ -95,15 +94,15 @@ jobs:
             echo "RELEASE_NAME=__beta__" >> $GITHUB_ENV
             echo "IS_TAG=false" >> $GITHUB_ENV
           fi
-        shell: bash
+        shell: bash # Use bash for all platforms
 
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
 
-      - name: List dist directory
-        run: ls -la dist/
+      # - name: List dist directory
+        # run: tree --du -shaC . # Ensure the directory is not empty
 
       - name: Create or update release
         id: create_release
@@ -112,12 +111,12 @@ jobs:
           tag_name: ${{ env.RELEASE_NAME }}
           name: ${{ env.RELEASE_NAME }}
           draft: false
-          prerelease: ${{ env.IS_TAG }} == 'false'
+          prerelease: ${{ env.IS_TAG == 'false' }}
           files: dist/*
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publishing to PyPi
         uses: pypa/gh-action-pypi-publish@release/v1
-        if: ${{ env.IS_TAG }} == 'true'
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
