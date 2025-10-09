@@ -7,13 +7,7 @@
 
 A high-performance Python wrapper for [pugixml](https://pugixml.org/) using Cython, providing fast XML parsing and manipulation capabilities.
 
-## ⭐ Star Requirement
 
-**To use this library, you must star the project on GitHub!**
-
-This helps support the development and shows appreciation for the work. Please star the repository before using the library:
-
-👉 **[Star pygixml on GitHub](https://github.com/MohammadRaziei/pygixml)**
 
 ## 🚀 Performance
 
@@ -131,6 +125,12 @@ The benchmark suite compares pygixml against:
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+**To use this library, you must star the project on GitHub!**
+
+This helps support the development and shows appreciation for the work. Please star the repository before using the library:
+
+👉 **[Star pygixml on GitHub](https://github.com/MohammadRaziei/pygixml)**
 
 ## Acknowledgments
 
