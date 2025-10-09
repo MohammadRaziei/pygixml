@@ -3,8 +3,17 @@
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/python.yml/badge.svg)](https://github.com/MohammadRaziei/pygixml/actions)
+[![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
 
 A high-performance Python wrapper for [pugixml](https://pugixml.org/) using Cython, providing fast XML parsing and manipulation capabilities.
+
+## ⭐ Star Requirement
+
+**To use this library, you must star the project on GitHub!**
+
+This helps support the development and shows appreciation for the work. Please star the repository before using the library:
+
+👉 **[Star pygixml on GitHub](https://github.com/MohammadRaziei/pygixml)**
 
 ## 🚀 Performance
 
@@ -29,19 +38,23 @@ pygixml delivers exceptional performance compared to other XML libraries:
 
 ## Installation
 
+### From Pypi repositoey
+```bash
+pip install pygixml
+```
+
 ### From Source
 ```bash
 git clone --recurse-submodules https://github.com/MohammadRaziei/pygixml.git
-cd pygixml
-pip install -e .
+pip install ./pygixml
 ```
 
 ### Development Installation
 ```bash
-pip install -e .[test]
+pip install ./pygixml[test]
 ```
 
-## Quick Start
+## Quick SWtart
 
 ```python
 import pygixml
@@ -114,21 +127,6 @@ The benchmark suite compares pygixml against:
 - `benchmarks/clean_visualization.py` - Main benchmark runner
 - `benchmarks/benchmark_parsing.py` - Core benchmark logic
 - `benchmarks/results/` - Generated CSV data and SVG charts
-
-## Development
-
-### Building from Source
-```bash
-git clone https://github.com/MohammadRaziei/pygixml.git
-cd pygixml
-git submodule update --init --recursive
-pip install -e .[test]
-```
-
-### Running Tests
-```bash
-pytest
-```
 
 ## License
 
