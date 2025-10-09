@@ -83,6 +83,73 @@ product.append_child("price").set_value("999.99")
 doc.save_file("output.xml")
 ```
 
+## XPath Support
+
+pygixml provides full XPath 1.0 support through pugixml's powerful XPath engine:
+
+```python
+import pygixml
+
+xml_string = """
+<library>
+    <book id="1" category="fiction">
+        <title>The Great Gatsby</title>
+        <author>F. Scott Fitzgerald</author>
+        <year>1925</year>
+        <price>12.99</price>
+    </book>
+    <book id="2" category="fiction">
+        <title>1984</title>
+        <author>George Orwell</author>
+        <year>1949</year>
+        <price>10.99</price>
+    </book>
+</library>
+"""
+
+doc = pygixml.parse_string(xml_string)
+root = doc.first_child()
+
+# Select all books
+books = root.select_nodes("book")
+print(f"Found {len(books)} books")
+
+# Select fiction books
+fiction_books = root.select_nodes("book[@category='fiction']")
+print(f"Found {len(fiction_books)} fiction books")
+
+# Select specific book by ID
+book_2 = root.select_node("book[@id='2']")
+if book_2:
+    title = book_2.node().child("title").child_value()
+    print(f"Book ID 2: {title}")
+
+# Use XPathQuery for repeated queries
+query = pygixml.XPathQuery("book[year > 1930]")
+recent_books = query.evaluate_node_set(root)
+print(f"Found {len(recent_books)} books published after 1930")
+
+# XPath boolean evaluation
+has_orwell = pygixml.XPathQuery("book[author='George Orwell']").evaluate_boolean(root)
+print(f"Has George Orwell books: {has_orwell}")
+
+# XPath number evaluation
+avg_price = pygixml.XPathQuery("sum(book/price) div count(book)").evaluate_number(root)
+print(f"Average price: ${avg_price:.2f}")
+```
+
+### Supported XPath Features
+
+- **Node selection**: `//book`, `/library/book`, `book[1]`
+- **Attribute selection**: `book[@id]`, `book[@category='fiction']`
+- **Boolean operations**: `and`, `or`, `not()`
+- **Comparison operators**: `=`, `!=`, `<`, `>`, `<=`, `>=`
+- **Mathematical operations**: `+`, `-`, `*`, `div`, `mod`
+- **Functions**: `position()`, `last()`, `count()`, `sum()`, `string()`, `number()`
+- **Axes**: `child::`, `attribute::`, `descendant::`, `ancestor::`
+- **Wildcards**: `*`, `@*`, `node()`
+
+
 ## API Overview
 
 ### Core Classes
@@ -90,9 +157,13 @@ doc.save_file("output.xml")
 - **XMLDocument**: Create, parse, save XML documents
 - **XMLNode**: Navigate and manipulate XML nodes  
 - **XMLAttribute**: Handle XML attributes
+- **XPathQuery**: Compile and execute XPath queries
+- **XPathNode**: Result of XPath queries (wraps nodes and attributes)
+- **XPathNodeSet**: Collection of XPath results
 
 ### Key Methods
 
+#### XMLDocument/XMLNode Methods
 - `parse_string(xml_string)` - Parse XML from string
 - `parse_file(file_path)` - Parse XML from file
 - `save_file(file_path)` - Save XML to file
@@ -100,6 +171,16 @@ doc.save_file("output.xml")
 - `child(name)` - Get child by name
 - `child_value()` - Get node value
 - `attribute(name)` - Get attribute
+
+#### XPath Methods
+- `select_nodes(query)` - Select multiple nodes using XPath
+- `select_node(query)` - Select single node using XPath
+- `XPathQuery(query)` - Create reusable XPath query object
+- `evaluate_node_set(context)` - Evaluate query and return node set
+- `evaluate_node(context)` - Evaluate query and return first node
+- `evaluate_boolean(context)` - Evaluate query and return boolean
+- `evaluate_number(context)` - Evaluate query and return number
+- `evaluate_string(context)` - Evaluate query and return string
 
 ## Benchmarks
 

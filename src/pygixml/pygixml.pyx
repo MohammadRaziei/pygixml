@@ -70,6 +70,36 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         node_declaration
         node_doctype
 
+    # XPath classes
+    cdef cppclass xpath_node:
+        xpath_node() except +
+        xpath_node(const xml_node& node)
+        xml_node node() const
+        xml_attribute attribute() const
+        xml_node parent() const
+        
+    cdef cppclass xpath_node_set:
+        xpath_node_set() except +
+        size_t size() const
+        xpath_node operator[](size_t index) const
+        
+    cdef cppclass xpath_query:
+        xpath_query() except +
+        xpath_query(const char* query) except +
+        xpath_node_set evaluate_node_set(const xml_node& n) const
+        xpath_node evaluate_node(const xml_node& n) const
+        bool evaluate_boolean(const xml_node& n) const
+        double evaluate_number(const xml_node& n) const
+        string evaluate_string(const xml_node& n) const
+        
+    cdef cppclass xpath_variable_set:
+        xpath_variable_set() except +
+        
+    # XPath methods for xml_node
+    cdef cppclass xml_node:
+        xpath_node select_node(const char* query, xpath_variable_set* variables = NULL) const
+        xpath_node_set select_nodes(const char* query, xpath_variable_set* variables = NULL) const
+
 # Python wrapper classes
 cdef class XMLDocument:
     cdef xml_document* _doc
@@ -208,6 +238,18 @@ cdef class XMLNode:
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_attribute attr = self._node.attribute(name_bytes)
         return XMLAttribute.create_from_cpp(attr)
+    
+    # XPath methods using XPathQuery internally
+    def select_nodes(self, str query):
+        """Select nodes using XPath query"""
+        cdef XPathQuery xpath_query = XPathQuery(query)
+        return xpath_query.evaluate_node_set(self)
+    
+    def select_node(self, str query):
+        """Select single node using XPath query"""
+        cdef XPathQuery xpath_query = XPathQuery(query)
+        return xpath_query.evaluate_node(self)
+    
 
 cdef class XMLAttribute:
     cdef xml_attribute _attr
@@ -237,6 +279,95 @@ cdef class XMLAttribute:
         """Set attribute value"""
         cdef bytes value_bytes = value.encode('utf-8')
         return self._attr.set_value(value_bytes)
+
+# XPath wrapper classes
+cdef class XPathNode:
+    cdef xpath_node _xpath_node
+    
+    @staticmethod
+    cdef XPathNode create_from_cpp(xpath_node xpath_node):
+        cdef XPathNode wrapper = XPathNode()
+        wrapper._xpath_node = xpath_node
+        return wrapper
+    
+    def node(self):
+        """Get XML node from XPath node"""
+        cdef xml_node node = self._xpath_node.node()
+        return XMLNode.create_from_cpp(node)
+    
+    def attribute(self):
+        """Get XML attribute from XPath node"""
+        cdef xml_attribute attr = self._xpath_node.attribute()
+        return XMLAttribute.create_from_cpp(attr)
+    
+    def parent(self):
+        """Get parent node"""
+        cdef xml_node node = self._xpath_node.parent()
+        return XMLNode.create_from_cpp(node)
+
+cdef class XPathNodeSet:
+    cdef xpath_node_set _xpath_node_set
+    
+    def __cinit__(self):
+        self._xpath_node_set = xpath_node_set()
+    
+    @staticmethod
+    cdef XPathNodeSet create_from_cpp(xpath_node_set xpath_node_set):
+        cdef XPathNodeSet wrapper = XPathNodeSet()
+        wrapper._xpath_node_set = xpath_node_set
+        return wrapper
+    
+    def __len__(self):
+        """Get number of nodes in the set"""
+        return self._xpath_node_set.size()
+    
+    def __getitem__(self, size_t index):
+        """Get node at specified index"""
+        if index >= self._xpath_node_set.size():
+            raise IndexError("XPath node set index out of range")
+        cdef xpath_node node = self._xpath_node_set[index]
+        return XPathNode.create_from_cpp(node)
+    
+    def __iter__(self):
+        """Iterate over nodes in the set"""
+        cdef size_t i
+        for i in range(self._xpath_node_set.size()):
+            yield self[i]
+
+cdef class XPathQuery:
+    cdef xpath_query* _query
+    
+    def __cinit__(self, str query):
+        """Create XPath query from string"""
+        cdef bytes query_bytes = query.encode('utf-8')
+        self._query = new xpath_query(query_bytes)
+    
+    def __dealloc__(self):
+        if self._query != NULL:
+            del self._query
+    
+    def evaluate_node_set(self, XMLNode context_node):
+        """Evaluate query and return node set"""
+        cdef xpath_node_set result = self._query.evaluate_node_set(context_node._node)
+        return XPathNodeSet.create_from_cpp(result)
+    
+    def evaluate_node(self, XMLNode context_node):
+        """Evaluate query and return first node"""
+        cdef xpath_node result = self._query.evaluate_node(context_node._node)
+        return XPathNode.create_from_cpp(result)
+    
+    def evaluate_boolean(self, XMLNode context_node):
+        """Evaluate query and return boolean result"""
+        return self._query.evaluate_boolean(context_node._node)
+    
+    def evaluate_number(self, XMLNode context_node):
+        """Evaluate query and return numeric result"""
+        return self._query.evaluate_number(context_node._node)
+    
+    def evaluate_string(self, XMLNode context_node):
+        """Evaluate query and return string result"""
+        cdef string result = self._query.evaluate_string(context_node._node)
+        return result.decode('utf-8') if not result.empty() else None
 
 # Convenience functions
 def parse_string(str xml_string):
