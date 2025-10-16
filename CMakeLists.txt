@@ -14,7 +14,12 @@ endif()
 
 # Additional optimization flags for GCC/Clang
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native -fomit-frame-pointer -fno-stack-protector")
+    set(SAFE_FLAGS "-fomit-frame-pointer -fno-stack-protector")
+    if(NOT APPLE AND NOT DEFINED ENV{CI})
+        set(SAFE_FLAGS "${SAFE_FLAGS} -march=native -mtune=native")
+    endif()
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAFE_FLAGS}")
 endif()
 
 # Set build type to Release for better performance
