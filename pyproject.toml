@@ -4,13 +4,13 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.2.0"
+version = "0.3.0"
 description = "Python wrapper for pugixml using Cython - Please star the project on GitHub to use!"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 keywords = ["xml", "pugixml", "cython", "wrapper"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -33,11 +33,11 @@ test = [
     "pytest-timeout>=2.0.0",
 ]
 
-[tool.setuptools]
-packages = ["pygixml"]
+[project.urls]
+"Homepage" = "https://github.com/mohammadraziei/pygixml"
+"Bug Tracker" = "https://github.com/mohammadraziei/pygixml/issues"
+"Document" = "https://mohammadraziei.github.io/pygixml"
 
-[tool.setuptools.package-dir]
-pygixml = "src/pygixml"
 
 [tool.scikit-build.cmake]
 version = ">=3.15"
@@ -45,6 +45,10 @@ build-type = "Release"
 
 [tool.scikit-build.build]
 targets = ["pygixml"]
+
+[tool.cibuildwheel]
+test-command = "python -m pytest {project}/tests"
+test-extras = ["test"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
