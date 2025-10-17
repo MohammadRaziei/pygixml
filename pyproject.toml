@@ -47,7 +47,7 @@ build-type = "Release"
 targets = ["pygixml"]
 
 [tool.cibuildwheel]
-test-command = "python -m pytest {project}/tests"
+test-command = "pytest {project}/tests"
 test-extras = ["test"]
 
 [tool.pytest.ini_options]

@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
-project(pygixml)
+project(${SKBUILD_PROJECT_NAME})
+
+# Set Python module name (should match the .pyx filename)
+string(REPLACE "-" "_" MODULE_NAME ${SKBUILD_PROJECT_NAME})
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
@@ -41,20 +44,20 @@ add_subdirectory(src/third_party/pugixml)
 set(PYTHON_MODULE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pygixml)
 
 # Transpile Cython to C++
-cython_transpile(src/pygixml/pygixml.pyx LANGUAGE CXX OUTPUT_VARIABLE pygixml_cpp_file)
+cython_transpile(src/${MODULE_NAME}/${MODULE_NAME}.pyx LANGUAGE CXX OUTPUT_VARIABLE pygixml_cpp_file)
 
 # Create the Python extension module
-python_add_library(pygixml MODULE "${pygixml_cpp_file}" WITH_SOABI)
+python_add_library(${MODULE_NAME} MODULE "${pygixml_cpp_file}" WITH_SOABI)
 
 # Link pugixml to our module
-target_link_libraries(pygixml PRIVATE pugixml)
+target_link_libraries(${MODULE_NAME} PRIVATE pugixml)
 
 # Include directories
-target_include_directories(pygixml PRIVATE 
+target_include_directories(${MODULE_NAME} PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/pugixml/src
 )
 
 # Install the module
-install(TARGETS pygixml
-    DESTINATION .
+install(TARGETS ${MODULE_NAME}
+    DESTINATION ${SKBUILD_PROJECT_NAME}
 )
