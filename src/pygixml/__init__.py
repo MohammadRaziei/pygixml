@@ -8,6 +8,7 @@ from .pygixml import (
     XMLDocument,
     XMLNode,
     XMLAttribute,
+    XPathQuery,
     parse_string,
     parse_file
 )
@@ -15,8 +16,9 @@ from .pygixml import (
 __version__ = "0.1.0"
 __all__ = [
     "XMLDocument",
-    "XMLNode", 
+    "XMLNode",
     "XMLAttribute",
+    "XPathQuery",
     "parse_string",
     "parse_file"
 ]
