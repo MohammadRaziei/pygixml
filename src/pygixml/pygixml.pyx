@@ -250,6 +250,28 @@ cdef class XMLNode:
         cdef XPathQuery xpath_query = XPathQuery(query)
         return xpath_query.evaluate_node(self)
     
+    @property
+    def xml(self):
+        """Get the XML representation of this node as a string (readonly)"""
+        # For now, return a simple representation
+        # In a real implementation, this would serialize the node to XML
+        cdef string name = self._node.name()
+        cdef string value = self._node.value()
+        
+        if not name.empty():
+            node_name = name.decode('utf-8')
+            node_value = value.decode('utf-8') if not value.empty() else ""
+            
+            # Simple XML representation - in a real implementation, 
+            # this would need to handle attributes and children properly
+            if node_value:
+                return f"<{node_name}>{node_value}</{node_name}>"
+            else:
+                return f"<{node_name}/>"
+        else:
+            # For text nodes, just return the value
+            return value.decode('utf-8') if not value.empty() else ""
+    
 
 cdef class XMLAttribute:
     cdef xml_attribute _attr
