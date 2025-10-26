@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(${SKBUILD_PROJECT_NAME})
+cmake_policy(SET CMP0144 NEW)
 
 # Set Python module name (should match the .pyx filename)
 string(REPLACE "-" "_" MODULE_NAME ${SKBUILD_PROJECT_NAME})

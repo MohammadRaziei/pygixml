@@ -271,6 +271,50 @@ cdef class XMLNode:
         else:
             # For text nodes, just return the value
             return value.decode('utf-8') if not value.empty() else ""
+
+    def text(self, bint recursive=True, str join="\n"):
+        """Get the text content of this node.
+
+        Args:
+            recursive: If True, collect text from all descendants.
+                       If False, only direct text node children.
+
+        Returns:
+            Text content as a string (may be "").
+        """
+        cdef list out = []
+
+        def _collect_direct(n: XMLNode):
+            cdef xml_node ch = n._node.first_child()
+            cdef xml_node_type ct
+            while ch.type() != node_null:
+                ct = ch.type()
+                if ct == node_pcdata or ct == node_cdata:
+                    val = XMLNode.create_from_cpp(ch).value()
+                    if val is not None:
+                        out.append(val)
+                ch = ch.next_sibling()
+
+        def _collect_recursive(n: XMLNode):
+            # DFS over all descendants; collect pcdata/cdata values
+            cdef xml_node ch = n._node.first_child()
+            while ch.type() != node_null:
+                ct = ch.type()
+                if ct == node_pcdata or ct == node_cdata:
+                    val = XMLNode.create_from_cpp(ch).value()
+                    if val is not None:
+                        out.append(val)
+                else:
+                    _collect_recursive(XMLNode.create_from_cpp(ch))
+                ch = ch.next_sibling()
+
+        if recursive:
+            _collect_recursive(self)
+        else:
+            _collect_direct(self)
+
+        return join.join(out)
+
     
 
 cdef class XMLAttribute:

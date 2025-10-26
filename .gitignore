@@ -37,3 +37,6 @@ htmlcov/
 # Documentation
 docs/_build/
 /out/
+
+
+/venv/
