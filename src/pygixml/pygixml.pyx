@@ -6,7 +6,6 @@ Python wrapper for pugixml using Cython
 """
 
 from libcpp.string cimport string
-from libcpp.vector cimport vector
 from libcpp cimport bool
 
 # Import pugixml headers
@@ -99,6 +98,30 @@ cdef extern from "pugixml.hpp" namespace "pugi":
     cdef cppclass xml_node:
         xpath_node select_node(const char* query, xpath_variable_set* variables = NULL) const
         xpath_node_set select_nodes(const char* query, xpath_variable_set* variables = NULL) const
+
+
+cdef extern from *:
+    """
+    #include <sstream>
+    #include "pugixml.hpp"
+
+    std::string pugi_serialize_node_with_indent(
+        const pugi::xml_node& node,
+        const char* indent
+    ) {
+        if (node.type() == pugi::node_null) {
+            return std::string();
+        }
+        std::ostringstream oss;
+        node.print(oss, indent);
+        std::string xml { oss.str() };
+        if (!xml.empty() && *xml.rbegin() == '\\n') {
+            xml.pop_back(); // Removes the last character
+        }
+        return xml;
+    }
+    """
+    string pugi_serialize_node_with_indent(const xml_node& node, const char* indent)
 
 # Python wrapper classes
 cdef class XMLDocument:
@@ -250,27 +273,19 @@ cdef class XMLNode:
         cdef XPathQuery xpath_query = XPathQuery(query)
         return xpath_query.evaluate_node(self)
     
+
+    def to_string(self, str indent="  "):
+        """Serialize this node to XML string with custom indentation."""
+        if self._node.type() == node_null:
+            return ""
+        cdef bytes indent_bytes = indent.encode('utf-8')
+        cdef string s = pugi_serialize_node_with_indent(self._node, indent_bytes)
+        return s.decode('utf-8')
+
     @property
     def xml(self):
-        """Get the XML representation of this node as a string (readonly)"""
-        # For now, return a simple representation
-        # In a real implementation, this would serialize the node to XML
-        cdef string name = self._node.name()
-        cdef string value = self._node.value()
-        
-        if not name.empty():
-            node_name = name.decode('utf-8')
-            node_value = value.decode('utf-8') if not value.empty() else ""
-            
-            # Simple XML representation - in a real implementation, 
-            # this would need to handle attributes and children properly
-            if node_value:
-                return f"<{node_name}>{node_value}</{node_name}>"
-            else:
-                return f"<{node_name}/>"
-        else:
-            # For text nodes, just return the value
-            return value.decode('utf-8') if not value.empty() else ""
+        """XML representation with default indent (two spaces)."""
+        return self.to_string()    
 
     def text(self, bint recursive=True, str join="\n"):
         """Get the text content of this node.

@@ -7,9 +7,57 @@ import pytest
 import pygixml
 
 
+class TestXMLNodeSerialization:
 
-import pytest
-import pygixml
+    def test_xml_simple_element(self):
+        doc = pygixml.parse_string("<root>hello</root>")
+        node = doc.first_child()
+        # Use compact form for predictable comparison
+        assert node.to_string(indent="") == "<root>hello</root>"
+
+    def test_xml_nested_elements(self):
+        doc = pygixml.parse_string("<root><a><b>text</b></a></root>")
+        node = doc.first_child()
+        expected = "<root>\n<a>\n<b>text</b>\n</a>\n</root>"
+        assert node.to_string(indent="") == expected
+
+    def test_xml_with_unicode(self):
+        doc = pygixml.parse_string("<msg>سلام 🌍</msg>")
+        node = doc.first_child()
+        result = node.to_string(indent="")
+        assert result == "<msg>سلام 🌍</msg>"
+
+    def test_xml_null_node(self):
+        doc = pygixml.XMLDocument()
+        node = doc.first_child()
+        assert node.to_string(indent="") == ""
+
+    def test_xml_text_node(self):
+        doc = pygixml.parse_string("<p>Hello</p>")
+        text_node = doc.first_child().first_child()
+        # Text nodes return raw text (no tags)
+        assert text_node.to_string(indent="") == "Hello"
+
+    def test_xml_mixed_content(self):
+        doc = pygixml.parse_string("<p>Hello <b>world</b>!</p>")
+        node = doc.first_child()
+        result = node.to_string(indent="")
+        assert result == "<p>Hello <b>world</b>!</p>"
+
+    def test_xml_deep_nesting(self):
+        level = 5
+        deep = "\n".join(["<a>"] * level) + "x" + "\n".join(["</a>"] * level)
+        doc = pygixml.parse_string(deep)
+        node = doc.first_child()
+        assert node.to_string(indent="") == deep
+
+    def test_xml_vs_to_string_consistency(self):
+        # We don't compare xml vs to_string() because xml uses default indent
+        # Instead, we just ensure both work without crash
+        doc = pygixml.parse_string("<test>ok</test>")
+        node = doc.first_child()
+        _ = node.xml  # should not raise
+        _ = node.to_string()  # should not raise
 
 
 class TestXMLNodeText:
@@ -118,97 +166,3 @@ class TestXMLNodeText:
 
         assert root.text(recursive=True) == "content"
 
-
-
-class TestXMLProperty:
-    """Test XML property functionality"""
-    
-    def test_xml_property_element_node(self):
-        """Test xml property for element nodes"""
-        xml_string = "<root><child>text</child></root>"
-        doc = pygixml.parse_string(xml_string)
-        root = doc.first_child()
-        
-        # Element nodes should return XML representation
-        assert root.xml == "<root/>"
-        
-    def test_xml_property_text_node(self):
-        """Test xml property for text nodes"""
-        xml_string = "<root>text content</root>"
-        doc = pygixml.parse_string(xml_string)
-        root = doc.first_child()
-        text_node = root.first_child()
-        
-        # Text nodes should return their text content
-        assert text_node.xml == "text content"
-        
-    def test_xml_property_with_attributes(self):
-        """Test xml property for elements with attributes"""
-        xml_string = '<book id="1" category="fiction"/>'
-        doc = pygixml.parse_string(xml_string)
-        book = doc.first_child()
-        
-        # Currently returns simple representation without attributes
-        # This is expected behavior for the current implementation
-        assert book.xml == "<book/>"
-        
-    def test_xml_property_empty_element(self):
-        """Test xml property for empty elements"""
-        xml_string = "<empty/>"
-        doc = pygixml.parse_string(xml_string)
-        empty = doc.first_child()
-        
-        assert empty.xml == "<empty/>"
-        
-    def test_xml_property_nested_elements(self):
-        """Test xml property for nested elements"""
-        xml_string = "<root><parent><child>value</child></parent></root>"
-        doc = pygixml.parse_string(xml_string)
-        root = doc.first_child()
-        parent = root.first_child()
-        child = parent.first_child()
-        
-        # Each element should return its own XML representation
-        assert root.xml == "<root/>"
-        assert parent.xml == "<parent/>"
-        assert child.xml == "<child/>"
-        
-    def test_xml_property_readonly(self):
-        """Test that xml property is readonly"""
-        xml_string = "<test>content</test>"
-        doc = pygixml.parse_string(xml_string)
-        node = doc.first_child()
-        
-        # Verify it's a property and can't be set
-        assert hasattr(node, 'xml')
-        
-        # Attempting to set should raise AttributeError
-        with pytest.raises(AttributeError):
-            node.xml = "<new>content</new>"
-            
-    def test_xml_property_complex_structure(self):
-        """Test xml property with complex XML structure"""
-        xml_string = """
-        <library>
-            <book id="1">
-                <title>Book One</title>
-                <author>Author One</author>
-            </book>
-            <book id="2">
-                <title>Book Two</title>
-                <author>Author Two</author>
-            </book>
-        </library>
-        """
-        
-        doc = pygixml.parse_string(xml_string)
-        library = doc.first_child()
-        first_book = library.child("book")
-        title = first_book.child("title")
-        title_text = title.first_child()
-        
-        # Test various node types
-        assert library.xml == "<library/>"
-        assert first_book.xml == "<book/>"
-        assert title.xml == "<title/>"
-        assert title_text.xml == "Book One"
