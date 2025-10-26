@@ -105,7 +105,7 @@ cdef extern from *:
     #include <sstream>
     #include "pugixml.hpp"
 
-    std::string pugi_serialize_node_with_indent(
+    std::string pugi_serialize_node(
         const pugi::xml_node& node,
         const char* indent
     ) {
@@ -121,7 +121,7 @@ cdef extern from *:
         return xml;
     }
     """
-    string pugi_serialize_node_with_indent(const xml_node& node, const char* indent)
+    string pugi_serialize_node(const xml_node& node, const char* indent)
 
 # Python wrapper classes
 cdef class XMLDocument:
