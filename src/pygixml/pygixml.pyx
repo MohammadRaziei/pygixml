@@ -123,6 +123,18 @@ cdef extern from *:
     """
     string pugi_serialize_node(const xml_node& node, const char* indent)
 
+
+
+class PygiXMLError(ValueError):
+    """General exception raised by pygixml."""
+    pass
+
+
+class PygiXMLNullNodeError(PygiXMLError):
+    pass
+
+
+
 # Python wrapper classes
 cdef class XMLDocument:
     cdef xml_document* _doc
@@ -180,27 +192,34 @@ cdef class XMLNode:
         cdef XMLNode wrapper = XMLNode()
         wrapper._node = node
         return wrapper
-    
+
+    @property
     def name(self):
         """Get node name"""
         cdef string name = self._node.name()
         return name.decode('utf-8') if not name.empty() else None
     
+    
+    @property
     def value(self):
         """Get node value"""
         cdef string value = self._node.value()
         return value.decode('utf-8') if not value.empty() else None
     
-    def set_name(self, str name):
+    @name.setter
+    def name(self, str name):
         """Set node name"""
         cdef bytes name_bytes = name.encode('utf-8')
-        return self._node.set_name(name_bytes)
+        success = self._node.set_name(name_bytes)
+        if not success: raise PygiXMLError("Cannot set name: node is null or invalid")
+
     
-    def set_value(self, str value):
+    @value.setter
+    def value(self, str value):
         """Set node value"""
         cdef bytes value_bytes = value.encode('utf-8')
         success = self._node.set_value(value_bytes)
-        return success
+        if not success: raise PygiXMLError("Cannot set value: node is null or invalid")
     
     def first_child(self):
         """Get first child node"""
@@ -246,6 +265,7 @@ cdef class XMLNode:
         cdef xml_node node = self._node.previous_sibling()
         return XMLNode.create_from_cpp(node)
     
+    @property
     def parent(self):
         """Get parent node"""
         cdef xml_node node = self._node.parent()
@@ -279,7 +299,7 @@ cdef class XMLNode:
         if self._node.type() == node_null:
             return ""
         cdef bytes indent_bytes = indent.encode('utf-8')
-        cdef string s = pugi_serialize_node_with_indent(self._node, indent_bytes)
+        cdef string s = pugi_serialize_node(self._node, indent_bytes)
         return s.decode('utf-8')
 
     @property
@@ -305,7 +325,7 @@ cdef class XMLNode:
             while ch.type() != node_null:
                 ct = ch.type()
                 if ct == node_pcdata or ct == node_cdata:
-                    val = XMLNode.create_from_cpp(ch).value()
+                    val = XMLNode.create_from_cpp(ch).value
                     if val is not None:
                         out.append(val)
                 ch = ch.next_sibling()
@@ -316,7 +336,7 @@ cdef class XMLNode:
             while ch.type() != node_null:
                 ct = ch.type()
                 if ct == node_pcdata or ct == node_cdata:
-                    val = XMLNode.create_from_cpp(ch).value()
+                    val = XMLNode.create_from_cpp(ch).value
                     if val is not None:
                         out.append(val)
                 else:
@@ -351,12 +371,12 @@ cdef class XMLAttribute:
         cdef string value = self._attr.value()
         return value.decode('utf-8') if not value.empty() else None
     
-    def set_name(self, str name):
+    def name(self, str name):
         """Set attribute name"""
         cdef bytes name_bytes = name.encode('utf-8')
         return self._attr.set_name(name_bytes)
     
-    def set_value(self, str value):
+    def value(self, str value):
         """Set attribute value"""
         cdef bytes value_bytes = value.encode('utf-8')
         return self._attr.set_value(value_bytes)
@@ -371,16 +391,19 @@ cdef class XPathNode:
         wrapper._xpath_node = xpath_node
         return wrapper
     
+    @property
     def node(self):
         """Get XML node from XPath node"""
         cdef xml_node node = self._xpath_node.node()
         return XMLNode.create_from_cpp(node)
     
+    @property
     def attribute(self):
         """Get XML attribute from XPath node"""
         cdef xml_attribute attr = self._xpath_node.attribute()
         return XMLAttribute.create_from_cpp(attr)
     
+    @property
     def parent(self):
         """Get parent node"""
         cdef xml_node node = self._xpath_node.parent()
@@ -457,7 +480,7 @@ def parse_string(str xml_string):
     if doc.load_string(xml_string):
         return doc
     else:
-        raise ValueError("Failed to parse XML string")
+        raise PygiXMLError("Failed to parse XML string")
 
 def parse_file(str file_path):
     """Parse XML from file and return XMLDocument"""
@@ -465,4 +488,4 @@ def parse_file(str file_path):
     if doc.load_file(file_path):
         return doc
     else:
-        raise ValueError(f"Failed to parse XML file: {file_path}")
+        raise PygiXMLError(f"Failed to parse XML file: {file_path}")

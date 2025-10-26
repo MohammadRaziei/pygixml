@@ -24,7 +24,7 @@ class TestXMLDocument:
         assert doc is not None
         
         root = doc.first_child()
-        assert root.name() == "root"
+        assert root.name == "root"
         
     def test_parse_invalid_string(self):
         """Test parsing invalid XML string"""
@@ -52,7 +52,7 @@ class TestXMLDocument:
             
             # Verify content
             root = doc2.first_child()
-            assert root.name() == "root"
+            assert root.name == "root"
             data = root.child("data")
             assert data.child_value() == "test"
             
@@ -80,13 +80,13 @@ class TestXMLNode:
         
     def test_node_name(self):
         """Test getting node name"""
-        assert self.root.name() == "library"
+        assert self.root.name == "library"
         
     def test_child_access(self):
         """Test accessing child nodes"""
         book = self.root.child("book")
         assert book is not None
-        assert book.name() == "book"
+        assert book.name == "book"
         
     def test_child_value(self):
         """Test getting child values"""
@@ -102,7 +102,7 @@ class TestXMLNode:
         text_node = title.first_child()
         # Note: set_value may not work as expected on text nodes
         # For now, we'll test that we can access the text node
-        assert text_node.value() == "Test Book"
+        assert text_node.value == "Test Book"
         
     def test_append_child(self):
         """Test appending child nodes - creating structure"""
@@ -111,13 +111,13 @@ class TestXMLNode:
         # For now, we'll test that we can create the structure
         # Setting text content requires different approach
         year = book.child("year")
-        assert year.name() == "year"
+        assert year.name == "year"
         assert year.child_value() is None  # No text content yet
         
     def test_first_child(self):
         """Test getting first child"""
         book = self.root.first_child()
-        assert book.name() == "book"
+        assert book.name == "book"
         
     def test_nonexistent_child(self):
         """Test accessing non-existent child"""
@@ -126,7 +126,7 @@ class TestXMLNode:
         # This is expected behavior for now
         assert nonexistent is not None
         # For non-existent children, name() returns None
-        assert nonexistent.name() is None
+        assert nonexistent.name is None
 
 
 class TestConvenienceFunctions:
@@ -138,7 +138,7 @@ class TestConvenienceFunctions:
         doc = pygixml.parse_string(xml_string)
         assert doc is not None
         root = doc.first_child()
-        assert root.name() == "root"
+        assert root.name == "root"
         
     def test_parse_file_function(self):
         """Test parse_file convenience function"""
@@ -151,7 +151,7 @@ class TestConvenienceFunctions:
             doc = pygixml.parse_file(temp_file)
             assert doc is not None
             root = doc.first_child()
-            assert root.name() == "root"
+            assert root.name == "root"
             data = root.child("data")
             assert data.child_value() == "file_test"
             

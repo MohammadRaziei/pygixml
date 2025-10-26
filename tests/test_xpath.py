@@ -36,7 +36,7 @@ class TestXPath:
         # Check book titles
         titles = []
         for book in books:
-            title_node = book.node().child("title")
+            title_node = book.node.child("title")
             titles.append(title_node.child_value())
         
         assert "The Great Gatsby" in titles
@@ -62,11 +62,11 @@ class TestXPath:
         
         # Select first book
         first_book = root.select_node("book[1]")
-        assert first_book.node().child("title").child_value() == "The Great Gatsby"
+        assert first_book.node.child("title").child_value() == "The Great Gatsby"
         
         # Select book by attribute
         book_by_id = root.select_node("book[@id='2']")
-        assert book_by_id.node().child("title").child_value() == "1984"
+        assert book_by_id.node.child("title").child_value() == "1984"
     
     def test_select_by_attribute(self):
         """Test XPath queries using attributes"""
@@ -96,7 +96,7 @@ class TestXPath:
         
         # Select employee by ID
         employee_102 = root.select_node("employee[@id='102']")
-        assert employee_102.node().child("name").child_value() == "Bob"
+        assert employee_102.node.child("name").child_value() == "Bob"
     
     def test_select_child_values(self):
         """Test XPath queries for child values"""
@@ -130,7 +130,7 @@ class TestXPath:
         # Get product names
         names = []
         for product in electronics:
-            name = product.node().child("name").child_value()
+            name = product.node.child("name").child_value()
             names.append(name)
         
         assert "Laptop" in names
@@ -169,7 +169,7 @@ class TestXPath:
         # Get item names
         names = []
         for item in result:
-            name = item.node().child("name").child_value()
+            name = item.node.child("name").child_value()
             names.append(name)
         
         assert "Widget A" in names
@@ -261,12 +261,12 @@ class TestXPath:
         
         # Select user by ID
         user_2 = root.select_node("user[@id='2']")
-        assert user_2.node().child("name").child_value() == "Jane"
+        assert user_2.node.child("name").child_value() == "Jane"
         
         # Select inactive users
         inactive_users = root.select_nodes("user[@active='false']")
         assert len(inactive_users) == 1
-        assert inactive_users[0].node().child("name").child_value() == "Jane"
+        assert inactive_users[0].node.child("name").child_value() == "Jane"
     
     def test_xpath_position_functions(self):
         """Test XPath position functions"""
@@ -284,15 +284,15 @@ class TestXPath:
         
         # Select first item
         first_item = root.select_node("item[1]")
-        assert first_item.node().child_value() == "First"
+        assert first_item.node.child_value() == "First"
         
         # Select last item
         last_item = root.select_node("item[last()]")
-        assert last_item.node().child_value() == "Fourth"
+        assert last_item.node.child_value() == "Fourth"
         
         # Select items by position
         items = root.select_nodes("item[position() > 2]")
         assert len(items) == 2
-        values = [item.node().child_value() for item in items]
+        values = [item.node.child_value() for item in items]
         assert "Third" in values
         assert "Fourth" in values

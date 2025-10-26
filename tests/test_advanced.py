@@ -20,16 +20,16 @@ class TestAdvancedXML:
         # Add multiple items
         for i in range(10):
             product = root.append_child("product")
-            product.set_name("product")
+            product.name = "product"
             
             id_elem = product.append_child("id")
-            id_elem.set_value(str(i))
+            id_elem.value = str(i)
             
             name_elem = product.append_child("name")
-            name_elem.set_value(f"Product {i}")
+            name_elem.value = f"Product {i}"
             
             price_elem = product.append_child("price")
-            price_elem.set_value(str(i * 10.5))
+            price_elem.velue = str(i * 10.5)
         
         # Verify structure
         assert root.name() == "catalog"
@@ -148,7 +148,7 @@ class TestAdvancedXML:
         
         # Add new employee structure (without setting values)
         new_employee = engineering.append_child("employee")
-        new_employee.set_name("employee")
+        new_employee.name = "employee"
         new_name = new_employee.append_child("name")
         new_role = new_employee.append_child("role")
         
@@ -185,7 +185,7 @@ class TestErrorHandling:
         # Empty document returns an empty node, not None
         root = doc.first_child()
         assert root is not None
-        assert root.name() is None
+        assert root.name is None
         
     def test_nonexistent_file_save(self):
         """Test saving to invalid file path"""
@@ -213,7 +213,7 @@ class TestPerformance:
         # Create many nodes quickly (reduced from 1000 to 100 for performance)
         for i in range(100):
             node = root.append_child(f"node_{i}")
-            node.set_value(f"value_{i}")
+            node.value = f"value_{i}"
         
         # Verify all nodes were created
         count = 0
