@@ -21,7 +21,16 @@ doc = pygixml.parse_string(xml_string)
 root = doc.first_child()
 
 print(root.name)
-print(root.text())
 
+
+book = root.child("book")
+title = book.child("title")
+print(book.xml)
+print(title.xml)
+
+
+print(title.parent == book)
+
+print(title.parent.mem_id == book.mem_id)
 
 

@@ -48,6 +48,8 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         string child_value(const char* name) const
         bool set_name(const char* name)
         bool set_value(const char* value)
+        xpath_node select_node(const char* query, xpath_variable_set* variables = NULL) const
+        xpath_node_set select_nodes(const char* query, xpath_variable_set* variables = NULL) const
         
     cdef cppclass xml_attribute:
         xml_attribute() except +
@@ -93,12 +95,9 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         
     cdef cppclass xpath_variable_set:
         xpath_variable_set() except +
-        
-    # XPath methods for xml_node
-    cdef cppclass xml_node:
-        xpath_node select_node(const char* query, xpath_variable_set* variables = NULL) const
-        xpath_node_set select_nodes(const char* query, xpath_variable_set* variables = NULL) const
+    
 
+    bool operator==(const xml_node&, const xml_node&)
 
 cdef extern from *:
     """
@@ -120,8 +119,15 @@ cdef extern from *:
         }
         return xml;
     }
+
+    static inline size_t get_pugi_node_address(const pugi::xml_node& node) {
+        return reinterpret_cast<size_t>(
+            *reinterpret_cast<void* const*>(&node)
+        );    
+    }
     """
     string pugi_serialize_node(const xml_node& node, const char* indent)
+    size_t get_pugi_node_address(xml_node& node)
 
 
 
@@ -349,6 +355,17 @@ cdef class XMLNode:
             _collect_direct(self)
 
         return join.join(out)
+
+    @property
+    def mem_id(self):
+        if self._node.type() == node_null:
+            return 0
+        return get_pugi_node_address(self._node)
+
+    def __eq__(self, other: XMLNode) -> bool:
+        if not isinstance(other, XMLNode):
+            return False
+        return self._node == other._node
 
     
 
