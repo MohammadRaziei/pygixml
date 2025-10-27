@@ -35,4 +35,5 @@ print(title.parent.mem_id == book.mem_id)
 
 
 for tag in root:
-    print(tag.name)
+    print(tag.name, tag.xpath)
+    print(root.select_node(tag.xpath).node.xml)

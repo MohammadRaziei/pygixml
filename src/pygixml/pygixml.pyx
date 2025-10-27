@@ -103,6 +103,7 @@ cdef extern from "pugixml.hpp" namespace "pugi":
 cdef extern from *:
     """
     #include <sstream>
+    #include <vector>
     #include "pugixml.hpp"
 
     std::string pugi_serialize_node(
@@ -126,10 +127,69 @@ cdef extern from *:
             *reinterpret_cast<void* const*>(&node)
         );    
     }
+
+    static std::string get_xpath_for_node(const pugi::xml_node& node) {
+        if (!node || node.type() != pugi::node_element) return "";
+
+        pugi::xml_node current = node;
+        std::vector<pugi::xml_node> path;
+        
+        while (current && current.type() == pugi::node_element) {
+            path.push_back(current);
+            current = current.parent();
+        }
+
+        if (path.empty()) return "";
+
+        std::ostringstream xpath;
+        xpath << "/";
+
+        for (auto it = path.rbegin(); it != path.rend(); ++it) {
+            const pugi::xml_node& n = *it;
+            const char* name = n.name();
+            if (!name || !*name) continue;
+
+            xpath << name;
+
+            pugi::xml_node parent = n.parent();
+            if (!parent) {
+                // This is the root element — check if there are multiple roots?
+                // In valid XML, there's only one root, so no index needed.
+                continue;
+            }
+
+            // Count total siblings with same name
+            int total_same = 0;
+            pugi::xml_node child = parent.first_child();
+            while (child) {
+                if (child.type() == pugi::node_element && 
+                    std::string(child.name()) == std::string(name)) {
+                    ++total_same;
+                }
+                child = child.next_sibling();
+            }
+
+            // Only add index if there is more than one
+            if (total_same > 1) {
+                int index = 1;
+                pugi::xml_node sibling = n.previous_sibling();
+                while (sibling) {
+                    if (sibling.type() == pugi::node_element && 
+                        std::string(sibling.name()) == std::string(name)) {
+                        ++index;
+                    }
+                    sibling = sibling.previous_sibling();
+                }
+                xpath << "[" << index << "]";
+            }
+        }
+
+        return xpath.str();
+    }
     """
     string pugi_serialize_node(const xml_node& node, const char* indent)
     size_t get_pugi_node_address(xml_node& node)
-
+    string get_xpath_for_node(const xml_node& node) 
 
 
 class PygiXMLError(ValueError):
@@ -300,6 +360,13 @@ cdef class XMLNode:
         cdef XPathQuery xpath_query = XPathQuery(query)
         return xpath_query.evaluate_node(self)
     
+    @property
+    def xpath(self):
+        """Return the absolute XPath of this node (e.g., '/root/item[1]/name[1]')."""
+        if self._node.type() != node_element:
+            return ""
+        cdef string xpath_str = get_xpath_for_node(self._node)
+        return xpath_str.decode('utf-8')
 
     def to_string(self, str indent="  "):
         """Serialize this node to XML string with custom indentation."""
