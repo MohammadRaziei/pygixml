@@ -131,9 +131,9 @@ cdef extern from *:
     static std::string get_xpath_for_node(const pugi::xml_node& node) {
         if (!node || node.type() != pugi::node_element) return "";
 
-        pugi::xml_node current = node;
+        // Collect path from node to root (then reverse)
         std::vector<pugi::xml_node> path;
-        
+        pugi::xml_node current = node;
         while (current && current.type() == pugi::node_element) {
             path.push_back(current);
             current = current.parent();
@@ -142,34 +142,31 @@ cdef extern from *:
         if (path.empty()) return "";
 
         std::ostringstream xpath;
-        xpath << "/";
 
+        // Build from root to node
         for (auto it = path.rbegin(); it != path.rend(); ++it) {
             const pugi::xml_node& n = *it;
             const char* name = n.name();
             if (!name || !*name) continue;
 
-            xpath << name;
-
-            pugi::xml_node parent = n.parent();
-            if (!parent) {
-                // This is the root element — check if there are multiple roots?
-                // In valid XML, there's only one root, so no index needed.
-                continue;
-            }
-
-            // Count total siblings with same name
+            xpath << "/" << name;  
+            // Count total same-name siblings under parent
             int total_same = 0;
-            pugi::xml_node child = parent.first_child();
-            while (child) {
-                if (child.type() == pugi::node_element && 
-                    std::string(child.name()) == std::string(name)) {
-                    ++total_same;
+            pugi::xml_node parent = n.parent();
+            if (parent) {
+                pugi::xml_node child = parent.first_child();
+                while (child) {
+                    if (child.type() == pugi::node_element && 
+                        std::string(child.name()) == std::string(name)) {
+                        ++total_same;
+                    }
+                    child = child.next_sibling();
                 }
-                child = child.next_sibling();
+            } else {
+                total_same = 1; // root element
             }
 
-            // Only add index if there is more than one
+            // Only add index if needed
             if (total_same > 1) {
                 int index = 1;
                 pugi::xml_node sibling = n.previous_sibling();
