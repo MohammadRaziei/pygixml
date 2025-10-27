@@ -1,4 +1,5 @@
 import pygixml
+import time
 
 
 # Parse XML from string
@@ -35,6 +36,11 @@ print(title.parent.mem_id == book.mem_id)
 
 
 for tag in root:
-    print(tag.name, tag.xpath)
-    if tag.xpath:
-        print(root.select_node(tag.xpath).node.xml)
+    tstart = time.time_ns()
+    xpath  = tag.xpath
+    tstop  = time.time_ns()
+
+    elapsed = tstop - tstart
+
+    print(tag.name, xpath, f"{elapsed/1e3} us")
+    if xpath: print(root.select_node(xpath).node.xml)
