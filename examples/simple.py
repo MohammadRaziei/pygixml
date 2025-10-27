@@ -34,3 +34,5 @@ print(title.parent == book)
 print(title.parent.mem_id == book.mem_id)
 
 
+for tag in root:
+    print(tag.name)

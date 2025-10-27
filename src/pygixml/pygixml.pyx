@@ -6,6 +6,7 @@ Python wrapper for pugixml using Cython
 """
 
 from libcpp.string cimport string
+from libcpp.vector cimport vector
 from libcpp cimport bool
 
 # Import pugixml headers
@@ -367,6 +368,24 @@ cdef class XMLNode:
             return False
         return self._node == other._node
 
+
+    def __iter__(self):
+        """Iterate over all descendant nodes in DFS preorder."""
+        if self._node.type() == node_null:
+            return
+        cdef vector[xml_node] stack
+        stack.push_back(self._node)
+        cdef xml_node current
+        cdef xml_node child
+        while stack.size() > 0:
+            current = stack.back()
+            stack.pop_back()
+            yield XMLNode.create_from_cpp(current)
+            # Traverse children in reverse order (right to left)
+            child = current.last_child()
+            while child.type() != node_null:
+                stack.push_back(child)
+                child = child.previous_sibling()
     
 
 cdef class XMLAttribute:
