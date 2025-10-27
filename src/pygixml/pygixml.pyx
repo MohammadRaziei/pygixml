@@ -378,25 +378,31 @@ cdef class XMLAttribute:
         wrapper._attr = attr
         return wrapper
     
+    @property
     def name(self):
         """Get attribute name"""
         cdef string name = self._attr.name()
         return name.decode('utf-8') if not name.empty() else None
     
+    @property
     def value(self):
         """Get attribute value"""
         cdef string value = self._attr.value()
         return value.decode('utf-8') if not value.empty() else None
     
+    @name.setter
     def name(self, str name):
         """Set attribute name"""
         cdef bytes name_bytes = name.encode('utf-8')
-        return self._attr.set_name(name_bytes)
-    
+        if not self._attr.set_name(name_bytes):
+            raise PygiXMLError("Cannot set attribute name")
+
+    @value.setter
     def value(self, str value):
         """Set attribute value"""
         cdef bytes value_bytes = value.encode('utf-8')
-        return self._attr.set_value(value_bytes)
+        if not self._attr.set_value(value_bytes):
+            raise PygiXMLError("Cannot set attribute value")
 
 # XPath wrapper classes
 cdef class XPathNode:
