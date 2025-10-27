@@ -10,7 +10,9 @@ xml_string = """
         <author>F. Scott Fitzgerald</author>
         <year>1925</year>
     </book>
+    hello
     <!-- comment -->
+    world
     <book id="2">
         <title>1984</title>
         <author>George Orwell</author>
@@ -44,4 +46,9 @@ for tag in doc:
     elapsed = tstop - tstart
 
     print(tag.name, xpath, f"{elapsed/1e3} us")
-    if xpath: print(root.select_node(xpath).node.xml)
+    if xpath:
+         node = root.select_node(xpath).node
+         print(node == tag , node.xml)
+
+
+print(root.text(join=" ", recursive=True))

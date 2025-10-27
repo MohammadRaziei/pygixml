@@ -392,53 +392,50 @@ cdef class XMLNode:
         """XML representation with default indent (two spaces)."""
         return self.to_string()    
         
-        
+
     def text(self, bint recursive=True, str join="\n"):
-        """Get the text content of this node.
+        """Get the text content of this node."""
+        if self._node.type() == node_null:
+            return ""
 
-        Args:
-            recursive: If True, collect text from all descendants.
-                       If False, only direct text node children.
+        cdef list out = []  # فقط برای جمع‌آوری رشته‌های نهایی (خروجی پایتونی)
+        cdef xml_node current
+        cdef xml_node_type ct
+        cdef vector[xml_node] stack
+        cdef xml_node child
+        cdef string val
 
-        Returns:
-            Text content as a string (may be "").
-        """
-        cdef list out = []
-
-        def _collect_direct(n: XMLNode):
-            cdef xml_node ch = n._node.first_child()
-            cdef xml_node_type ct
-            cdef string val
-            while ch.type() != node_null:
-                ct = ch.type()
+        if not recursive:
+            current = self._node.first_child()
+            while current.type() != node_null:
+                ct = current.type()
                 if ct == node_pcdata or ct == node_cdata:
-                    val = ch.value()
+                    val = current.value()
                     if not val.empty():
                         out.append(val.decode('utf-8'))
-                ch = ch.next_sibling()
-
-        def _collect_recursive(n: XMLNode):
-            # DFS over all descendants; collect pcdata/cdata values
-            cdef xml_node ch = n._node.first_child()
-            cdef string val
-            while ch.type() != node_null:
-                ct = ch.type()
-                if ct == node_pcdata or ct == node_cdata:
-                    val = ch.value()
-                    if not val.empty():
-                        out.append(val.decode('utf-8'))
-                else:
-                    _collect_recursive(XMLNode.create_from_cpp(ch))
-                ch = ch.next_sibling()
-
-        if recursive:
-            _collect_recursive(self)
+                current = current.next_sibling()
         else:
-            _collect_direct(self)
+            current = self._node.first_child()
+            while current.type() != node_null:
+                stack.push_back(current)
+                current = current.next_sibling()
+
+            while stack.size() > 0:
+                current = stack.back()
+                stack.pop_back()
+
+                ct = current.type()
+                if ct == node_pcdata or ct == node_cdata:
+                    val = current.value()
+                    if not val.empty():
+                        out.append(val.decode('utf-8'))
+                elif ct in (node_element, node_document, node_declaration, node_doctype):
+                    child = current.last_child()
+                    while child.type() != node_null:
+                        stack.push_back(child)
+                        child = child.previous_sibling()
 
         return join.join(out)
-
-
 
     @property
     def mem_id(self):
