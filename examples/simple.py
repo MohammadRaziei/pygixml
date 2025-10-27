@@ -35,7 +35,7 @@ print(title.parent == book)
 print(title.parent.mem_id == book.mem_id)
 
 
-for tag in root:
+for tag in doc:
     tstart = time.time_ns()
     xpath  = tag.xpath
     tstop  = time.time_ns()

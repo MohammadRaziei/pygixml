@@ -248,8 +248,16 @@ cdef class XMLDocument:
         cdef xml_node node = self._doc.child(name_bytes)
         return XMLNode.create_from_cpp(node)
 
+    def __iter__(self):
+        root = self.first_child()
+        return iter(root) if root else iter(())
+
+
 cdef class XMLNode:
     cdef xml_node _node
+
+    def __init__(self):
+        pass  
     
     @staticmethod
     cdef XMLNode create_from_cpp(xml_node node):
@@ -315,20 +323,22 @@ cdef class XMLNode:
             value = self._node.child_value(name_bytes)
             return value.decode('utf-8') if not value.empty() else None
     
+    @property
     def next_sibling(self):
         """Get next sibling node"""
         cdef xml_node node = self._node.next_sibling()
-        # Check if the node is empty (no more siblings) by checking if name is empty
-        cdef string node_name = node.name()
-        if node_name.empty():
+        if node.type() == node_null:
             return None
         return XMLNode.create_from_cpp(node)
     
+    @property
     def previous_sibling(self):
         """Get previous sibling node"""
         cdef xml_node node = self._node.previous_sibling()
+        if node.type() == node_null:
+            return None
         return XMLNode.create_from_cpp(node)
-    
+
     @property
     def parent(self):
         """Get parent node"""
@@ -356,6 +366,10 @@ cdef class XMLNode:
         """Select single node using XPath query"""
         cdef XPathQuery xpath_query = XPathQuery(query)
         return xpath_query.evaluate_node(self)
+
+    def is_null(self):
+        """Return True if this node is null."""
+        return self._node.type() == node_null
     
     @property
     def xpath(self):
@@ -432,6 +446,8 @@ cdef class XMLNode:
             return False
         return self._node == other._node
 
+    def __bool__(self):
+        return self._node.type() != node_null
 
     def __iter__(self):
         """Iterate over all descendant nodes in DFS preorder."""
