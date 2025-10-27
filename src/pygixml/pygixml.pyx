@@ -391,7 +391,8 @@ cdef class XMLNode:
     def xml(self):
         """XML representation with default indent (two spaces)."""
         return self.to_string()    
-
+        
+        
     def text(self, bint recursive=True, str join="\n"):
         """Get the text content of this node.
 
@@ -407,23 +408,25 @@ cdef class XMLNode:
         def _collect_direct(n: XMLNode):
             cdef xml_node ch = n._node.first_child()
             cdef xml_node_type ct
+            cdef string val
             while ch.type() != node_null:
                 ct = ch.type()
                 if ct == node_pcdata or ct == node_cdata:
-                    val = XMLNode.create_from_cpp(ch).value
-                    if val is not None:
-                        out.append(val)
+                    val = ch.value()
+                    if not val.empty():
+                        out.append(val.decode('utf-8'))
                 ch = ch.next_sibling()
 
         def _collect_recursive(n: XMLNode):
             # DFS over all descendants; collect pcdata/cdata values
             cdef xml_node ch = n._node.first_child()
+            cdef string val
             while ch.type() != node_null:
                 ct = ch.type()
                 if ct == node_pcdata or ct == node_cdata:
-                    val = XMLNode.create_from_cpp(ch).value
-                    if val is not None:
-                        out.append(val)
+                    val = ch.value()
+                    if not val.empty():
+                        out.append(val.decode('utf-8'))
                 else:
                     _collect_recursive(XMLNode.create_from_cpp(ch))
                 ch = ch.next_sibling()
@@ -434,6 +437,8 @@ cdef class XMLNode:
             _collect_direct(self)
 
         return join.join(out)
+
+
 
     @property
     def mem_id(self):
