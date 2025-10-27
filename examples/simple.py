@@ -10,6 +10,7 @@ xml_string = """
         <author>F. Scott Fitzgerald</author>
         <year>1925</year>
     </book>
+    <!-- comment -->
     <book id="2">
         <title>1984</title>
         <author>George Orwell</author>
