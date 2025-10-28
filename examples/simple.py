@@ -49,6 +49,7 @@ for tag in doc:
     if xpath:
          node = root.select_node(xpath).node
          print(node == tag , node.xml)
+         print(tag.mem_id)
 
 
 print(root.text(join=" ", recursive=True))

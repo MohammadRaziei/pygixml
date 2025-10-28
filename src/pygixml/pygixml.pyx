@@ -123,9 +123,37 @@ cdef extern from *:
     }
 
     static inline size_t get_pugi_node_address(const pugi::xml_node& node) {
-        return reinterpret_cast<size_t>(
-            *reinterpret_cast<void* const*>(&node)
-        );    
+        return reinterpret_cast<size_t>(node.internal_object());
+    }
+
+    static pugi::xml_node find_node_by_address(
+        pugi::xml_node& root,
+        size_t target_addr
+    ) {
+        if (root.type() == pugi::node_null) {
+            return pugi::xml_node();
+        }        
+        std::vector<pugi::xml_node> stack;
+        stack.push_back(root);
+        
+        while (!stack.empty()) {
+            pugi::xml_node current = stack.back();
+            stack.pop_back();
+            
+            size_t current_addr = get_pugi_node_address(current);
+            
+            if (current_addr == target_addr) {
+                return current;
+            }
+            
+            // Add children in reverse order
+            pugi::xml_node child = current.last_child();
+            while (child) {
+                stack.push_back(child);
+                child = child.previous_sibling();
+            }
+        }
+        return pugi::xml_node();
     }
 
     static std::string get_xpath_for_node(const pugi::xml_node& node) {
@@ -186,7 +214,9 @@ cdef extern from *:
     """
     string pugi_serialize_node(const xml_node& node, const char* indent)
     size_t get_pugi_node_address(xml_node& node)
+    xml_node find_node_by_address(xml_node& root, size_t target_addr)
     string get_xpath_for_node(const xml_node& node) 
+
 
 
 class PygiXMLError(ValueError):
