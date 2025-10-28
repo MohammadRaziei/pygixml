@@ -330,6 +330,7 @@ cdef class XMLNode:
         if node.type() == node_null:
             return None
         return XMLNode.create_from_cpp(node)
+
     
     @property
     def previous_sibling(self):
@@ -338,6 +339,22 @@ cdef class XMLNode:
         if node.type() == node_null:
             return None
         return XMLNode.create_from_cpp(node)
+
+    @property
+    def next_element_sibling(self):
+        """Get next sibling that is an element node."""
+        sibling = self.next_sibling
+        while sibling and sibling.type != node_element:
+            sibling = sibling.next_sibling
+        return sibling
+        
+    @property
+    def previous_element_sibling(self):
+        """Get previous sibling that is an element node."""
+        sibling = self.previous_sibling
+        while sibling and sibling.type != node_element:
+            sibling = sibling.previous_sibling
+        return sibling
 
     @property
     def parent(self):
@@ -398,7 +415,7 @@ cdef class XMLNode:
         if self._node.type() == node_null:
             return ""
 
-        cdef list out = []  # فقط برای جمع‌آوری رشته‌های نهایی (خروجی پایتونی)
+        cdef list out = []  
         cdef xml_node current
         cdef xml_node_type ct
         cdef vector[xml_node] stack
