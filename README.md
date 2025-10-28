@@ -6,11 +6,9 @@
 [![Documentation Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/docs.yaml/badge.svg)](https://mohammadraziei.github.io/pygixml/)
 [![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
 
-A high-performance Python wrapper for [pugixml](https://pugixml.org/) using Cython, providing fast XML parsing and manipulation capabilities.
+A high-performance XML parser for Python based on Cython and [pugixml](https://pugixml.org/), providing fast XML parsing, manipulation, XPath queries, text extraction, and advanced XML processing capabilities.
 
 📚 **[View Full Documentation](https://mohammadraziei.github.io/pygixml/)**
-
-
 
 ## 🚀 Performance
 
@@ -35,7 +33,7 @@ pygixml delivers exceptional performance compared to other XML libraries:
 
 ## Installation
 
-### From Pypi repositoey
+### From PyPI
 ```bash
 pip install pygixml
 ```
@@ -79,11 +77,122 @@ print(f"Title: {title.child_value()}")  # Output: Title: The Great Gatsby
 doc = pygixml.XMLDocument()
 root = doc.append_child("catalog")
 product = root.append_child("product")
-product.append_child("name").set_value("Laptop")
-product.append_child("price").set_value("999.99")
+product.name = "product"
 
-# Save to file
-doc.save_file("output.xml")
+# Note: Element nodes don't have values directly in pugixml
+# Use child_value() to get text content from child text nodes
+```
+
+## Important Note: Element Nodes vs Text Nodes
+
+In pugixml (and therefore pygixml), **element nodes do not have values directly**. Instead, they contain child text nodes that hold the text content.
+
+```python
+# ❌ This will NOT work (element nodes don't have values):
+element_node.value = "some text"
+
+# ✅ Correct approach - use child_value() to get text content:
+text_content = element_node.child_value()
+
+# ✅ To set text content, you need to append a text node:
+text_node = element_node.append_child("")  # Empty name creates text node
+text_node.value = "some text"
+```
+
+## Advanced Features
+
+### Text Content Extraction
+
+```python
+import pygixml
+
+xml_string = """
+<root>
+    <simple>Hello World</simple>
+    <nested>
+        <child>Child Text</child>
+        More text
+    </nested>
+    <mixed>Text <b>with</b> mixed <i>content</i></mixed>
+</root>
+"""
+
+doc = pygixml.parse_string(xml_string)
+root = doc.first_child()
+
+# Get direct text content
+simple = root.child("simple")
+print(simple.child_value())  # "Hello World"
+
+# Get recursive text content
+nested = root.child("nested")
+print(nested.text(recursive=True))  # "Child Text\nMore text"
+
+# Get direct text only (non-recursive)
+mixed = root.child("mixed") 
+print(mixed.text(recursive=False))  # "Text "
+
+# Custom join character
+print(nested.text(recursive=True, join=" | "))  # "Child Text | More text"
+```
+
+### XML Serialization
+
+```python
+import pygixml
+
+doc = pygixml.XMLDocument()
+root = doc.append_child("root")
+child = root.append_child("item")
+child.name = "product"
+
+# Serialize to string
+print(root.to_string())  # <root>\n  <product/>\n</root>
+print(root.to_string("    "))  # Custom indentation
+
+# Convenience property
+print(root.xml)  # Same as to_string() with default indent
+```
+
+### Node Iteration
+
+```python
+import pygixml
+
+xml_string = """
+<root>
+    <item>First</item>
+    <item>Second</item>
+    <item>Third</item>
+</root>
+"""
+
+doc = pygixml.parse_string(xml_string)
+
+# Iterate over document (depth-first)
+for node in doc:
+    print(f"Node: {node.name}, XPath: {node.xpath}")
+
+# Iterate over children
+root = doc.first_child()
+for child in root:
+    print(f"Child: {child.name}, Value: {child.child_value()}")
+```
+
+### Node Comparison and Identity
+
+```python
+import pygixml
+
+doc = pygixml.parse_string("<root><a/><b/></root>")
+root = doc.first_child()
+a = root.child("a")
+b = root.child("b")
+a2 = root.child("a")
+
+print(a == a2)  # True - same node
+print(a == b)   # False - different nodes
+print(a.mem_id) # Memory address for debugging
 ```
 
 ## XPath Support
@@ -124,7 +233,7 @@ print(f"Found {len(fiction_books)} fiction books")
 # Select specific book by ID
 book_2 = root.select_node("book[@id='2']")
 if book_2:
-    title = book_2.node().child("title").child_value()
+    title = book_2.node.child("title").child_value()
     print(f"Book ID 2: {title}")
 
 # Use XPathQuery for repeated queries
@@ -152,7 +261,6 @@ print(f"Average price: ${avg_price:.2f}")
 - **Axes**: `child::`, `attribute::`, `descendant::`, `ancestor::`
 - **Wildcards**: `*`, `@*`, `node()`
 
-
 ## API Overview
 
 ### Core Classes
@@ -166,14 +274,31 @@ print(f"Average price: ${avg_price:.2f}")
 
 ### Key Methods
 
-#### XMLDocument/XMLNode Methods
+#### XMLDocument Methods
 - `parse_string(xml_string)` - Parse XML from string
 - `parse_file(file_path)` - Parse XML from file
 - `save_file(file_path)` - Save XML to file
 - `append_child(name)` - Add child node
+- `first_child()` - Get first child node
 - `child(name)` - Get child by name
-- `child_value()` - Get node value
-- `attribute(name)` - Get attribute
+- `reset()` - Clear document
+
+#### XMLNode Methods
+- `name` - Get/set node name
+- `value` - Get/set node value (for text nodes only)
+- `child_value(name)` - Get text content of child node
+- `append_child(name)` - Add child node
+- `first_child()` - Get first child
+- `child(name)` - Get child by name
+- `next_sibling` - Get next sibling
+- `previous_sibling` - Get previous sibling
+- `parent` - Get parent node
+- `text(recursive, join)` - Get text content
+- `to_string(indent)` - Serialize to XML string
+- `xml` - XML representation property
+- `xpath` - Absolute XPath of node
+- `is_null()` - Check if node is null
+- `mem_id` - Memory identifier for debugging
 
 #### XPath Methods
 - `select_nodes(query)` - Select multiple nodes using XPath
