@@ -439,6 +439,9 @@ cdef class XMLNode:
         """XML representation with default indent (two spaces)."""
         return self.to_string()    
         
+    def find_mem_id(self, size_t mem_id):
+        cdef xml_node node = find_node_by_address(self._node, mem_id)
+        return XMLNode.create_from_cpp(node)
 
     def text(self, bint recursive=True, str join="\n"):
         """Get the text content of this node."""

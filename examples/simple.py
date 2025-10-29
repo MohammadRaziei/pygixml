@@ -47,9 +47,9 @@ for tag in doc:
 
     print(tag.name, xpath, f"{elapsed/1e3} us")
     if xpath:
-         node = root.select_node(xpath).node
-         print(node == tag , node.xml)
-         print(tag.mem_id)
+        node = root.select_node(xpath).node
+        print(node == tag , node.xml)
+        print(tag.mem_id, root.find_mem_id(tag.mem_id)==tag)
 
 
-print(root.text(join=" ", recursive=True))
+print(root.text(join=" ", recursive=False))
