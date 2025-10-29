@@ -367,6 +367,27 @@ cdef class XMLDocument:
         cdef xml_node node = self._doc.child(name_bytes)
         return XMLNode.create_from_cpp(node)
 
+    def to_string(self, str indent="  "):
+        """Serialize the document to XML string with custom indentation.
+        
+        Args:
+            indent (str): Indentation string (default: two spaces)
+            
+        Returns:
+            str: XML content as string
+            
+        Example:
+            >>> doc = pygixml.parse_string('<root><item>value</item></root>')
+            >>> xml_string = doc.to_string()
+            >>> print(xml_string)
+            <root>
+              <item>value</item>
+            </root>
+        """
+        cdef bytes indent_bytes = indent.encode('utf-8')
+        cdef string s = pugi_serialize_node(self._doc.first_child(), indent_bytes)
+        return s.decode('utf-8')
+
     def __iter__(self):
         """Iterate over all nodes in the document.
         
