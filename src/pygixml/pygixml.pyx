@@ -470,6 +470,40 @@ cdef class XMLNode:
         cdef string value = self._node.value()
         return value.decode('utf-8') if not value.empty() else None
     
+    def set_name(self, str name):
+        """Set node name.
+        
+        Args:
+            name (str): New name for the node
+            
+        Returns:
+            bool: True if successful, False if node is null or invalid
+            
+        Example:
+            >>> success = node.set_name('new_name')
+            >>> print(success)
+            True
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        return self._node.set_name(name_bytes)
+
+    def set_value(self, str value):
+        """Set node value.
+        
+        Args:
+            value (str): New value for the node
+            
+        Returns:
+            bool: True if successful, False if node is null or invalid
+            
+        Example:
+            >>> success = node.set_value('new value')
+            >>> print(success)
+            True
+        """
+        cdef bytes value_bytes = value.encode('utf-8')
+        return self._node.set_value(value_bytes)
+
     @name.setter
     def name(self, str name):
         """Set node name.
@@ -483,9 +517,8 @@ cdef class XMLNode:
         Example:
             >>> node.name = 'new_name'
         """
-        cdef bytes name_bytes = name.encode('utf-8')
-        success = self._node.set_name(name_bytes)
-        if not success: raise PygiXMLError("Cannot set name: node is null or invalid")
+        if not self.set_name(name):
+            raise PygiXMLError("Cannot set name: node is null or invalid")
 
     
     @value.setter
@@ -501,9 +534,8 @@ cdef class XMLNode:
         Example:
             >>> node.value = 'new value'
         """
-        cdef bytes value_bytes = value.encode('utf-8')
-        success = self._node.set_value(value_bytes)
-        if not success: raise PygiXMLError("Cannot set value: node is null or invalid")
+        if not self.set_value(value):
+            raise PygiXMLError("Cannot set value: node is null or invalid")
     
     def first_child(self):
         """Get first child node.
@@ -827,6 +859,40 @@ cdef class XMLAttribute:
         cdef string value = self._attr.value()
         return value.decode('utf-8') if not value.empty() else None
     
+    def set_name(self, str name):
+        """Set attribute name.
+        
+        Args:
+            name (str): New name for the attribute
+            
+        Returns:
+            bool: True if successful, False if attribute is null or invalid
+            
+        Example:
+            >>> success = attr.set_name('new_name')
+            >>> print(success)
+            True
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        return self._attr.set_name(name_bytes)
+
+    def set_value(self, str value):
+        """Set attribute value.
+        
+        Args:
+            value (str): New value for the attribute
+            
+        Returns:
+            bool: True if successful, False if attribute is null or invalid
+            
+        Example:
+            >>> success = attr.set_value('new_value')
+            >>> print(success)
+            True
+        """
+        cdef bytes value_bytes = value.encode('utf-8')
+        return self._attr.set_value(value_bytes)
+
     @name.setter
     def name(self, str name):
         """Set attribute name.
@@ -840,8 +906,7 @@ cdef class XMLAttribute:
         Example:
             >>> attr.name = 'new_name'
         """
-        cdef bytes name_bytes = name.encode('utf-8')
-        if not self._attr.set_name(name_bytes):
+        if not self.set_name(name):
             raise PygiXMLError("Cannot set attribute name")
 
     @value.setter
@@ -857,8 +922,7 @@ cdef class XMLAttribute:
         Example:
             >>> attr.value = 'new_value'
         """
-        cdef bytes value_bytes = value.encode('utf-8')
-        if not self._attr.set_value(value_bytes):
+        if not self.set_value(value):
             raise PygiXMLError("Cannot set attribute value")
 
 # XPath wrapper classes
