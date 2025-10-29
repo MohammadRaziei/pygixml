@@ -367,24 +367,32 @@ cdef class XMLDocument:
         cdef xml_node node = self._doc.child(name_bytes)
         return XMLNode.create_from_cpp(node)
 
-    def to_string(self, str indent="  "):
+    def to_string(self, indent="  "):
         """Serialize the document to XML string with custom indentation.
         
         Args:
-            indent (str): Indentation string (default: two spaces)
+            indent (str or int): Indentation string or number of spaces 
+                                (default: two spaces)
             
         Returns:
             str: XML content as string
             
         Example:
             >>> doc = pygixml.parse_string('<root><item>value</item></root>')
+            >>> # Default indentation (2 spaces)
             >>> xml_string = doc.to_string()
-            >>> print(xml_string)
-            <root>
-              <item>value</item>
-            </root>
+            >>> # Custom string indentation
+            >>> xml_string = doc.to_string('    ')
+            >>> # Number of spaces
+            >>> xml_string = doc.to_string(4)
         """
-        cdef bytes indent_bytes = indent.encode('utf-8')
+        cdef str indent_str
+        if isinstance(indent, int):
+            indent_str = " " * indent
+        else:
+            indent_str = indent
+            
+        cdef bytes indent_bytes = indent_str.encode('utf-8')
         cdef string s = pugi_serialize_node(self._doc.first_child(), indent_bytes)
         return s.decode('utf-8')
 
@@ -649,11 +657,35 @@ cdef class XMLNode:
         cdef string xpath_str = get_xpath_for_node(self._node)
         return xpath_str.decode('utf-8')
 
-    def to_string(self, str indent="  "):
-        """Serialize this node to XML string with custom indentation."""
+    def to_string(self, indent="  "):
+        """Serialize this node to XML string with custom indentation.
+        
+        Args:
+            indent (str or int): Indentation string or number of spaces 
+                                (default: two spaces)
+            
+        Returns:
+            str: XML content as string
+            
+        Example:
+            >>> node = doc.first_child()
+            >>> # Default indentation (2 spaces)
+            >>> xml_string = node.to_string()
+            >>> # Custom string indentation
+            >>> xml_string = node.to_string('    ')
+            >>> # Number of spaces
+            >>> xml_string = node.to_string(4)
+        """
         if self._node.type() == node_null:
             return ""
-        cdef bytes indent_bytes = indent.encode('utf-8')
+            
+        cdef str indent_str
+        if isinstance(indent, int):
+            indent_str = " " * indent
+        else:
+            indent_str = indent
+            
+        cdef bytes indent_bytes = indent_str.encode('utf-8')
         cdef string s = pugi_serialize_node(self._node, indent_bytes)
         return s.decode('utf-8')
 
