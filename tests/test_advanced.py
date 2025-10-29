@@ -224,3 +224,187 @@ class TestPerformance:
             node = node.next_sibling
         
         assert count == 100
+
+
+class TestMemoryOperations:
+    """Test memory-related operations like mem_id and find_mem_id"""
+    
+    def test_mem_id_property(self):
+        """Test mem_id property for node identification"""
+        xml_string = """
+        <root>
+            <item id="1">First</item>
+            <item id="2">Second</item>
+            <item id="3">Third</item>
+        </root>
+        """
+        
+        doc = pygixml.parse_string(xml_string)
+        root = doc.first_child()
+        
+        # Test mem_id on root node
+        root_mem_id = root.mem_id
+        assert isinstance(root_mem_id, int)
+        assert root_mem_id > 0
+        
+        # Test mem_id on child nodes
+        first_item = root.child("item")
+        first_item_mem_id = first_item.mem_id
+        assert isinstance(first_item_mem_id, int)
+        assert first_item_mem_id > 0
+        assert first_item_mem_id != root_mem_id
+        
+        # Test mem_id on null node
+        null_node = pygixml.XMLNode()
+        assert null_node.mem_id == 0
+        
+    def test_find_mem_id_method(self):
+        """Test find_mem_id method for locating nodes by memory ID"""
+        xml_string = """
+        <root>
+            <level1>
+                <level2>
+                    <level3>Deep Node</level3>
+                </level2>
+            </level1>
+            <sibling>Another Node</sibling>
+        </root>
+        """
+        
+        doc = pygixml.parse_string(xml_string)
+        root = doc.first_child()
+        
+        # Get memory ID of a deep node
+        level1 = root.child("level1")
+        level2 = level1.first_child()
+        level3 = level2.first_child()
+        
+        target_mem_id = level3.mem_id
+        assert target_mem_id > 0
+        
+        # Find node by memory ID starting from root
+        found_node = root.find_mem_id(target_mem_id)
+        assert found_node is not None
+        assert found_node.mem_id == target_mem_id
+        assert found_node.child_value() == "Deep Node"
+        
+        # Find node by memory ID starting from level1
+        found_from_level1 = level1.find_mem_id(target_mem_id)
+        assert found_from_level1 is not None
+        assert found_from_level1.mem_id == target_mem_id
+        
+        # Test with invalid memory ID
+        invalid_node = root.find_mem_id(999999)
+        assert invalid_node is not None
+        assert invalid_node.mem_id == 0  # Null node has mem_id 0
+        
+    def test_mem_id_consistency(self):
+        """Test that mem_id remains consistent for the same node"""
+        xml_string = """
+        <root>
+            <item>Content</item>
+        </root>
+        """
+        
+        doc = pygixml.parse_string(xml_string)
+        root = doc.first_child()
+        item = root.child("item")
+        
+        # Get mem_id multiple times - should be consistent
+        mem_id1 = item.mem_id
+        mem_id2 = item.mem_id
+        mem_id3 = item.mem_id
+        
+        assert mem_id1 == mem_id2 == mem_id3
+        assert mem_id1 > 0
+        
+    def test_mem_id_unique_across_nodes(self):
+        """Test that different nodes have different mem_ids"""
+        xml_string = """
+        <root>
+            <item1>First</item1>
+            <item2>Second</item2>
+            <item3>Third</item3>
+        </root>
+        """
+        
+        doc = pygixml.parse_string(xml_string)
+        root = doc.first_child()
+        
+        item1 = root.child("item1")
+        item2 = root.child("item2")
+        item3 = root.child("item3")
+        
+        mem_ids = {item1.mem_id, item2.mem_id, item3.mem_id}
+        
+        # All nodes should have unique mem_ids
+        assert len(mem_ids) == 3
+        assert all(mem_id > 0 for mem_id in mem_ids)
+        
+    def test_find_mem_id_with_modifications(self):
+        """Test find_mem_id after modifying the XML structure"""
+        xml_string = """
+        <root>
+            <original>Original Content</original>
+        </root>
+        """
+        
+        doc = pygixml.parse_string(xml_string)
+        root = doc.first_child()
+        original = root.child("original")
+        
+        # Get mem_id before modification
+        original_mem_id = original.mem_id
+        
+        # Add new nodes
+        new_node = root.append_child("new_node")
+        new_node_mem_id = new_node.mem_id
+        
+        # Find original node by mem_id after modification
+        found_original = root.find_mem_id(original_mem_id)
+        assert found_original is not None
+        assert found_original.mem_id == original_mem_id
+        assert found_original.child_value() == "Original Content"
+        
+        # Find new node by mem_id
+        found_new = root.find_mem_id(new_node_mem_id)
+        assert found_new is not None
+        assert found_new.mem_id == new_node_mem_id
+        assert found_new.name == "new_node"
+        
+    def test_mem_id_with_complex_hierarchy(self):
+        """Test mem_id and find_mem_id with complex nested structure"""
+        xml_string = """
+        <root>
+            <branch1>
+                <leaf1>Leaf 1</leaf1>
+                <leaf2>Leaf 2</leaf2>
+            </branch1>
+            <branch2>
+                <leaf3>Leaf 3</leaf3>
+                <subbranch>
+                    <leaf4>Leaf 4</leaf4>
+                </subbranch>
+            </branch2>
+        </root>
+        """
+        
+        doc = pygixml.parse_string(xml_string)
+        root = doc.first_child()
+        
+        # Collect all nodes and their mem_ids
+        nodes = {}
+        for node in root:
+            if node.name:  # Only collect nodes with names (skip text nodes)
+                nodes[node.mem_id] = node
+        
+        # Verify we can find each node by its mem_id
+        for mem_id, original_node in nodes.items():
+            found_node = root.find_mem_id(mem_id)
+            assert found_node is not None
+            assert found_node.mem_id == mem_id
+            assert found_node.name == original_node.name
+            
+            # For leaf nodes, verify content
+            if original_node.name.startswith("leaf"):
+                assert found_node.child_value() == original_node.child_value()
