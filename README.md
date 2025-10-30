@@ -73,8 +73,9 @@ root = doc.append_child("catalog")
 product = root.append_child("product")
 product.name = "product"
 
-# Note: Element nodes don't have values directly in pugixml
-# Use child_value() to get text content from child text nodes
+# To add text content to an element, append a text node
+text_node = product.append_child("")  # Empty name creates text node
+text_node.value = "content"
 ```
 
 ## Important Note: Element Nodes vs Text Nodes

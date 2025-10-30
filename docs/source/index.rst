@@ -93,6 +93,10 @@ Quick Start
    product = root.append_child("product")
    product.name = "product"
 
+   # To add text content to an element, append a text node
+   text_node = product.append_child("")  # Empty name creates text node
+   text_node.value = "content"
+
 
 .. important::
    **Element Nodes vs Text Nodes**

@@ -583,7 +583,6 @@ cdef class XMLNode:
         Example:
             >>> root = doc.first_child()
             >>> new_child = root.append_child('new_element')
-            >>> new_child.text = 'content'
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.append_child(name_bytes)

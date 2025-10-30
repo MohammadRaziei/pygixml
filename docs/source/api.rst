@@ -382,7 +382,6 @@ XMLNode Class
 
          root = doc.first_child()
          new_child = root.append_child('new_element')
-         new_child.text = 'content'
 
    .. py:method:: child_value(name=None)
 
