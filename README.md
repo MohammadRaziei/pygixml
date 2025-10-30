@@ -38,15 +38,9 @@ pygixml delivers exceptional performance compared to other XML libraries:
 pip install pygixml
 ```
 
-### From Source
+### From GitHub
 ```bash
-git clone --recurse-submodules https://github.com/MohammadRaziei/pygixml.git
-pip install ./pygixml
-```
-
-### Development Installation
-```bash
-pip install ./pygixml[test]
+pip install git+https://github.com/MohammadRaziei/pygixml.git
 ```
 
 ## Quick Start
