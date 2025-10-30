@@ -460,7 +460,7 @@ XMLNode Class
          # Number of spaces
          xml_string = node.to_string(4)
 
-   .. py:method:: text(recursive=True, join="\\n")
+   .. py:method:: text(recursive=True, join="\n")
 
       Get the text content of this node.
 
