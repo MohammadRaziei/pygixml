@@ -4,6 +4,10 @@ pygixml - Python wrapper for pugixml using Cython
 A fast and efficient XML parser and manipulator for Python.
 """
 
+import importlib
+
+__version__ = importlib.metadata.version("pygixml")
+
 from .pygixml import (
     XMLDocument,
     XMLNode,
@@ -14,19 +18,11 @@ from .pygixml import (
     PygiXMLError,
     PygiXMLNullNodeError,
     parse_string,
-    parse_file,
-    node_null,
-    node_document,
-    node_element,
-    node_pcdata,
-    node_cdata,
-    node_comment,
-    node_pi,
-    node_declaration,
-    node_doctype
+    parse_file
 )
 
-__version__ = "0.4.0"
+
+
 __all__ = [
     "XMLDocument",
     "XMLNode",
@@ -37,14 +33,5 @@ __all__ = [
     "PygiXMLError",
     "PygiXMLNullNodeError",
     "parse_string",
-    "parse_file",
-    "node_null",
-    "node_document",
-    "node_element",
-    "node_pcdata",
-    "node_cdata",
-    "node_comment",
-    "node_pi",
-    "node_declaration",
-    "node_doctype"
+    "parse_file"
 ]
