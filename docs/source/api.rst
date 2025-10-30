@@ -10,26 +10,27 @@ Convenience Functions
 
    Parse XML from string and return XMLDocument.
 
-   :param str xml_string: XML string to parse
-   :return: XMLDocument object
+   :param str xml_string: XML content as string
+   :return: Parsed XML document
    :rtype: XMLDocument
-   :raises ValueError: If XML parsing fails
+   :raises PygiXMLError: If parsing fails
 
    **Example:**
 
    .. code-block:: python
 
       import pygixml
-      doc = pygixml.parse_string('<root><item>test</item></root>')
+      doc = pygixml.parse_string('<root>content</root>')
+      print(doc.first_child().name)  # 'root'
 
 .. py:function:: parse_file(file_path)
 
    Parse XML from file and return XMLDocument.
 
    :param str file_path: Path to XML file
-   :return: XMLDocument object
+   :return: Parsed XML document
    :rtype: XMLDocument
-   :raises ValueError: If file cannot be read or XML parsing fails
+   :raises PygiXMLError: If parsing fails
 
    **Example:**
 
@@ -37,13 +38,17 @@ Convenience Functions
 
       import pygixml
       doc = pygixml.parse_file('data.xml')
+      print(doc.first_child().name)  # 'root'
 
 XMLDocument Class
 -----------------
 
 .. py:class:: XMLDocument()
 
-   Main XML document class representing the entire XML document.
+   XML document wrapper providing document-level operations.
+
+   This class represents an XML document and provides methods for loading,
+   saving, and manipulating the document structure.
 
    **Methods:**
 
@@ -51,52 +56,143 @@ XMLDocument Class
 
       Load XML from string.
 
-      :param str content: XML string content
-      :return: True if successful, False otherwise
+      :param str content: XML content as string
+      :return: True if parsing succeeded, False otherwise
       :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.XMLDocument()
+         success = doc.load_string('<root>content</root>')
+         print(success)  # True
 
    .. py:method:: load_file(path)
 
       Load XML from file.
 
-      :param str path: File path
-      :return: True if successful, False otherwise
+      :param str path: Path to XML file
+      :return: True if loading succeeded, False otherwise
       :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.XMLDocument()
+         success = doc.load_file('data.xml')
+         print(success)  # True
 
    .. py:method:: save_file(path, indent="  ")
 
       Save XML to file.
 
-      :param str path: File path
+      :param str path: Path where to save the file
       :param str indent: Indentation string (default: two spaces)
-      :raises Exception: If file cannot be written
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root>content</root>')
+         doc.save_file('output.xml', indent='    ')
 
    .. py:method:: reset()
 
-      Reset the document (clear all content).
+      Reset the document to empty state.
+
+      Clears all content and resets the document to its initial state.
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root>content</root>')
+         doc.reset()  # Document is now empty
 
    .. py:method:: append_child(name)
 
       Append a child node to the document.
 
-      :param str name: Node name
-      :return: New XMLNode object
+      :param str name: Name of the new element
+      :return: The newly created node
       :rtype: XMLNode
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.XMLDocument()
+         root = doc.append_child('root')
+         item = root.append_child('item')
 
    .. py:method:: first_child()
 
-      Get first child node.
+      Get first child node of the document.
 
-      :return: First child XMLNode or None if no children
+      :return: First child node or None if no children
       :rtype: XMLNode or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root><child/></root>')
+         first = doc.first_child()
+         print(first.name)  # 'root'
 
    .. py:method:: child(name)
 
       Get child node by name.
 
-      :param str name: Child node name
-      :return: Child XMLNode or None if not found
+      :param str name: Name of the child element to find
+      :return: Child node with specified name or None if not found
       :rtype: XMLNode or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root><item>value</item></root>')
+         item = doc.child('item')
+         print(item.text())  # 'value'
+
+   .. py:method:: to_string(indent="  ")
+
+      Serialize the document to XML string with custom indentation.
+
+      :param str|int indent: Indentation string or number of spaces (default: two spaces)
+      :return: XML content as string
+      :rtype: str
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root><item>value</item></root>')
+         # Default indentation (2 spaces)
+         xml_string = doc.to_string()
+         # Custom string indentation
+         xml_string = doc.to_string('    ')
+         # Number of spaces
+         xml_string = doc.to_string(4)
+
+   .. py:method:: __iter__()
+
+      Iterate over all nodes in the document.
+
+      :return: Iterator of XMLNode objects in depth-first order
+      :rtype: iterator
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root><a><b/></a></root>')
+         for node in doc:
+             print(node.name)
+         # Output: root, a, b
 
    **Example:**
 
@@ -111,91 +207,200 @@ XMLNode Class
 
 .. py:class:: XMLNode()
 
-   Represents an XML node in the document.
+   XML node wrapper providing node-level operations.
 
-   **Methods:**
+   This class represents an XML node and provides methods for accessing
+   and manipulating node properties, children, attributes, and text content.
 
-   .. py:method:: name()
+   **Properties:**
+
+   .. py:attribute:: name
 
       Get node name.
 
       :return: Node name or None if no name
       :rtype: str or None
 
-   .. py:method:: value()
+      **Example:**
+
+      .. code-block:: python
+
+         node = doc.first_child()
+         print(node.name)  # 'root'
+
+   .. py:attribute:: value
 
       Get node value.
 
       :return: Node value or None if no value
       :rtype: str or None
 
-   .. py:method:: set_name(name)
+      **Example:**
 
-      Set node name.
+      .. code-block:: python
 
-      :param str name: New node name
-      :return: True if successful, False otherwise
-      :rtype: bool
+         text_node = node.first_child()
+         print(text_node.value)  # 'text content'
 
-   .. py:method:: set_value(value)
-
-      Set node value.
-
-      :param str value: New node value
-      :return: True if successful, False otherwise
-      :rtype: bool
-
-   .. py:method:: first_child()
-
-      Get first child node.
-
-      :return: First child XMLNode or None if no children
-      :rtype: XMLNode or None
-
-   .. py:method:: child(name)
-
-      Get child node by name.
-
-      :param str name: Child node name
-      :return: Child XMLNode or None if not found
-      :rtype: XMLNode or None
-
-   .. py:method:: append_child(name)
-
-      Append a child node.
-
-      :param str name: Child node name
-      :return: New XMLNode object
-      :rtype: XMLNode
-
-   .. py:method:: child_value(name=None)
-
-      Get child value. If name is provided, get value of specific child. Otherwise get value of this node.
-
-      :param str name: Optional child name
-      :return: Child value or None if not found
-      :rtype: str or None
-
-   .. py:method:: next_sibling()
+   .. py:attribute:: next_sibling
 
       Get next sibling node.
 
       :return: Next sibling XMLNode or None if no more siblings
       :rtype: XMLNode or None
 
-   .. py:method:: previous_sibling()
+   .. py:attribute:: previous_sibling
 
       Get previous sibling node.
 
       :return: Previous sibling XMLNode or None if no previous sibling
       :rtype: XMLNode or None
 
-   .. py:method:: parent()
+   .. py:attribute:: next_element_sibling
+
+      Get next sibling that is an element node.
+
+      :return: Next element sibling or None if no more element siblings
+      :rtype: XMLNode or None
+
+   .. py:attribute:: previous_element_sibling
+
+      Get previous sibling that is an element node.
+
+      :return: Previous element sibling or None if no previous element sibling
+      :rtype: XMLNode or None
+
+   .. py:attribute:: parent
 
       Get parent node.
 
       :return: Parent XMLNode or None if no parent
       :rtype: XMLNode or None
+
+   .. py:attribute:: xpath
+
+      Get the absolute XPath of this node.
+
+      :return: XPath string (e.g., '/root/item[1]/name[1]')
+      :rtype: str
+
+      **Example:**
+
+      .. code-block:: python
+
+         node = doc.select_node('//item')
+         print(node.xpath)  # '/root/item[1]'
+
+   .. py:attribute:: xml
+
+      Get XML representation with default indent (two spaces).
+
+      :return: XML content as string
+      :rtype: str
+
+   .. py:attribute:: mem_id
+
+      Get memory identifier for this node.
+
+      :return: Memory address as integer
+      :rtype: int
+
+   **Methods:**
+
+   .. py:method:: set_name(name)
+
+      Set node name.
+
+      :param str name: New name for the node
+      :return: True if successful, False if node is null or invalid
+      :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         success = node.set_name('new_name')
+         print(success)  # True
+
+   .. py:method:: set_value(value)
+
+      Set node value.
+
+      :param str value: New value for the node
+      :return: True if successful, False if node is null or invalid
+      :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         success = node.set_value('new value')
+         print(success)  # True
+
+   .. py:method:: first_child()
+
+      Get first child node.
+
+      :return: First child node or None if no children
+      :rtype: XMLNode or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         root = doc.first_child()
+         first_child = root.first_child()
+         print(first_child.name)  # 'child'
+
+   .. py:method:: child(name)
+
+      Get child node by name.
+
+      :param str name: Name of the child element to find
+      :return: Child node with specified name or None if not found
+      :rtype: XMLNode or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         root = doc.first_child()
+         item = root.child('item')
+         print(item.text())  # 'value'
+
+   .. py:method:: append_child(name)
+
+      Append a child node.
+
+      :param str name: Name of the new child element
+      :return: The newly created child node
+      :rtype: XMLNode
+
+      **Example:**
+
+      .. code-block:: python
+
+         root = doc.first_child()
+         new_child = root.append_child('new_element')
+         new_child.text = 'content'
+
+   .. py:method:: child_value(name=None)
+
+      Get child value.
+
+      :param str name: Optional name of specific child element. 
+                       If None, returns direct text content.
+      :return: Text content or None if no content
+      :rtype: str or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         # Get direct text content
+         text = node.child_value()
+         # Get text from specific child
+         title = node.child_value('title')
 
    .. py:method:: first_attribute()
 
@@ -228,53 +433,169 @@ XMLNode Class
       :return: XPathNode or None if not found
       :rtype: XPathNode or None
 
+   .. py:method:: is_null()
+
+      Check if this node is null.
+
+      :return: True if node is null
+      :rtype: bool
+
+   .. py:method:: to_string(indent="  ")
+
+      Serialize this node to XML string with custom indentation.
+
+      :param str|int indent: Indentation string or number of spaces (default: two spaces)
+      :return: XML content as string
+      :rtype: str
+
+      **Example:**
+
+      .. code-block:: python
+
+         node = doc.first_child()
+         # Default indentation (2 spaces)
+         xml_string = node.to_string()
+         # Custom string indentation
+         xml_string = node.to_string('    ')
+         # Number of spaces
+         xml_string = node.to_string(4)
+
+   .. py:method:: text(recursive=True, join="\\n")
+
+      Get the text content of this node.
+
+      :param bool recursive: If True, get text from all descendants (default: True)
+      :param str join: String to join multiple text nodes (default: newline)
+      :return: Text content as string
+      :rtype: str
+
+      **Example:**
+
+      .. code-block:: python
+
+         # Get direct text content only
+         text = node.text(recursive=False)
+         # Get all text content with custom separator
+         text = node.text(join=' ')
+
+   .. py:method:: find_mem_id(mem_id)
+
+      Find node by memory identifier.
+
+      :param int mem_id: Memory identifier
+      :return: XMLNode with matching memory identifier or None if not found
+      :rtype: XMLNode or None
+
+   .. py:method:: __iter__()
+
+      Iterate over all descendant nodes in DFS preorder.
+
+      :return: Iterator of XMLNode objects
+      :rtype: iterator
+
+      **Example:**
+
+      .. code-block:: python
+
+         for descendant in node:
+             print(descendant.name)
+
+   .. py:method:: __bool__()
+
+      Check if node is not null.
+
+      :return: True if node is not null
+      :rtype: bool
+
+   .. py:method:: __eq__(other)
+
+      Compare two nodes for equality.
+
+      :param XMLNode other: Other node to compare
+      :return: True if nodes are equal
+      :rtype: bool
+
    **Example:**
 
    .. code-block:: python
 
-      node = root.first_child()
-      print(f"Node name: {node.name()}")
-      child = node.append_child("new_child")
-      children = node.select_nodes("child")
+      import pygixml
+      doc = pygixml.parse_string('<root><item>value</item></root>')
+      root = doc.first_child()
+      item = root.child('item')
+      print(item.text())  # 'value'
 
 XMLAttribute Class
 ------------------
 
 .. py:class:: XMLAttribute()
 
-   Represents an XML attribute.
+   XML attribute wrapper providing attribute operations.
 
-   **Methods:**
+   This class represents an XML attribute and provides methods for accessing
+   and manipulating attribute properties.
 
-   .. py:method:: name()
+   **Properties:**
+
+   .. py:attribute:: name
 
       Get attribute name.
 
       :return: Attribute name or None if no name
       :rtype: str or None
 
-   .. py:method:: value()
+      **Example:**
+
+      .. code-block:: python
+
+         attr = node.attribute('id')
+         print(attr.name)  # 'id'
+
+   .. py:attribute:: value
 
       Get attribute value.
 
       :return: Attribute value or None if no value
       :rtype: str or None
 
+      **Example:**
+
+      .. code-block:: python
+
+         attr = node.attribute('id')
+         print(attr.value)  # '123'
+
+   **Methods:**
+
    .. py:method:: set_name(name)
 
       Set attribute name.
 
-      :param str name: New attribute name
-      :return: True if successful, False otherwise
+      :param str name: New name for the attribute
+      :return: True if successful, False if attribute is null or invalid
       :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         success = attr.set_name('new_name')
+         print(success)  # True
 
    .. py:method:: set_value(value)
 
       Set attribute value.
 
-      :param str value: New attribute value
-      :return: True if successful, False otherwise
+      :param str value: New value for the attribute
+      :return: True if successful, False if attribute is null or invalid
       :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         success = attr.set_value('new_value')
+         print(success)  # True
 
    .. py:method:: next_attribute()
 
@@ -294,10 +615,11 @@ XMLAttribute Class
 
    .. code-block:: python
 
-      attr = node.first_attribute()
-      while attr:
-          print(f"{attr.name()} = {attr.value()}")
-          attr = attr.next_attribute()
+      import pygixml
+      doc = pygixml.parse_string('<root id="123" name="test"/>')
+      root = doc.first_child()
+      attr = root.attribute('id')
+      print(attr.value)  # '123'
 
 XPath Classes
 -------------
@@ -504,9 +826,10 @@ Error Handling
 
 All methods that can fail will return appropriate values (like None or False) rather than throwing exceptions for expected error conditions. However, some operations may raise exceptions:
 
-- ``parse_string()`` and ``parse_file()`` raise ``ValueError`` for invalid XML
+- ``parse_string()`` and ``parse_file()`` raise ``PygiXMLError`` for invalid XML
 - ``save_file()`` may raise exceptions for file system errors
 - Indexing operations on ``XPathNodeSet`` raise ``IndexError`` for out-of-range access
+- Property setters (``name`` and ``value``) raise ``PygiXMLError`` for null or invalid nodes/attributes
 
 Best Practices
 --------------
@@ -536,8 +859,3 @@ Best Practices
        title = book.child("title")
        if title:
            print(f"Title: {title.child_value()}")
-
-Complete Module Reference
--------------------------
-
-For a complete list of all available classes and functions, see the :doc:`modules` page.
