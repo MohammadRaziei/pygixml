@@ -78,22 +78,6 @@ text_node = product.append_child("")  # Empty name creates text node
 text_node.value = "content"
 ```
 
-## Important Note: Element Nodes vs Text Nodes
-
-In pugixml (and therefore pygixml), **element nodes do not have values directly**. Instead, they contain child text nodes that hold the text content.
-
-```python
-# ❌ This will NOT work (element nodes don't have values):
-element_node.value = "some text"
-
-# ✅ Correct approach - use child_value() to get text content:
-text_content = element_node.child_value()
-
-# ✅ To set text content, you need to append a text node:
-text_node = element_node.append_child("")  # Empty name creates text node
-text_node.value = "some text"
-```
-
 ## Advanced Features
 
 ### Text Content Extraction
@@ -243,6 +227,23 @@ print(f"Has George Orwell books: {has_orwell}")
 # XPath number evaluation
 avg_price = pygixml.XPathQuery("sum(book/price) div count(book)").evaluate_number(root)
 print(f"Average price: ${avg_price:.2f}")
+```
+
+
+## Important Note: Element Nodes vs Text Nodes
+
+In pugixml (and therefore pygixml), **element nodes do not have values directly**. Instead, they contain child text nodes that hold the text content.
+
+```python
+# ❌ This will NOT work (element nodes don't have values):
+element_node.value = "some text"
+
+# ✅ Correct approach - use child_value() to get text content:
+text_content = element_node.child_value()
+
+# ✅ To set text content, you need to append a text node:
+text_node = element_node.append_child("")  # Empty name creates text node
+text_node.value = "some text"
 ```
 
 ### Supported XPath Features
