@@ -16,11 +16,11 @@ pygixml delivers exceptional performance compared to other XML libraries:
 
 ### Performance Comparison (5000 XML elements)
 
-| Library | Parsing Time | Speedup vs ElementTree |
-|---------|--------------|------------------------|
-| **pygixml** | 0.00077s | **15.9x faster** |
-| **lxml** | 0.00407s | 3.0x faster |
-| **ElementTree** | 0.01220s | 1.0x (baseline) |
+| Library         | Parsing Time | Speedup vs ElementTree |
+|-----------------|--------------|------------------------|
+| **pygixml**     | 0.00077s     | **15.9x faster**       |
+| **lxml**        | 0.00407s     | 3.0x faster            |
+| **ElementTree** | 0.01220s     | 1.0x (baseline)        |
 
 ![Performance Comparison](https://github.com/MohammadRaziei/pygixml/raw/master/benchmarks/results/performance_comparison.svg)
 
@@ -42,6 +42,68 @@ pip install pygixml
 ```bash
 pip install git+https://github.com/MohammadRaziei/pygixml.git
 ```
+
+
+### Supported XPath Features
+
+- **Node selection**: `//book`, `/library/book`, `book[1]`
+- **Attribute selection**: `book[@id]`, `book[@category='fiction']`
+- **Boolean operations**: `and`, `or`, `not()`
+- **Comparison operators**: `=`, `!=`, `<`, `>`, `<=`, `>=`
+- **Mathematical operations**: `+`, `-`, `*`, `div`, `mod`
+- **Functions**: `position()`, `last()`, `count()`, `sum()`, `string()`, `number()`
+- **Axes**: `child::`, `attribute::`, `descendant::`, `ancestor::`
+- **Wildcards**: `*`, `@*`, `node()`
+
+## API Overview
+
+### Core Classes
+
+- **XMLDocument**: Create, parse, save XML documents
+- **XMLNode**: Navigate and manipulate XML nodes  
+- **XMLAttribute**: Handle XML attributes
+- **XPathQuery**: Compile and execute XPath queries
+- **XPathNode**: Result of XPath queries (wraps nodes and attributes)
+- **XPathNodeSet**: Collection of XPath results
+
+### Key Methods
+
+#### XMLDocument Methods
+- `parse_string(xml_string)` - Parse XML from string
+- `parse_file(file_path)` - Parse XML from file
+- `save_file(file_path)` - Save XML to file
+- `append_child(name)` - Add child node
+- `first_child()` - Get first child node
+- `child(name)` - Get child by name
+- `reset()` - Clear document
+
+#### XMLNode Methods
+- `name` - Get/set node name
+- `value` - Get/set node value (for text nodes only)
+- `child_value(name)` - Get text content of child node
+- `append_child(name)` - Add child node
+- `first_child()` - Get first child
+- `child(name)` - Get child by name
+- `next_sibling` - Get next sibling
+- `previous_sibling` - Get previous sibling
+- `parent` - Get parent node
+- `text(recursive, join)` - Get text content
+- `to_string(indent)` - Serialize to XML string
+- `xml` - XML representation property
+- `xpath` - Absolute XPath of node
+- `is_null()` - Check if node is null
+- `mem_id` - Memory identifier for debugging
+
+#### XPath Methods
+- `select_nodes(query)` - Select multiple nodes using XPath
+- `select_node(query)` - Select single node using XPath
+- `XPathQuery(query)` - Create reusable XPath query object
+- `evaluate_node_set(context)` - Evaluate query and return node set
+- `evaluate_node(context)` - Evaluate query and return first node
+- `evaluate_boolean(context)` - Evaluate query and return boolean
+- `evaluate_number(context)` - Evaluate query and return number
+- `evaluate_string(context)` - Evaluate query and return string
+
 
 ## Quick Start
 
@@ -245,66 +307,6 @@ text_content = element_node.child_value()
 text_node = element_node.append_child("")  # Empty name creates text node
 text_node.value = "some text"
 ```
-
-### Supported XPath Features
-
-- **Node selection**: `//book`, `/library/book`, `book[1]`
-- **Attribute selection**: `book[@id]`, `book[@category='fiction']`
-- **Boolean operations**: `and`, `or`, `not()`
-- **Comparison operators**: `=`, `!=`, `<`, `>`, `<=`, `>=`
-- **Mathematical operations**: `+`, `-`, `*`, `div`, `mod`
-- **Functions**: `position()`, `last()`, `count()`, `sum()`, `string()`, `number()`
-- **Axes**: `child::`, `attribute::`, `descendant::`, `ancestor::`
-- **Wildcards**: `*`, `@*`, `node()`
-
-## API Overview
-
-### Core Classes
-
-- **XMLDocument**: Create, parse, save XML documents
-- **XMLNode**: Navigate and manipulate XML nodes  
-- **XMLAttribute**: Handle XML attributes
-- **XPathQuery**: Compile and execute XPath queries
-- **XPathNode**: Result of XPath queries (wraps nodes and attributes)
-- **XPathNodeSet**: Collection of XPath results
-
-### Key Methods
-
-#### XMLDocument Methods
-- `parse_string(xml_string)` - Parse XML from string
-- `parse_file(file_path)` - Parse XML from file
-- `save_file(file_path)` - Save XML to file
-- `append_child(name)` - Add child node
-- `first_child()` - Get first child node
-- `child(name)` - Get child by name
-- `reset()` - Clear document
-
-#### XMLNode Methods
-- `name` - Get/set node name
-- `value` - Get/set node value (for text nodes only)
-- `child_value(name)` - Get text content of child node
-- `append_child(name)` - Add child node
-- `first_child()` - Get first child
-- `child(name)` - Get child by name
-- `next_sibling` - Get next sibling
-- `previous_sibling` - Get previous sibling
-- `parent` - Get parent node
-- `text(recursive, join)` - Get text content
-- `to_string(indent)` - Serialize to XML string
-- `xml` - XML representation property
-- `xpath` - Absolute XPath of node
-- `is_null()` - Check if node is null
-- `mem_id` - Memory identifier for debugging
-
-#### XPath Methods
-- `select_nodes(query)` - Select multiple nodes using XPath
-- `select_node(query)` - Select single node using XPath
-- `XPathQuery(query)` - Create reusable XPath query object
-- `evaluate_node_set(context)` - Evaluate query and return node set
-- `evaluate_node(context)` - Evaluate query and return first node
-- `evaluate_boolean(context)` - Evaluate query and return boolean
-- `evaluate_number(context)` - Evaluate query and return number
-- `evaluate_string(context)` - Evaluate query and return string
 
 ## Benchmarks
 
