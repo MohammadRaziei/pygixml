@@ -1,4 +1,4 @@
-name: PYTHON_BUILD_TEST_DEPLOY
+name: build wheels
 
 on:
   workflow_dispatch:
