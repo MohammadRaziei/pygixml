@@ -1,10 +1,10 @@
 [build-system]
-requires = ["scikit-build-core", "cython"]
+requires = ["scikit-build-core<0.11.6", "cython"]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.5.0"
+version = "0.5.1"
 description = "Python wrapper for pugixml using Cython - Please star the project on GitHub to use!"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
