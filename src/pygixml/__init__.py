@@ -4,7 +4,7 @@ pygixml - Python wrapper for pugixml using Cython
 A fast and efficient XML parser and manipulator for Python.
 """
 
-import importlib
+import importlib.metadata
 
 __version__ = importlib.metadata.version("pygixml")
 
