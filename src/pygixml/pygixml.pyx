@@ -987,6 +987,35 @@ cdef class XMLAttribute:
         cdef xml_attribute attr = self._attr.next_attribute()
         return XMLAttribute.create_from_cpp(attr)
 
+    def __iter__(self):
+        """Iterate over all attributes starting from this one.
+        
+        Yields:
+            XMLAttribute: Each attribute in the chain
+            
+        Example:
+            >>> for attr in node.first_attribute():
+            ...     print(f"{attr.name} = {attr.value}")
+        """
+        current = self
+        while current:
+            yield current
+            current = current.next_attribute
+
+    def __bool__(self):
+        """Return True if this attribute is not null.
+        
+        Returns:
+            bool: True if attribute has name or value, False otherwise
+            
+        Example:
+            >>> attr = node.attribute('id')
+            >>> if attr:
+            ...     print(f"ID: {attr.value}")
+        """
+        cdef string name = self._attr.name()
+        return not name.empty()
+
 # XPath wrapper classes
 cdef class XPathNode:
     """XPath node wrapper containing either an XML node or attribute.

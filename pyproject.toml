@@ -42,6 +42,7 @@ test = [
 [tool.scikit-build.cmake]
 version = ">=3.15"
 build-type = "Release"
+define.CMAKE_BUILD_PARALLEL_LEVEL=8
 
 [tool.scikit-build.build]
 targets = ["pygixml"]
