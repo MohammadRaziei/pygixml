@@ -194,6 +194,23 @@ XMLDocument Class
              print(node.name)
          # Output: root, a, b
 
+   **Properties:**
+
+   .. py:attribute:: root
+
+      Get the root element of the document.
+
+      :return: Root element node or None if no root element
+      :rtype: XMLNode or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         doc = pygixml.parse_string('<root><item>value</item></root>')
+         root = doc.root
+         print(root.name)  # 'root'
+
    **Example:**
 
    .. code-block:: python
@@ -213,6 +230,21 @@ XMLNode Class
    and manipulating node properties, children, attributes, and text content.
 
    **Properties:**
+
+   .. py:attribute:: type
+
+      Get node type.
+
+      :return: Node type as string ('null', 'document', 'element', 'pcdata', 'cdata', 
+               'comment', 'pi', 'declaration', 'doctype')
+      :rtype: str
+
+      **Example:**
+
+      .. code-block:: python
+
+         node = doc.first_child()
+         print(node.type)  # 'element'
 
    .. py:attribute:: name
 
@@ -239,7 +271,7 @@ XMLNode Class
 
       .. code-block:: python
 
-         text_node = node.first_child()
+         text_node = node.root
          print(text_node.value)  # 'text content'
 
    .. py:attribute:: next_sibling
@@ -564,6 +596,20 @@ XMLAttribute Class
          attr = node.attribute('id')
          print(attr.value)  # '123'
 
+   .. py:attribute:: next_attribute
+
+      Get next attribute.
+
+      :return: Next XMLAttribute or None if no next attribute
+      :rtype: XMLAttribute or None
+
+      **Example:**
+
+      .. code-block:: python
+
+         attr = node.first_attribute()
+         next_attr = attr.next_attribute
+
    **Methods:**
 
    .. py:method:: set_name(name)
@@ -596,19 +642,41 @@ XMLAttribute Class
          success = attr.set_value('new_value')
          print(success)  # True
 
-   .. py:method:: next_attribute()
-
-      Get next attribute.
-
-      :return: Next XMLAttribute or None if no more attributes
-      :rtype: XMLAttribute or None
-
    .. py:method:: previous_attribute()
 
       Get previous attribute.
 
       :return: Previous XMLAttribute or None if no previous attribute
       :rtype: XMLAttribute or None
+
+   .. py:method:: __iter__()
+
+      Iterate over all attributes starting from this one.
+
+      :return: Iterator of XMLAttribute objects
+      :rtype: iterator
+
+      **Example:**
+
+      .. code-block:: python
+
+         for attr in node.first_attribute():
+             print(f"{attr.name} = {attr.value}")
+
+   .. py:method:: __bool__()
+
+      Check if this attribute is not null.
+
+      :return: True if attribute has name or value, False otherwise
+      :rtype: bool
+
+      **Example:**
+
+      .. code-block:: python
+
+         attr = node.attribute('id')
+         if attr:
+             print(f"ID: {attr.value}")
 
    **Example:**
 
