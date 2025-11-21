@@ -239,7 +239,7 @@ cdef class XMLDocument:
     Example:
         >>> import pygixml
         >>> doc = pygixml.parse_string('<root><item>value</item></root>')
-        >>> root = doc.first_child()
+        >>> root = doc.root
         >>> print(root.name)
         'root'
     """
@@ -410,8 +410,23 @@ cdef class XMLDocument:
             a
             b
         """
-        root = self.first_child()
+        root = self.root
         return iter(root) if root else iter(())
+
+    @property
+    def root(self):
+        """Get the root element of the document.
+        
+        Returns:
+            XMLNode: Root element node or None if no root element
+            
+        Example:
+            >>> doc = pygixml.parse_string('<root><item>value</item></root>')
+            >>> root = doc.root
+            >>> print(root.name)
+            'root'
+        """
+        return self.first_child()
 
 
 cdef class XMLNode:
@@ -423,7 +438,7 @@ cdef class XMLNode:
     Example:
         >>> import pygixml
         >>> doc = pygixml.parse_string('<root><item>value</item></root>')
-        >>> root = doc.first_child()
+        >>> root = doc.root
         >>> item = root.child('item')
         >>> print(item.text())
         'value'
@@ -439,6 +454,40 @@ cdef class XMLNode:
         wrapper._node = node
         return wrapper
 
+    @property
+    def type(self):
+        """Get node type.
+        
+        Returns:
+            str: Node type as string ('null', 'document', 'element', 'pcdata', 'cdata', 
+                 'comment', 'pi', 'declaration', 'doctype')
+            
+        Example:
+            >>> node = doc.first_child()
+            >>> print(node.type)
+            'element'
+        """
+        cdef xml_node_type node_type = self._node.type()
+        
+        if node_type == node_document:
+            return "document"
+        elif node_type == node_element:
+            return "element"
+        elif node_type == node_pcdata:
+            return "pcdata"
+        elif node_type == node_cdata:
+            return "cdata"
+        elif node_type == node_comment:
+            return "comment"
+        elif node_type == node_pi:
+            return "pi"
+        elif node_type == node_declaration:
+            return "declaration"
+        elif node_type == node_doctype:
+            return "doctype"
+        else:  # node_null
+            return "null"
+    
     @property
     def name(self):
         """Get node name.
@@ -636,7 +685,7 @@ cdef class XMLNode:
     def next_element_sibling(self):
         """Get next sibling that is an element node."""
         sibling = self.next_sibling
-        while sibling and sibling.type != node_element:
+        while sibling and sibling.type != "element":
             sibling = sibling.next_sibling
         return sibling
         
@@ -644,7 +693,7 @@ cdef class XMLNode:
     def previous_element_sibling(self):
         """Get previous sibling that is an element node."""
         sibling = self.previous_sibling
-        while sibling and sibling.type != node_element:
+        while sibling and sibling.type != "element":
             sibling = sibling.previous_sibling
         return sibling
 
@@ -923,6 +972,20 @@ cdef class XMLAttribute:
         """
         if not self.set_value(value):
             raise PygiXMLError("Cannot set attribute value")
+
+    @property
+    def next_attribute(self):
+        """Get next attribute.
+        
+        Returns:
+            XMLAttribute: Next attribute or None if no next attribute
+            
+        Example:
+            >>> attr = node.first_attribute()
+            >>> next_attr = attr.next_attribute
+        """
+        cdef xml_attribute attr = self._attr.next_attribute()
+        return XMLAttribute.create_from_cpp(attr)
 
 # XPath wrapper classes
 cdef class XPathNode:

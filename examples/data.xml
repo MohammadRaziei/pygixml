@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<!DOCTYPE catalog [
+  <!ENTITY company "Acme & Co.">
+  <!ENTITY copy "© 2025">
+]>
+<catalog xmlns="http://example.com/ns/catalog"
+         xmlns:meta="http://example.com/ns/meta"
+         meta:version="1.0">
+
+  <!-- Root-level comment -->
+  <meta:info created="2025-11-21">&company; &copy;</meta:info>
+
+  <product id="p1" inStock="true" price="19.99">
+    <name>Widget</name>
+
+    <!-- mixed content -->
+    <description>Simple <b xmlns="">and</b> versatile</description>
+
+    <tags>
+      <tag/> <!-- empty element -->
+      <tag>tools</tag>
+    </tags>
+
+    <specs>
+      <![CDATA[
+        Use <angle> brackets & ampersands without escaping.
+      ]]>
+    </specs>
+  </product>
+
+  <product id="p2" inStock="false" price="9.99">
+    <name>Gadget</name>
+    <meta:extra key="color">red</meta:extra>
+  </product>
+
+  <links>
+    <url href="https://example.com/?q=xml&amp;page=1"/>
+  </links>
+</catalog>
