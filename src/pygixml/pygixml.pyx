@@ -11,6 +11,30 @@ from libcpp cimport bool
 
 # Import pugixml headers
 cdef extern from "pugixml.hpp" namespace "pugi":
+    # Parse flags
+    const unsigned int parse_minimal
+    const unsigned int parse_pi
+    const unsigned int parse_comments
+    const unsigned int parse_cdata
+    const unsigned int parse_ws_pcdata
+    const unsigned int parse_escapes
+    const unsigned int parse_eol
+    const unsigned int parse_wconv_attribute
+    const unsigned int parse_wnorm_attribute
+    const unsigned int parse_declaration
+    const unsigned int parse_doctype
+    const unsigned int parse_ws_pcdata_single
+    const unsigned int parse_trim_pcdata
+    const unsigned int parse_fragment
+    const unsigned int parse_embed_pcdata
+    const unsigned int parse_merge_pcdata
+    const unsigned int parse_default
+    const unsigned int parse_full
+
+    cdef cppclass xml_parse_result:
+        bool operator bool() const
+        const char* description() const
+
     cdef cppclass xml_document:
         xml_document() except +
         xml_node append_child(const char* name)
@@ -18,8 +42,11 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         xml_node first_child()
         xml_node last_child()
         xml_node child(const char* name)
-        bool load_string(const char* contents)
-        bool load_file(const char* path)
+        xml_parse_result load_string(const char* contents, unsigned int options)
+        xml_parse_result load_file(const char* path, unsigned int options)
+        # Keep the original default-arg overloads
+        xml_parse_result load_string(const char* contents)
+        xml_parse_result load_file(const char* path)
         void save_file(const char* path, const char* indent) except +
         void reset()
         
@@ -219,6 +246,27 @@ cdef extern from *:
 
 
 
+# Expose parse flags as Python-level constants
+PARSE_MINIMAL = parse_minimal
+PARSE_PI = parse_pi
+PARSE_COMMENTS = parse_comments
+PARSE_CDATA = parse_cdata
+PARSE_WS_PCDATA = parse_ws_pcdata
+PARSE_ESCAPES = parse_escapes
+PARSE_EOL = parse_eol
+PARSE_WCONV_ATTRIBUTE = parse_wconv_attribute
+PARSE_WNORM_ATTRIBUTE = parse_wnorm_attribute
+PARSE_DECLARATION = parse_declaration
+PARSE_DOCTYPE = parse_doctype
+PARSE_WS_PCDATA_SINGLE = parse_ws_pcdata_single
+PARSE_TRIM_PCDATA = parse_trim_pcdata
+PARSE_FRAGMENT = parse_fragment
+PARSE_EMBED_PCDATA = parse_embed_pcdata
+PARSE_MERGE_PCDATA = parse_merge_pcdata
+PARSE_DEFAULT = parse_default
+PARSE_FULL = parse_full
+
+
 class PygiXMLError(ValueError):
     """General exception raised by pygixml."""
     pass
@@ -252,41 +300,51 @@ cdef class XMLDocument:
         if self._doc != NULL:
             del self._doc
     
-    def load_string(self, str content):
+    def load_string(self, str content, unsigned int options=0xFFFFFFFF):
         """Load XML from string.
-        
+
         Args:
             content (str): XML content as string
-            
+            options (int, optional): Parse flags (default: PARSE_DEFAULT).
+                Combine flags with bitwise OR. Use PARSE_MINIMAL for fastest
+                parsing when you don't need comments, CDATA, or escape processing.
+
         Returns:
             bool: True if parsing succeeded, False otherwise
-            
+
         Example:
             >>> doc = pygixml.XMLDocument()
             >>> success = doc.load_string('<root>content</root>')
-            >>> print(success)
-            True
+            >>> # Fast parse with minimal processing:
+            >>> success = doc.load_string(xml_str, pygixml.PARSE_MINIMAL)
         """
         cdef bytes content_bytes = content.encode('utf-8')
-        return self._doc.load_string(content_bytes)
-    
-    def load_file(self, str path):
+        if options == 0xFFFFFFFF:
+            return <bool>self._doc.load_string(content_bytes)
+        return <bool>self._doc.load_string(content_bytes, options)
+
+    def load_file(self, str path, unsigned int options=0xFFFFFFFF):
         """Load XML from file.
-        
+
         Args:
             path (str): Path to XML file
-            
+            options (int, optional): Parse flags (default: PARSE_DEFAULT).
+                Combine flags with bitwise OR. Use PARSE_MINIMAL for fastest
+                parsing when you don't need comments, CDATA, or escape processing.
+
         Returns:
             bool: True if loading succeeded, False otherwise
-            
+
         Example:
             >>> doc = pygixml.XMLDocument()
             >>> success = doc.load_file('data.xml')
-            >>> print(success)
-            True
+            >>> # Fast parse:
+            >>> success = doc.load_file('data.xml', pygixml.PARSE_MINIMAL)
         """
         cdef bytes path_bytes = path.encode('utf-8')
-        return self._doc.load_file(path_bytes)
+        if options == 0xFFFFFFFF:
+            return <bool>self._doc.load_file(path_bytes)
+        return <bool>self._doc.load_file(path_bytes, options)
     
     def save_file(self, str path, str indent="  "):
         """Save XML to file.
@@ -1283,50 +1341,56 @@ cdef class XPathQuery:
         return result.decode('utf-8') if not result.empty() else None
 
 # Convenience functions
-def parse_string(str xml_string):
+def parse_string(str xml_string, unsigned int options=0xFFFFFFFF):
     """Parse XML from string and return XMLDocument.
-    
+
     Args:
         xml_string (str): XML content as string
-        
+        options (int, optional): Parse flags (default: PARSE_DEFAULT).
+            Combine flags with bitwise OR. Use PARSE_MINIMAL for fastest
+            parsing when you don't need comments, CDATA, or escape processing.
+
     Returns:
         XMLDocument: Parsed XML document
-        
+
     Raises:
         PygiXMLError: If parsing fails
-        
+
     Example:
         >>> import pygixml
         >>> doc = pygixml.parse_string('<root>content</root>')
-        >>> print(doc.first_child().name)
-        'root'
+        >>> # Fast parse:
+        >>> doc = pygixml.parse_string(xml_str, pygixml.PARSE_MINIMAL)
     """
     doc = XMLDocument()
-    if doc.load_string(xml_string):
+    if doc.load_string(xml_string, options):
         return doc
     else:
         raise PygiXMLError("Failed to parse XML string")
 
-def parse_file(str file_path):
+def parse_file(str file_path, unsigned int options=0xFFFFFFFF):
     """Parse XML from file and return XMLDocument.
-    
+
     Args:
         file_path (str): Path to XML file
-        
+        options (int, optional): Parse flags (default: PARSE_DEFAULT).
+            Combine flags with bitwise OR. Use PARSE_MINIMAL for fastest
+            parsing when you don't need comments, CDATA, or escape processing.
+
     Returns:
         XMLDocument: Parsed XML document
-        
+
     Raises:
         PygiXMLError: If parsing fails
-        
+
     Example:
         >>> import pygixml
         >>> doc = pygixml.parse_file('data.xml')
-        >>> print(doc.first_child().name)
-        'root'
+        >>> # Fast parse:
+        >>> doc = pygixml.parse_file('data.xml', pygixml.PARSE_MINIMAL)
     """
     doc = XMLDocument()
-    if doc.load_file(file_path):
+    if doc.load_file(file_path, options):
         return doc
     else:
         raise PygiXMLError(f"Failed to parse XML file: {file_path}")
