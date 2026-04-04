@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "cython"]
+requires = ["scikit-build-core", "cython", "pybind11_stubgen"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -32,9 +32,6 @@ test = [
     "pytest-xdist>=3.0.0",
     "pytest-timeout>=2.0.0",
     "pytest-cov",
-]
-dev = [
-    "mypy",
 ]
 
 [project.urls]

@@ -6,7 +6,7 @@ A fast and efficient XML parser and manipulator for Python.
 
 import importlib.metadata
 
-__version__ = importlib.metadata.version("pygixml")
+# __version__ = importlib.metadata.version("pygixml")
 
 from .pygixml_cy import (
     XMLDocument,
