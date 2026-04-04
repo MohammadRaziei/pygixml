@@ -5,8 +5,6 @@ if(DEFINED SKBUILD)
     find_package(Cython MODULE REQUIRED VERSION 3.0)
     include(UseCython)
 
-    # set(CYTHON_FLAGS "${CYTHON_FLAGS} -3 -X binding=True -X embedsignature=True")
-
     cython_transpile(${CMAKE_CURRENT_SOURCE_DIR}/pygixml_cy.pyx 
                     LANGUAGE CXX 
                     OUTPUT_VARIABLE pygixml_cxx_file)
@@ -27,7 +25,11 @@ if(DEFINED SKBUILD)
     # Generate .pyi stub file using stubgen after build
     add_custom_command(TARGET pygixml_cy POST_BUILD
         COMMAND ${Python3_EXECUTABLE} -m pybind11_stubgen pygixml_cy -o ${CMAKE_CURRENT_BINARY_DIR}
+        COMMAND ${Python_EXECUTABLE} -c 
+            "import sys; f=sys.argv[1]; lines=[l for l in open(f, encoding='utf-8') if not l.startswith('__test__')]; open(f, 'w', encoding='utf-8').writelines(lines)"
+            "${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi"
         COMMENT "Generating .pyi stubs with stubgen..."
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         VERBATIM
     )
@@ -59,7 +61,7 @@ ExternalProject_Add(build_python
     INSTALL_DIR ${PYTHON_INSTALL_DIR}
     
     # Pass configuration arguments to CMake
-    CMAKE_ARGS  --no-warn-unused-cli -DSKBUILD=2
+    CMAKE_ARGS --no-warn-unused-cli -DSKBUILD=2 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${PYTHON_INSTALL_DIR}
     
     # Ensure the build step runs the install command
     INSTALL_COMMAND ${CMAKE_COMMAND} --build . --target install --parallel 8
