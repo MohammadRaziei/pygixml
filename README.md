@@ -4,8 +4,8 @@
 
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
-[![PyPI version](https://img.shields.io/pypi/v/pygixml.svg)](https://pypi.org/project/pygixml/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://img.shields.io/pypi/v/pygixml.svg?color=blue)](https://pypi.org/project/pygixml/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/wheels.yml/badge.svg)](https://github.com/MohammadRaziei/pygixml/actions)
 [![Documentation Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/docs.yml/badge.svg)](https://mohammadraziei.github.io/pygixml/)
 [![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
