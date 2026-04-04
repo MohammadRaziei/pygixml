@@ -8,7 +8,7 @@ import importlib.metadata
 
 __version__ = importlib.metadata.version("pygixml")
 
-from .pygixml import (
+from .pygixml_cy import (
     XMLDocument,
     XMLNode,
     XMLAttribute,

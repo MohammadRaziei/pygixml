@@ -2,27 +2,22 @@ find_package(Cython MODULE REQUIRED VERSION 3.0)
 include(UseCython)
 
 if(DEFINED SKBUILD)
-    # Add pugixml
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/pugixml)
-
     # Transpile Cython to C++
-    cython_transpile(${CMAKE_CURRENT_SOURCE_DIR}/${MODULE_NAME}.pyx 
+    cython_transpile(${CMAKE_CURRENT_SOURCE_DIR}/pygixml_cy.pyx 
                     LANGUAGE CXX 
                     OUTPUT_VARIABLE pygixml_cxx_file)
 
     # Create the Python extension module
-    python_add_library(${MODULE_NAME} MODULE "${pygixml_cxx_file}" WITH_SOABI)
-
-    # Link pugixml to our module
-    target_link_libraries(${MODULE_NAME} PRIVATE pugixml)
+    python_add_library(pygixml_cy MODULE "${pygixml_cxx_file}" WITH_SOABI)
 
     # Include directories
-    target_include_directories(${MODULE_NAME} PRIVATE 
+    target_include_directories(pygixml_cy PRIVATE 
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/pugixml/src
     )
 
+    target_compile_definitions(pygixml_cy PRIVATE PUGIXML_HEADER_ONLY)
     # Install the module
-    install(TARGETS ${MODULE_NAME}
+    install(TARGETS pygixml_cy
         DESTINATION ${MODULE_NAME}
     )
 
@@ -36,10 +31,9 @@ endif()
 
 
 # Include the ExternalProject module
-include(ExternalProject)
-
-
 set(PYTHON_INSTALL_DIR ${CMAKE_BINARY_DIR}/python/install)
+
+include(ExternalProject)
 ExternalProject_Add(build_python
     SOURCE_DIR ${CMAKE_SOURCE_DIR}
     BINARY_DIR ${CMAKE_BINARY_DIR}/python/build
