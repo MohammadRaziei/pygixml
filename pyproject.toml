@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.5.1"
+version = "0.6.0"
 description = "Python wrapper for pugixml using Cython - Please star the project on GitHub to use!"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
@@ -31,6 +31,10 @@ test = [
     "pytest>=7.0.0",
     "pytest-xdist>=3.0.0",
     "pytest-timeout>=2.0.0",
+    "pytest-cov",
+]
+dev = [
+    "mypy",
 ]
 
 [project.urls]
