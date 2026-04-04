@@ -11,6 +11,11 @@ import pygixml
 
 class TestXMLDocument:
     """Test XMLDocument class functionality"""
+    def test_version(self):
+        """Test that version is accessible"""
+        assert pygixml.__version__ is not None
+        assert isinstance(pygixml.__version__, str)
+        assert pygixml.__version__ != "dev"  # Ensure version is set properly
     
     def test_create_document(self):
         """Test creating a new XML document"""

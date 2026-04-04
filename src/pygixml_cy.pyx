@@ -245,7 +245,6 @@ cdef extern from *:
     string get_xpath_for_node(const xml_node& node) 
 
 
-
 # Expose parse flags as Python-level constants
 PARSE_MINIMAL = parse_minimal
 PARSE_PI = parse_pi
@@ -265,6 +264,21 @@ PARSE_EMBED_PCDATA = parse_embed_pcdata
 PARSE_MERGE_PCDATA = parse_merge_pcdata
 PARSE_DEFAULT = parse_default
 PARSE_FULL = parse_full
+
+
+# Version injected by CMake at compile time
+cdef extern from *:
+    """
+    #define STRINGIFY(x) #x
+    #define MACRO_STRINGIFY(x) STRINGIFY(x)
+    #ifdef VERSION_INFO
+        const char* PYGIXML_VERSION = MACRO_STRINGIFY(VERSION_INFO);
+    #else
+        const char* PYGIXML_VERSION = "dev";
+    #endif
+    """
+    const char* PYGIXML_VERSION
+__version__ = PYGIXML_VERSION.decode("utf-8")
 
 
 class PygiXMLError(ValueError):

@@ -19,7 +19,10 @@ if(DEFINED SKBUILD)
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/pugixml/src
     )
 
-    target_compile_definitions(pygixml_cy PRIVATE PUGIXML_HEADER_ONLY)
+    target_compile_definitions(pygixml_cy PRIVATE 
+        PUGIXML_HEADER_ONLY 
+        VERSION_INFO=${PROJECT_VERSION}
+    )
 
     # Generate .pyi stub file using stubgen after build
     add_custom_command(TARGET pygixml_cy POST_BUILD
