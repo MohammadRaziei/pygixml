@@ -34,11 +34,11 @@ if(DEFINED SKBUILD)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             VERBATIM
         )
+        install (FILES ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
+            DESTINATION ${MODULE_NAME}
+        )
     endif()
 
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
-        DESTINATION ${MODULE_NAME}
-    )
 
     # Install the module
     install(TARGETS pygixml_cy
