@@ -131,9 +131,17 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs)
 
 # Define a custom target for building Sphinx documentation
 add_custom_target(sphinx_docs
-    COMMAND ${Python3_EXECUTABLE} -m sphinx -b html ${CMAKE_CURRENT_SOURCE_DIR}/docs/source ${CMAKE_CURRENT_BINARY_DIR}/docs
+    # Generate API RST from installed module (which includes .pyi stub)
+    COMMAND ${Python3_EXECUTABLE} -m sphinx.ext.apidoc
+            -o ${CMAKE_CURRENT_SOURCE_DIR}/docs/source/api
+            ${CMAKE_CURRENT_BINARY_DIR}/python/install
+            -f -M -e --no-toc
+
+    # Build HTML docs with PYTHONPATH set
+    COMMAND ${CMAKE_COMMAND} -E env
+            PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/python/install
+            ${Python3_EXECUTABLE} -m sphinx -b html ${CMAKE_CURRENT_SOURCE_DIR}/docs/source ${CMAKE_CURRENT_BINARY_DIR}/docs
     COMMENT "Building documentation with Sphinx..."
-    # WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs/source
     USES_TERMINAL
     DEPENDS build_python
 )

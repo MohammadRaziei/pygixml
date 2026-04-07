@@ -22,7 +22,7 @@ if(DEFINED SKBUILD)
         VERSION_INFO=${PROJECT_VERSION}
     )
 
-    IF (NOT WIN32)
+    if (NOT WIN32)
         # Generate .pyi stub file using stubgen after build
         add_custom_command(TARGET pygixml_cy POST_BUILD
             COMMAND ${Python3_EXECUTABLE} -m pybind11_stubgen pygixml_cy -o ${CMAKE_CURRENT_BINARY_DIR} 
