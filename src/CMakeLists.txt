@@ -22,10 +22,11 @@ if(DEFINED SKBUILD)
         VERSION_INFO=${PROJECT_VERSION}
     )
 
-    IF (NOT WIN32)
+    # IF (NOT WIN32)
         # Generate .pyi stub file using stubgen after build
         add_custom_command(TARGET pygixml_cy POST_BUILD
-            COMMAND ${Python3_EXECUTABLE} -m pybind11_stubgen pygixml_cy -o ${CMAKE_CURRENT_BINARY_DIR} 
+            COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}${PATH_SEPARATOR}$ENV{PYTHONPATH}" 
+                    ${Python3_EXECUTABLE} -m pybind11_stubgen pygixml_cy -o ${CMAKE_CURRENT_BINARY_DIR} 
             COMMAND ${Python3_EXECUTABLE} -c 
                     "import sys; f=sys.argv[1]; lines=[l for l in open(f, encoding='utf-8') if not l.startswith('__test__')]; open(f, 'w', encoding='utf-8').writelines(lines)"
                     "${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi"
@@ -37,7 +38,7 @@ if(DEFINED SKBUILD)
         install (FILES ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
             DESTINATION ${MODULE_NAME}
         )
-    endif()
+    # endif()
 
 
     # Install the module
