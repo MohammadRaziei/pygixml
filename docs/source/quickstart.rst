@@ -170,6 +170,6 @@ Next Steps
 ----------
 
 - Learn about :doc:`XPath capabilities <xpath>`
-- Explore :doc:`API reference <api/pygixml>`
+- Explore :doc:`API reference <api>`
 - Check out :doc:`examples <examples>`
 - Read about :doc:`performance <performance>`

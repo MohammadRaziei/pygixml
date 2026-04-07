@@ -166,15 +166,10 @@ Documentation Contents
 
    installation
    quickstart
+   api
    xpath
    examples
    performance
-
-.. toctree::
-   :maxdepth: 1
-   :caption: API Reference
-
-   api/pygixml
 
 
 Indices and tables
