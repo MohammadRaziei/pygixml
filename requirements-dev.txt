@@ -1,0 +1,15 @@
+# Development dependencies for pygixml
+cython
+pybind11-stubgen
+scikit-build-core
+# Packaging dependencies
+build
+twine
+wheel
+# Testing and documentation dependencies
+pytest
+pytest-cov
+# Documentation dependencies
+sphinx 
+furo 
+sphinx-autodoc-typehints
