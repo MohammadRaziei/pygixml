@@ -79,7 +79,7 @@ html_theme_options = {
 
 # Logo and favicon
 html_logo = str(IMAGES_DIR / 'pygixml.svg')
-html_favicon = str(IMAGES_DIR / 'pygixml.svg')
+# html_favicon = str(IMAGES_DIR / 'pygixml.svg')
 
 # If not None, a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
