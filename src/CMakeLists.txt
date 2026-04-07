@@ -22,18 +22,19 @@ if(DEFINED SKBUILD)
         VERSION_INFO=${PROJECT_VERSION}
     )
 
-    # Generate .pyi stub file using stubgen after build
-    add_custom_command(TARGET pygixml_cy POST_BUILD
-        COMMAND ${Python3_EXECUTABLE} -m pybind11_stubgen pygixml_cy -o ${CMAKE_CURRENT_BINARY_DIR} 
-        COMMAND ${Python3_EXECUTABLE} -c 
-                "import sys; f=sys.argv[1]; lines=[l for l in open(f, encoding='utf-8') if not l.startswith('__test__')]; open(f, 'w', encoding='utf-8').writelines(lines)"
-                "${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi"
-        DEPENDS $<TARGET_FILE:pygixml_cy>
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
-        COMMENT "Generating .pyi stubs with stubgen..."
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        VERBATIM
-    )
+    IF (NOT WIN32)
+        # Generate .pyi stub file using stubgen after build
+        add_custom_command(TARGET pygixml_cy POST_BUILD
+            COMMAND ${Python3_EXECUTABLE} -m pybind11_stubgen pygixml_cy -o ${CMAKE_CURRENT_BINARY_DIR} 
+            COMMAND ${Python3_EXECUTABLE} -c 
+                    "import sys; f=sys.argv[1]; lines=[l for l in open(f, encoding='utf-8') if not l.startswith('__test__')]; open(f, 'w', encoding='utf-8').writelines(lines)"
+                    "${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi"
+            BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
+            COMMENT "Generating .pyi stubs with stubgen..."
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            VERBATIM
+        )
+    endif()
 
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi
         DESTINATION ${MODULE_NAME}
