@@ -124,3 +124,16 @@ else()
     message(WARNING "Please install it using: pip install coverage")
 endif()
 
+
+
+# Create output directory for Sphinx documentation
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs)
+
+# Define a custom target for building Sphinx documentation
+add_custom_target(sphinx_docs
+    COMMAND ${Python3_EXECUTABLE} -m sphinx -b html ${CMAKE_CURRENT_SOURCE_DIR}/docs/source ${CMAKE_CURRENT_BINARY_DIR}/docs
+    COMMENT "Building documentation with Sphinx..."
+    # WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs/source
+    USES_TERMINAL
+    DEPENDS build_python
+)

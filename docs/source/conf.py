@@ -4,19 +4,17 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+from pathlib import Path
+
 # -- Path setup --------------------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../..'))
+DOCS_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = DOCS_DIR.parent.parent
+IMAGES_DIR = DOCS_DIR.parent / 'images'
 
 # Read version from pyproject.toml
 import tomllib
-with open('../../pyproject.toml', 'rb') as f:
+with open(PROJECT_ROOT / 'pyproject.toml', 'rb') as f:
     pyproject_data = tomllib.load(f)
 version = pyproject_data['project']['version']
 
@@ -79,14 +77,9 @@ html_theme_options = {
     "source_directory": "docs/source/",
 }
 
-# The name of an image file (relative to this directory) to place at the top
-# of the sidebar.
-html_logo = "../../logo.png"
-
-# The name of an image file (relative to this directory) to use as a favicon of
-# the docs. This file should be a Windows icon file (.ico) being 16x16 or 32x32
-# pixels large.
-html_favicon = "../../favicon.ico"
+# Logo and favicon
+html_logo = str(IMAGES_DIR / 'pygixml.svg')
+html_favicon = str(IMAGES_DIR / 'pygixml.svg')
 
 # If not None, a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
@@ -114,6 +107,3 @@ autodoc_member_order = 'groupwise'
 autodoc_typehints = 'description'
 autodoc_typehints_format = 'short'
 autodoc_class_signature = 'mixed'
-
-
-# -- Extension configuration -------------------------------------------------
