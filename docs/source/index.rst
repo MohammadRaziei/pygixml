@@ -10,6 +10,9 @@ Welcome to pygixml
 `pugixml <https://pugixml.org/>`_.  It delivers fast parsing, full XPath 1.0
 support, and a clean Pythonic API for reading, writing, and transforming XML.
 
+New to XML?  Start with :doc:`xml_basics` for a primer on the format, its
+structure, and real-world applications.
+
 .. note::
    Enjoy pygixml?  Star the project on GitHub to support the development:
    https://github.com/MohammadRaziei/pygixml
@@ -157,6 +160,7 @@ Documentation Contents
    :caption: User Guide
 
    installation
+   xml_basics
    quickstart
    xpath
    examples

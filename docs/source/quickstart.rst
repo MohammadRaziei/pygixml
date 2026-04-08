@@ -36,6 +36,73 @@ Parsing XML
 
    doc = pygixml.parse_file("data.xml")
 
+Parse Flags
+-----------
+
+All parse functions accept a ``ParseFlags`` enum to control how pugixml
+processes the input.  By default pygixml uses ``ParseFlags.DEFAULT`` which
+gives full XML compliance.  Use ``ParseFlags.MINIMAL`` for maximum speed when
+you only need the structure.
+
+.. code-block:: python
+
+   import pygixml
+
+   # Fastest parse — skip escapes, EOL normalization, whitespace handling
+   doc = pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)
+
+   # Combine specific flags with bitwise OR
+   flags = pygixml.ParseFlags.COMMENTS | pygixml.ParseFlags.CDATA
+   doc = pygixml.parse_string(xml, flags)
+
+Available flags:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Flag
+     - What it enables
+   * - ``ParseFlags.MINIMAL``
+     - No optional processing — fastest parse
+   * - ``ParseFlags.COMMENTS``
+     - Parse ``<!--comment-->`` nodes
+   * - ``ParseFlags.CDATA``
+     - Parse ``<![CDATA[...]]>`` sections
+   * - ``ParseFlags.PI``
+     - Parse processing instructions ``<?...?>``
+   * - ``ParseFlags.ESCAPES``
+     - Process ``&amp;``, ``&lt;``, ``&quot;``, etc.
+   * - ``ParseFlags.EOL``
+     - Normalize line endings to ``\n``
+   * - ``ParseFlags.WS_PCDATA``
+     - Convert whitespace in PCDATA to spaces
+   * - ``ParseFlags.WS_PCDATA_SINGLE``
+     - Collapse multiple whitespace to one space
+   * - ``ParseFlags.WCONV_ATTRIBUTE``
+     - Convert attribute whitespace
+   * - ``ParseFlags.WNORM_ATTRIBUTE``
+     - Normalize attribute whitespace
+   * - ``ParseFlags.DECLARATION``
+     - Parse ``<?xml ...?>`` declaration
+   * - ``ParseFlags.DOCTYPE``
+     - Parse ``<!DOCTYPE ...>`` node
+   * - ``ParseFlags.TRIM_PCDATA``
+     - Trim leading/trailing PCDATA whitespace
+   * - ``ParseFlags.FRAGMENT``
+     - Parse XML fragments (no root element required)
+   * - ``ParseFlags.EMBED_PCDATA``
+     - Parse embedded PCDATA as markup
+   * - ``ParseFlags.MERGE_PCDATA``
+     - Merge adjacent PCDATA nodes
+   * - ``ParseFlags.DEFAULT``
+     - Default — all standard processing enabled
+   * - ``ParseFlags.FULL``
+     - Everything — same as default
+
+The same flags apply to :py:meth:`~pygixml.XMLDocument.load_string` and
+:py:meth:`~pygixml.XMLDocument.load_file`.
+
 Navigating the Tree
 -------------------
 
