@@ -127,6 +127,37 @@ endif()
 
 
 
+# Define a custom target for running benchmarks
+add_custom_target(run_benchmarks
+    COMMAND ${CMAKE_COMMAND} -E echo "-- Running benchmarks..."
+    COMMAND ${Python3_EXECUTABLE} -m benchmark_parsing
+    COMMENT "Running benchmark suite..."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+    USES_TERMINAL
+    DEPENDS build_python
+)
+
+# Define a custom target for generating benchmark charts
+add_custom_target(gen_benchmark_charts
+    COMMAND ${CMAKE_COMMAND} -E echo "-- Running benchmarks and generating charts..."
+    COMMAND ${Python3_EXECUTABLE} -m clean_visualization
+    COMMENT "Generating benchmark charts..."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+    USES_TERMINAL
+    DEPENDS build_python
+)
+
+# Define a custom target for running the full benchmark suite
+# (parsing + memory + package size across multiple XML sizes)
+add_custom_target(run_full_benchmarks
+    COMMAND ${CMAKE_COMMAND} -E echo "-- Running full benchmark suite..."
+    COMMAND ${Python3_EXECUTABLE} -m full_benchmark
+    COMMENT "Running full benchmarks..."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+    USES_TERMINAL
+    DEPENDS build_python
+)
+
 # Define a custom target for building Sphinx documentation
 add_custom_target(sphinx_docs
     # Create output directory for Sphinx documentation

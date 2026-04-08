@@ -40,3 +40,6 @@ docs/_build/
 
 
 /venv/
+
+# Local configuration files
+.qwen/

@@ -61,9 +61,9 @@ def benchmark_elementtree_parse(xml_content):
 def benchmark_pygixml_traversal(doc):
     """Benchmark pygixml traversal"""
     start_time = time.time()
-    root = doc.first_child()
+    root = doc.root
     count = 0
-    
+
     item = root.first_child()
     while item:
         count += 1
@@ -72,8 +72,8 @@ def benchmark_pygixml_traversal(doc):
         if name and value:
             _ = name.child_value()
             _ = value.child_value()
-        item = item.next_sibling()
-    
+        item = item.next_sibling
+
     end_time = time.time()
     return end_time - start_time, count
 

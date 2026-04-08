@@ -20,24 +20,42 @@ clean Pythonic API for reading, writing, and transforming XML.
 
 ## Why pygixml?
 
-**Speed.**  pugixml is one of the fastest XML parsers available — pygixml
-brings that speed directly to Python.
+**Speed, memory, and size.**  pygixml brings pugixml's battle-tested C++
+parser directly to Python — with numbers that speak for themselves.
 
-### Performance Comparison (5 000 elements)
+### Parsing Performance (5 000 elements)
 
 | Library         | Parsing Time | Speedup vs ElementTree |
 |-----------------|--------------|------------------------|
-| **pygixml**     | 0.00077 s    | **15.9× faster**       |
-| **lxml**        | 0.00407 s    | 3.0× faster            |
-| **ElementTree** | 0.01220 s    | 1.0× (baseline)        |
+| **pygixml**     | 0.0009 s     | **12.2× faster**        |
+| **lxml**        | 0.0041 s     | 1.8× faster            |
+| **ElementTree** | 0.0073 s     | 1.0× (baseline)        |
 
-![Performance Comparison](https://github.com/MohammadRaziei/pygixml/raw/master/benchmarks/results/performance_comparison.svg)
+### Memory Usage (5 000 elements, peak)
+
+| Library         | Peak Memory | vs ElementTree |
+|-----------------|-------------|----------------|
+| **pygixml**     | **0.67 MB** | **7.2× less**  |
+| **lxml**        | 0.67 MB     | 7.2× less      |
+| **ElementTree** | 4.84 MB     | 1.0×           |
+
+### Package Size
+
+| Library     | Installed Size | vs lxml   |
+|-------------|----------------|-----------|
+| **pygixml** | **0.43 MB**    | **12.7× smaller** |
+| lxml        | 5.48 MB        | 1.0×      |
+
+*All numbers from `benchmarks/full_benchmark.py`.  See the
+[Performance](https://mohammadraziei.github.io/pygixml/performance) page for
+the full comparison across 6 XML sizes.*
 
 ### Features
 
-* **Blazing-fast parsing** — up to 15.9× faster than ElementTree
+* **Blazing-fast parsing** — up to 12.2× faster than ElementTree
+* **Low memory** — 7× less than ElementTree, on par with lxml
+* **Tiny footprint** — 0.43 MB installed (12.7× smaller than lxml)
 * **Full XPath 1.0** — complete query engine with all standard functions
-* **Memory efficient** — zero-copy C++ memory management via pugixml
 * **Pythonic API** — intuitive properties and methods, not a direct C++ mirror
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
@@ -333,15 +351,19 @@ For most use-cases, `element.text()` is all you need.
 
 ## Benchmarks
 
-```bash
-# Run the benchmark suite
-python benchmarks/clean_visualization.py
+Run the full benchmark suite on your machine:
 
-# View results
-cat benchmarks/results/benchmark_results.csv
+```bash
+# Full suite: parsing (6 sizes), memory (3 sizes), package size
+python benchmarks/full_benchmark.py
+
+# Legacy parsing-only benchmark
+python benchmarks/benchmark_parsing.py
 ```
 
 Compares pygixml against **lxml** and **xml.etree.ElementTree**.
+Results are printed as tables and saved to
+`benchmarks/results/benchmark_full.json`.
 
 ---
 
