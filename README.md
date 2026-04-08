@@ -52,7 +52,7 @@ the full comparison across 6 XML sizes.*
 
 ### Features
 
-* **Blazing-fast parsing** — up to 35× faster than ElementTree
+* **Blazing-fast parsing** — up to 14× faster than ElementTree
 * **Low memory** — 7× less than ElementTree, on par with lxml
 * **Tiny footprint** — 0.43 MB installed (12.7× smaller than lxml)
 * **Full XPath 1.0** — complete query engine with all standard functions
