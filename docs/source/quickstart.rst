@@ -34,22 +34,26 @@ Navigating XML
 .. code-block:: python
 
    # Get root element
-   root = doc.first_child()
-   print(f"Root name: {root.name()}")  # Output: library
+   root = doc.root
+   print(f"Root name: {root.name}")  # Output: library
 
    # Access children
    book = root.first_child()
-   print(f"Book name: {book.name()}")  # Output: book
+   print(f"Book name: {book.name}")  # Output: book
 
    # Get specific child by name
    title = book.child("title")
-   print(f"Title: {title.child_value()}")  # Output: The Great Gatsby
+   print(f"Title: {title.text()}")  # Output: The Great Gatsby
 
    # Iterate through children
-   current = root.first_child()
-   while current:
-       print(f"Node: {current.name()}")
-       current = current.next_sibling()
+   for child in root:
+       print(f"Node: {child.name}")
+
+   # Or iterate via sibling properties
+   child = root.first_child()
+   while child:
+       print(f"Node: {child.name}")
+       child = child.next_sibling
 
 Working with Attributes
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -57,14 +61,15 @@ Working with Attributes
 .. code-block:: python
 
    # Get attribute
+   book = root.first_child()
    book_id = book.attribute("id")
-   print(f"Book ID: {book_id.value()}")  # Output: 1
+   print(f"Book ID: {book_id.value}")  # Output: 1
 
    # Iterate through attributes
    attr = book.first_attribute()
    while attr:
-       print(f"Attribute: {attr.name()} = {attr.value()}")
-       attr = attr.next_attribute()
+       print(f"Attribute: {attr.name} = {attr.value}")
+       attr = attr.next_attribute
 
 Creating and Modifying XML
 --------------------------
@@ -84,11 +89,22 @@ Creating New Documents
 
    # Add child elements
    book = root.append_child("book")
-   book.set_attribute("id", "1")
 
+   # Note: attribute creation is not yet exposed in the Python API.
+   # Build the XML with attributes using parse_string instead:
+   doc = pygixml.parse_string(
+       '<library><book id="1">'
+       '<title>The Great Gatsby</title>'
+       '<author>F. Scott Fitzgerald</author>'
+       '</book></library>'
+   )
+
+   # Or build structure without attributes:
+   doc = pygixml.XMLDocument()
+   root = doc.append_child("library")
+   book = root.append_child("book")
    title = book.append_child("title")
    title.set_value("The Great Gatsby")
-
    author = book.append_child("author")
    author.set_value("F. Scott Fitzgerald")
 
@@ -102,19 +118,18 @@ Modifying Existing XML
 
    # Load existing XML
    doc = pygixml.parse_string(xml_string)
-   root = doc.first_child()
+   root = doc.root
 
    # Modify values
    book = root.first_child()
    book.child("title").set_value("New Title")
 
+   # Modify names
+   book.child("title").name = "book_title"
+
    # Add new elements
    price = book.append_child("price")
    price.set_value("12.99")
-
-   # Remove elements
-   year = book.child("year")
-   book.remove_child(year)
 
 XPath Queries
 -------------
@@ -131,7 +146,7 @@ Basic XPath Usage
    # Select specific book by ID
    book1 = root.select_node("book[@id='1']")
    if book1:
-       print(f"Book 1 title: {book1.node().child('title').child_value()}")
+       print(f"Book 1 title: {book1.node.child('title').text()}")
 
    # Select books by year
    old_books = root.select_nodes("book[year < 1950]")
@@ -158,7 +173,7 @@ Error Handling
 
    try:
        doc = pygixml.parse_string(invalid_xml)
-   except ValueError as e:
+   except pygixml.PygiXMLError as e:
        print(f"Failed to parse XML: {e}")
 
    try:
