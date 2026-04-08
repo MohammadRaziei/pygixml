@@ -1,7 +1,7 @@
 API Reference
 =============
 
-.. automodule:: pygixml.pygixml_cy
+.. automodule:: pygixml
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,6 @@
 # Development dependencies for pygixml
 cython
-git+https://github.com/MohammadRaziei/pybind11-stubgen
+stubgen-pyx
 scikit-build-core
 # Packaging dependencies
 build
