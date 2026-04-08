@@ -134,9 +134,9 @@ add_custom_target(sphinx_docs
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/docs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/docs
     # Build HTML docs
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_INSTALL_DIR} ${Python3_EXECUTABLE} -m sphinx -b html ${CMAKE_CURRENT_SOURCE_DIR}/docs/source ${CMAKE_CURRENT_BINARY_DIR}/docs
+    COMMAND ${Python3_EXECUTABLE} -m sphinx -b html ${CMAKE_CURRENT_SOURCE_DIR}/docs/source ${CMAKE_CURRENT_BINARY_DIR}/docs
     COMMENT "Building documentation with Sphinx..."
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/python/install
+    WORKING_DIRECTORY ${PYTHON_INSTALL_DIR}
     USES_TERMINAL
     DEPENDS build_python
 )
