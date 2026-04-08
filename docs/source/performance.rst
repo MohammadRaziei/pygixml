@@ -24,28 +24,28 @@ Parsing Performance
      - ElementTree
    * - 100
      - 0.000008 s
-     - 0.000233 s
-     - 0.000275 s
+     - 0.000094 s
+     - 0.000112 s
    * - 500
-     - 0.000205 s
-     - 0.000619 s
-     - 0.000841 s
+     - 0.000097 s
+     - 0.000394 s
+     - 0.000558 s
    * - 1 000
-     - 0.000156 s
-     - 0.000775 s
-     - 0.001151 s
+     - 0.000147 s
+     - 0.001127 s
+     - 0.001146 s
    * - 2 500
-     - 0.000451 s
-     - 0.001920 s
-     - 0.003553 s
+     - 0.000433 s
+     - 0.001937 s
+     - 0.003441 s
    * - 5 000
-     - 0.000961 s
-     - 0.004346 s
-     - 0.007361 s
+     - 0.000883 s
+     - 0.004108 s
+     - 0.007614 s
    * - 10 000
-     - 0.001786 s
-     - 0.008472 s
-     - 0.015816 s
+     - 0.001649 s
+     - 0.009095 s
+     - 0.016108 s
 
 Measured with ``PARSE_MINIMAL`` (``pygixml.parse_string(xml, pygixml.PARSE_MINIMAL)``).
 Skips escape processing, EOL normalization, and attribute whitespace conversion
@@ -63,25 +63,25 @@ Speedup vs ElementTree
      - pygixml
      - lxml
    * - 100
-     - **35.3×**
+     - **14.4×**
      - 1.2×
    * - 500
-     - **4.1×**
+     - **5.8×**
      - 1.4×
    * - 1 000
-     - **7.4×**
-     - 1.5×
+     - **7.8×**
+     - 1.0×
    * - 2 500
-     - **7.9×**
+     - **8.0×**
      - 1.8×
    * - 5 000
-     - **7.7×**
-     - 1.7×
-   * - 10 000
-     - **8.9×**
+     - **8.6×**
      - 1.9×
+   * - 10 000
+     - **9.8×**
+     - 1.8×
 
-pygixml consistently outperforms lxml by ~2× and ElementTree by **4–35×**
+pygixml consistently outperforms lxml by ~2× and ElementTree by **6–10×**
 depending on document size.  The advantage grows with larger documents.
 
 Traversal Performance
