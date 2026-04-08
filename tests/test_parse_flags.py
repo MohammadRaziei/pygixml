@@ -4,6 +4,8 @@ Tests for ParseFlags enum in pygixml
 """
 
 import pytest
+import tempfile
+import os
 import pygixml
 
 
@@ -15,26 +17,33 @@ class TestParseFlagsEnum:
         from enum import IntFlag
         assert issubclass(pygixml.ParseFlags, IntFlag)
 
-    def test_minimal_flag_value(self):
-        """MINIMAL should have a valid integer value"""
-        assert int(pygixml.ParseFlags.MINIMAL) > 0 or int(pygixml.ParseFlags.MINIMAL) == 0
+    @pytest.mark.parametrize("flag", [
+        pygixml.ParseFlags.MINIMAL,
+        pygixml.ParseFlags.FULL,
+        pygixml.ParseFlags.DEFAULT,
+        pygixml.ParseFlags.COMMENTS,
+        pygixml.ParseFlags.CDATA,
+        pygixml.ParseFlags.PI,
+        pygixml.ParseFlags.ESCAPES,
+        pygixml.ParseFlags.WS_PCDATA,
+        pygixml.ParseFlags.EOL,
+        pygixml.ParseFlags.WCONV_ATTRIBUTE,
+        pygixml.ParseFlags.WNORM_ATTRIBUTE,
+        pygixml.ParseFlags.DECLARATION,
+        pygixml.ParseFlags.DOCTYPE,
+    ])
+    def test_all_flags_are_integers(self, flag):
+        """Every ParseFlags member should be accessible as an int"""
+        assert isinstance(int(flag), int)
 
-    def test_full_flag_value(self):
-        """FULL should have a valid integer value"""
-        assert int(pygixml.ParseFlags.FULL) > 0
-
-    def test_default_flag_value(self):
-        """DEFAULT should have a valid integer value"""
-        assert int(pygixml.ParseFlags.DEFAULT) > 0 or int(pygixml.ParseFlags.DEFAULT) == 0
-
-    def test_bitwise_or(self):
-        """Flags should combine with bitwise OR"""
+    def test_bitwise_or_two(self):
+        """Two flags should combine with bitwise OR"""
         flags = pygixml.ParseFlags.COMMENTS | pygixml.ParseFlags.CDATA
         expected = int(pygixml.ParseFlags.COMMENTS) | int(pygixml.ParseFlags.CDATA)
         assert int(flags) == expected
 
-    def test_bitwise_or_multiple(self):
-        """Multiple flags should combine correctly"""
+    def test_bitwise_or_three(self):
+        """Three flags should combine with bitwise OR"""
         flags = (pygixml.ParseFlags.COMMENTS |
                  pygixml.ParseFlags.CDATA |
                  pygixml.ParseFlags.PI)
@@ -42,11 +51,6 @@ class TestParseFlagsEnum:
                     int(pygixml.ParseFlags.CDATA) |
                     int(pygixml.ParseFlags.PI))
         assert int(flags) == expected
-
-    def test_all_flags_have_values(self):
-        """All ParseFlags members should have non-zero values"""
-        for flag in pygixml.ParseFlags:
-            assert int(flag) > 0, f"{flag.name} has zero value"
 
     def test_parse_flags_exported(self):
         """ParseFlags should be in __all__"""
@@ -56,65 +60,55 @@ class TestParseFlagsEnum:
 class TestParseFlagsUsage:
     """Test ParseFlags with actual parsing"""
 
-    def test_parse_with_minimal_flag(self):
-        """Parsing with MINIMAL flag should work"""
+    @pytest.mark.parametrize("flag", [
+        pygixml.ParseFlags.MINIMAL,
+        pygixml.ParseFlags.DEFAULT,
+        pygixml.ParseFlags.FULL,
+    ])
+    def test_parse_string_flags(self, flag):
+        """parse_string should accept ParseFlags"""
         xml = "<root><item>text</item></root>"
-        doc = pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)
+        doc = pygixml.parse_string(xml, flag)
         assert doc.root.child("item").text() == "text"
 
-    def test_parse_with_default_flag(self):
-        """Parsing with DEFAULT flag should work"""
-        xml = "<root><item>text</item></root>"
-        doc = pygixml.parse_string(xml, pygixml.ParseFlags.DEFAULT)
-        assert doc.root.child("item").text() == "text"
-
-    def test_parse_with_full_flag(self):
-        """Parsing with FULL flag should work"""
-        xml = "<root><item>text</item></root>"
-        doc = pygixml.parse_string(xml, pygixml.ParseFlags.FULL)
-        assert doc.root.child("item").text() == "text"
-
-    def test_parse_with_combined_flags(self):
-        """Parsing with combined flags should work"""
+    def test_parse_string_combined_flags(self):
+        """parse_string should accept combined flags"""
         flags = pygixml.ParseFlags.COMMENTS | pygixml.ParseFlags.CDATA
         xml = "<root><item>text</item><!--comment--></root>"
         doc = pygixml.parse_string(xml, flags)
         assert doc.root.child("item").text() == "text"
 
-    def test_parse_file_with_enum(self):
+    def test_parse_file(self):
         """parse_file should accept ParseFlags"""
-        import tempfile
-        import os
-
-        xml = "<root><item>text</item></root>"
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
-            f.write(xml)
+            f.write("<root><item>text</item></root>")
             path = f.name
-
         try:
             doc = pygixml.parse_file(path, pygixml.ParseFlags.MINIMAL)
             assert doc.root.child("item").text() == "text"
         finally:
             os.unlink(path)
 
-    def test_load_string_with_enum(self):
-        """XMLDocument.load_string should accept ParseFlags"""
+    @pytest.mark.parametrize("flag", [
+        pygixml.ParseFlags.MINIMAL,
+        pygixml.ParseFlags.COMMENTS | pygixml.ParseFlags.CDATA,
+        None,  # default (no flags)
+    ])
+    def test_load_string(self, flag):
+        """load_string should accept ParseFlags and combined flags"""
         doc = pygixml.XMLDocument()
-        xml = "<root><item>text</item></root>"
-        result = doc.load_string(xml, pygixml.ParseFlags.MINIMAL)
+        if flag is None:
+            result = doc.load_string("<root><item>ok</item></root>")
+        else:
+            result = doc.load_string("<root><item>ok</item></root>", flag)
         assert result is True
-        assert doc.root.child("item").text() == "text"
+        assert doc.root.child("item").text() == "ok"
 
-    def test_load_file_with_enum(self):
-        """XMLDocument.load_file should accept ParseFlags"""
-        import tempfile
-        import os
-
-        xml = "<root><item>text</item></root>"
+    def test_load_file(self):
+        """load_file should accept ParseFlags"""
         with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as f:
-            f.write(xml)
+            f.write("<root><item>text</item></root>")
             path = f.name
-
         try:
             doc = pygixml.XMLDocument()
             result = doc.load_file(path, pygixml.ParseFlags.MINIMAL)

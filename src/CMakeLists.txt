@@ -28,6 +28,7 @@ if(DEFINED SKBUILD)
             COMMAND ${Python3_EXECUTABLE} -m stubgen_pyx
                     ${CMAKE_CURRENT_SOURCE_DIR}
                     --output-dir ${CMAKE_CURRENT_BINARY_DIR}
+                    --no-normalize-names
             COMMAND ${Python3_EXECUTABLE} -c
                     "import sys; f=sys.argv[1]; lines=[l for l in open(f, encoding='utf-8') if not l.startswith('__test__') and not l.startswith('from libcpp')]; open(f, 'w', encoding='utf-8').writelines(lines)"
                     "${CMAKE_CURRENT_BINARY_DIR}/pygixml_cy.pyi"

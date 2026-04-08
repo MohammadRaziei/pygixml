@@ -327,13 +327,13 @@ cdef class XMLDocument:
         if self._doc != NULL:
             del self._doc
     
-    def load_string(self, str content, unsigned int options=0xFFFFFFFF):
+    def load_string(self, str content, options=0xFFFFFFFF):
         """Load XML from string.
 
         Args:
             content (str): XML content as string
-            options (int | ParseFlags, optional): Parse flags
-                (default: ParseFlags.DEFAULT / 0xFFFFFFFF for full parsing).
+            options (ParseFlags, optional): Parse flags
+                (default: ``ParseFlags.DEFAULT``).
                 Combine flags with bitwise OR.  Use ``ParseFlags.MINIMAL``
                 for fastest parsing when you don't need comments, CDATA,
                 or escape processing.
@@ -344,21 +344,21 @@ cdef class XMLDocument:
         Example:
             >>> doc = pygixml.XMLDocument()
             >>> success = doc.load_string('<root>content</root>')
-            >>> # Enum style:
             >>> success = doc.load_string(xml, pygixml.ParseFlags.MINIMAL)
         """
+        cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes content_bytes = content.encode('utf-8')
-        if options == 0xFFFFFFFF:
+        if opts == 0xFFFFFFFF:
             return <bool>self._doc.load_string(content_bytes)
-        return <bool>self._doc.load_string(content_bytes, options)
+        return <bool>self._doc.load_string(content_bytes, opts)
 
-    def load_file(self, str path, unsigned int options=0xFFFFFFFF):
+    def load_file(self, str path, options=0xFFFFFFFF):
         """Load XML from file.
 
         Args:
             path (str): Path to XML file
-            options (int | ParseFlags, optional): Parse flags
-                (default: ParseFlags.DEFAULT / 0xFFFFFFFF for full parsing).
+            options (ParseFlags, optional): Parse flags
+                (default: ``ParseFlags.DEFAULT``).
                 Combine flags with bitwise OR.  Use ``ParseFlags.MINIMAL``
                 for fastest parsing when you don't need comments, CDATA,
                 or escape processing.
@@ -369,13 +369,13 @@ cdef class XMLDocument:
         Example:
             >>> doc = pygixml.XMLDocument()
             >>> success = doc.load_file('data.xml')
-            >>> # Enum style:
             >>> success = doc.load_file('data.xml', pygixml.ParseFlags.MINIMAL)
         """
+        cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes path_bytes = path.encode('utf-8')
-        if options == 0xFFFFFFFF:
+        if opts == 0xFFFFFFFF:
             return <bool>self._doc.load_file(path_bytes)
-        return <bool>self._doc.load_file(path_bytes, options)
+        return <bool>self._doc.load_file(path_bytes, opts)
     
     def save_file(self, str path, str indent="  "):
         """Save XML to file.
@@ -1372,13 +1372,13 @@ cdef class XPathQuery:
         return result.decode('utf-8') if not result.empty() else None
 
 # Convenience functions
-def parse_string(str xml_string, unsigned int options=0xFFFFFFFF):
+def parse_string(str xml_string, options=0xFFFFFFFF):
     """Parse XML from string and return XMLDocument.
 
     Args:
         xml_string (str): XML content as string
-        options (int | ParseFlags, optional): Parse flags
-            (default: ParseFlags.DEFAULT / 0xFFFFFFFF for full parsing).
+        options (ParseFlags, optional): Parse flags
+            (default: ``ParseFlags.DEFAULT``).
             Combine flags with bitwise OR.  Use ``ParseFlags.MINIMAL``
             for fastest parsing when you don't need comments, CDATA,
             or escape processing.
@@ -1392,7 +1392,6 @@ def parse_string(str xml_string, unsigned int options=0xFFFFFFFF):
     Example:
         >>> import pygixml
         >>> doc = pygixml.parse_string('<root>content</root>')
-        >>> # Enum style:
         >>> doc = pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)
     """
     doc = XMLDocument()
@@ -1401,13 +1400,13 @@ def parse_string(str xml_string, unsigned int options=0xFFFFFFFF):
     else:
         raise PygiXMLError("Failed to parse XML string")
 
-def parse_file(str file_path, unsigned int options=0xFFFFFFFF):
+def parse_file(str file_path, options=0xFFFFFFFF):
     """Parse XML from file and return XMLDocument.
 
     Args:
         file_path (str): Path to XML file
-        options (int | ParseFlags, optional): Parse flags
-            (default: ParseFlags.DEFAULT / 0xFFFFFFFF for full parsing).
+        options (ParseFlags, optional): Parse flags
+            (default: ``ParseFlags.DEFAULT``).
             Combine flags with bitwise OR.  Use ``ParseFlags.MINIMAL``
             for fastest parsing when you don't need comments, CDATA,
             or escape processing.
@@ -1421,7 +1420,6 @@ def parse_file(str file_path, unsigned int options=0xFFFFFFFF):
     Example:
         >>> import pygixml
         >>> doc = pygixml.parse_file('data.xml')
-        >>> # Enum style:
         >>> doc = pygixml.parse_file('data.xml', pygixml.ParseFlags.MINIMAL)
     """
     doc = XMLDocument()
