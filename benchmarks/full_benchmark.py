@@ -48,6 +48,12 @@ def bench_pygixml_parse(xml_str):
     return doc
 
 
+def bench_pygixml_parse_minimal(xml_str):
+    import pygixml
+    doc = pygixml.parse_string(xml_str, pygixml.PARSE_MINIMAL)
+    return doc
+
+
 def bench_lxml_parse(xml_str):
     from lxml import etree as lxml_etree
     return lxml_etree.fromstring(xml_str.encode('utf-8'))
@@ -174,6 +180,7 @@ def run_parsing_benchmarks():
 
         bench_fns = {
             'pygixml': bench_pygixml_parse,
+            'pygixml_min': bench_pygixml_parse_minimal,
             'lxml': bench_lxml_parse,
             'elementtree': bench_et_parse,
         }
@@ -277,7 +284,7 @@ def print_table(results):
 
     for size in XML_SIZES:
         et_avg = results[size]['elementtree']['parse_avg_s']
-        for lib in ['pygixml', 'lxml', 'elementtree']:
+        for lib in ['pygixml', 'pygixml_min', 'lxml', 'elementtree']:
             d = results[size][lib]
             speedup = et_avg / d['parse_avg_s'] if d['parse_avg_s'] > 0 else 0
             print(f"{size:>8} | {lib:12} | {d['parse_avg_s']:>10.6f} | {d['parse_min_s']:>10.6f} | {speedup:>13.1f}x")

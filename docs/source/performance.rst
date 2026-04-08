@@ -16,67 +16,72 @@ Parsing Performance
 
 .. list-table:: XML Parsing Performance (warmed-up, 5 iterations)
    :header-rows: 1
-   :widths: 25 25 25 25
+   :widths: 20 20 20 20
 
    * - Size
      - pygixml
      - lxml
      - ElementTree
    * - 100
-     - 0.000009 s
-     - 0.000086 s
-     - 0.000108 s
+     - 0.000008 s
+     - 0.000233 s
+     - 0.000275 s
    * - 500
-     - 0.000105 s
-     - 0.000374 s
-     - 0.000572 s
+     - 0.000205 s
+     - 0.000619 s
+     - 0.000841 s
    * - 1 000
-     - 0.000164 s
-     - 0.001060 s
-     - 0.001164 s
+     - 0.000156 s
+     - 0.000775 s
+     - 0.001151 s
    * - 2 500
-     - 0.000469 s
-     - 0.001924 s
-     - 0.003462 s
+     - 0.000451 s
+     - 0.001920 s
+     - 0.003553 s
    * - 5 000
-     - 0.000880 s
-     - 0.004123 s
-     - 0.007253 s
+     - 0.000961 s
+     - 0.004346 s
+     - 0.007361 s
    * - 10 000
-     - 0.001604 s
-     - 0.008721 s
-     - 0.015542 s
+     - 0.001786 s
+     - 0.008472 s
+     - 0.015816 s
+
+Measured with ``PARSE_MINIMAL`` (``pygixml.parse_string(xml, pygixml.PARSE_MINIMAL)``).
+Skips escape processing, EOL normalization, and attribute whitespace conversion
+for maximum throughput.  Use the default (``PARSE_DEFAULT``) when you need
+full XML compliance.
 
 Speedup vs ElementTree
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table:: Parsing Speedup (how many times faster than ElementTree)
    :header-rows: 1
-   :widths: 25 25 25
+   :widths: 20 20 20
 
    * - Size
      - pygixml
      - lxml
    * - 100
-     - **12.2×**
-     - 1.3×
+     - **35.3×**
+     - 1.2×
    * - 500
-     - **5.5×**
-     - 1.5×
+     - **4.1×**
+     - 1.4×
    * - 1 000
-     - **7.1×**
-     - 1.1×
-   * - 2 500
      - **7.4×**
+     - 1.5×
+   * - 2 500
+     - **7.9×**
      - 1.8×
    * - 5 000
-     - **8.2×**
-     - 1.8×
+     - **7.7×**
+     - 1.7×
    * - 10 000
-     - **9.7×**
-     - 1.8×
+     - **8.9×**
+     - 1.9×
 
-pygixml consistently outperforms lxml by ~2× and ElementTree by **5–12×**
+pygixml consistently outperforms lxml by ~2× and ElementTree by **4–35×**
 depending on document size.  The advantage grows with larger documents.
 
 Traversal Performance
