@@ -10,104 +10,53 @@
 [![Documentation Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/docs.yml/badge.svg)](https://mohammadraziei.github.io/pygixml/)
 [![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
 
-A high-performance XML parser for Python based on Cython and [pugixml](https://pugixml.org/), providing fast XML parsing, manipulation, XPath queries, text extraction, and advanced XML processing capabilities.
+A high-performance XML parser for Python based on Cython and
+[pugixml](https://pugixml.org/).  Fast parsing, full XPath 1.0 support, and a
+clean Pythonic API for reading, writing, and transforming XML.
 
 📚 **[View Full Documentation](https://mohammadraziei.github.io/pygixml/)**
 
-## 🚀 Performance
+---
 
-pygixml delivers exceptional performance compared to other XML libraries:
+## Why pygixml?
 
-### Performance Comparison (5000 XML elements)
+**Speed.**  pugixml is one of the fastest XML parsers available — pygixml
+brings that speed directly to Python.
+
+### Performance Comparison (5 000 elements)
 
 | Library         | Parsing Time | Speedup vs ElementTree |
 |-----------------|--------------|------------------------|
-| **pygixml**     | 0.00077s     | **15.9x faster**       |
-| **lxml**        | 0.00407s     | 3.0x faster            |
-| **ElementTree** | 0.01220s     | 1.0x (baseline)        |
+| **pygixml**     | 0.00077 s    | **15.9× faster**       |
+| **lxml**        | 0.00407 s    | 3.0× faster            |
+| **ElementTree** | 0.01220 s    | 1.0× (baseline)        |
 
 ![Performance Comparison](https://github.com/MohammadRaziei/pygixml/raw/master/benchmarks/results/performance_comparison.svg)
 
-### Key Performance Highlights
+### Features
 
-- **15.9x faster** than Python's ElementTree for XML parsing
-- **5.3x faster** than lxml for XML parsing  
-- **Memory efficient** - uses pugixml's optimized C++ memory management
-- **Scalable performance** - maintains speed advantage across different XML sizes
+* **Blazing-fast parsing** — up to 15.9× faster than ElementTree
+* **Full XPath 1.0** — complete query engine with all standard functions
+* **Memory efficient** — zero-copy C++ memory management via pugixml
+* **Pythonic API** — intuitive properties and methods, not a direct C++ mirror
+* **Cross-platform** — Windows, Linux, macOS
+* **Text extraction** — recursive text gathering with configurable joins
+* **XML serialization** — output with custom indentation
+* **Node iteration** — depth-first traversal of the entire document
+
+---
 
 ## Installation
 
-### From PyPI
 ```bash
+# From PyPI
 pip install pygixml
-```
 
-### From GitHub
-```bash
+# Or from GitHub
 pip install git+https://github.com/MohammadRaziei/pygixml.git
 ```
 
-
-### Supported XPath Features
-
-- **Node selection**: `//book`, `/library/book`, `book[1]`
-- **Attribute selection**: `book[@id]`, `book[@category='fiction']`
-- **Boolean operations**: `and`, `or`, `not()`
-- **Comparison operators**: `=`, `!=`, `<`, `>`, `<=`, `>=`
-- **Mathematical operations**: `+`, `-`, `*`, `div`, `mod`
-- **Functions**: `position()`, `last()`, `count()`, `sum()`, `string()`, `number()`
-- **Axes**: `child::`, `attribute::`, `descendant::`, `ancestor::`
-- **Wildcards**: `*`, `@*`, `node()`
-
-## API Overview
-
-### Core Classes
-
-- **XMLDocument**: Create, parse, save XML documents
-- **XMLNode**: Navigate and manipulate XML nodes  
-- **XMLAttribute**: Handle XML attributes
-- **XPathQuery**: Compile and execute XPath queries
-- **XPathNode**: Result of XPath queries (wraps nodes and attributes)
-- **XPathNodeSet**: Collection of XPath results
-
-### Key Methods
-
-#### XMLDocument Methods
-- `parse_string(xml_string)` - Parse XML from string
-- `parse_file(file_path)` - Parse XML from file
-- `save_file(file_path)` - Save XML to file
-- `append_child(name)` - Add child node
-- `first_child()` - Get first child node
-- `child(name)` - Get child by name
-- `reset()` - Clear document
-
-#### XMLNode Methods
-- `name` - Get/set node name
-- `value` - Get/set node value (for text nodes only)
-- `child_value(name)` - Get text content of child node
-- `append_child(name)` - Add child node
-- `first_child()` - Get first child
-- `child(name)` - Get child by name
-- `next_sibling` - Get next sibling
-- `previous_sibling` - Get previous sibling
-- `parent` - Get parent node
-- `text(recursive, join)` - Get text content
-- `to_string(indent)` - Serialize to XML string
-- `xml` - XML representation property
-- `xpath` - Absolute XPath of node
-- `is_null()` - Check if node is null
-- `mem_id` - Memory identifier for debugging
-
-#### XPath Methods
-- `select_nodes(query)` - Select multiple nodes using XPath
-- `select_node(query)` - Select single node using XPath
-- `XPathQuery(query)` - Create reusable XPath query object
-- `evaluate_node_set(context)` - Evaluate query and return node set
-- `evaluate_node(context)` - Evaluate query and return first node
-- `evaluate_boolean(context)` - Evaluate query and return boolean
-- `evaluate_number(context)` - Evaluate query and return number
-- `evaluate_string(context)` - Evaluate query and return string
-
+---
 
 ## Quick Start
 
@@ -115,34 +64,56 @@ pip install git+https://github.com/MohammadRaziei/pygixml.git
 import pygixml
 
 # Parse XML from string
-xml_string = """
+xml = """
 <library>
-    <book id="1">
+    <book id="1" category="fiction">
         <title>The Great Gatsby</title>
         <author>F. Scott Fitzgerald</author>
         <year>1925</year>
     </book>
+    <book id="2" category="fiction">
+        <title>1984</title>
+        <author>George Orwell</author>
+        <year>1949</year>
+    </book>
 </library>
 """
 
-doc = pygixml.parse_string(xml_string)
-root = doc.first_child()
+doc = pygixml.parse_string(xml)
+root = doc.root                           # <library>
 
-# Access elements
-book = root.first_child()
-title = book.child("title")
-print(f"Title: {title.child_value()}")  # Output: Title: The Great Gatsby
+# Access children and attributes
+book = root.child("book")
+print(book.name)                          # book
+print(book.attribute("id").value)         # 1
+print(book.child("title").text())         # The Great Gatsby
 
-# Create new XML
+# XPath queries
+fiction = root.select_nodes("book[@category='fiction']")
+print(f"Found {len(fiction)} fiction books")
+
+# Create & save
 doc = pygixml.XMLDocument()
 root = doc.append_child("catalog")
-product = root.append_child("product")
-product.name = "product"
-
-# To add text content to an element, append a text node
-text_node = product.append_child("")  # Empty name creates text node
-text_node.value = "content"
+root.append_child("item").set_value("Hello")
+doc.save_file("output.xml")
 ```
+
+### Properties vs Methods
+
+A quick reference so you don't get tripped up:
+
+| **Properties** (no `()`)                | **Methods** (need `()`)              |
+|-----------------------------------------|--------------------------------------|
+| `node.name`, `node.value`, `node.type`  | `node.child(name)`                   |
+| `node.parent`, `node.next_sibling`      | `node.first_child()`                 |
+| `node.xml`, `node.xpath`                | `node.append_child(name)`            |
+| `attr.name`, `attr.value`               | `node.set_value(v)`                  |
+| `doc.root`                              | `node.select_nodes(query)`           |
+|                                         | `node.first_attribute()`             |
+|                                         | `node.text()`                        |
+
+---
 
 ## Advanced Features
 
@@ -151,7 +122,7 @@ text_node.value = "content"
 ```python
 import pygixml
 
-xml_string = """
+xml = """
 <root>
     <simple>Hello World</simple>
     <nested>
@@ -162,23 +133,20 @@ xml_string = """
 </root>
 """
 
-doc = pygixml.parse_string(xml_string)
-root = doc.first_child()
+doc = pygixml.parse_string(xml)
+root = doc.root
 
-# Get direct text content
-simple = root.child("simple")
-print(simple.child_value())  # "Hello World"
+# Direct text content of a child element
+print(root.child("simple").text())                # Hello World
 
-# Get recursive text content
+# Recursive text content (all descendant text joined)
 nested = root.child("nested")
-print(nested.text(recursive=True))  # "Child Text\nMore text"
+print(nested.text())                              # Child Text\nMore text
+print(nested.text(join=" | "))                    # Child Text | More text
 
-# Get direct text only (non-recursive)
-mixed = root.child("mixed") 
-print(mixed.text(recursive=False))  # "Text "
-
-# Custom join character
-print(nested.text(recursive=True, join=" | "))  # "Child Text | More text"
+# Direct text only (non-recursive — immediate text children)
+mixed = root.child("mixed")
+print(mixed.text(recursive=False))                # Text
 ```
 
 ### XML Serialization
@@ -188,66 +156,82 @@ import pygixml
 
 doc = pygixml.XMLDocument()
 root = doc.append_child("root")
-child = root.append_child("item")
-child.name = "product"
-
-# Serialize to string
-print(root.to_string())  # <root>\n  <product/>\n</root>
-print(root.to_string("    "))  # Custom indentation
+root.append_child("item").set_value("content")
 
 # Convenience property
-print(root.xml)  # Same as to_string() with default indent
+print(root.xml)
+# <root>
+#   <item>content</item>
+# </root>
+
+# Custom indentation
+print(root.to_string("    "))
 ```
 
-### Node Iteration
-
-```python
-import pygixml
-
-xml_string = """
-<root>
-    <item>First</item>
-    <item>Second</item>
-    <item>Third</item>
-</root>
-"""
-
-doc = pygixml.parse_string(xml_string)
-
-# Iterate over document (depth-first)
-for node in doc:
-    print(f"Node: {node.name}, XPath: {node.xpath}")
-
-# Iterate over children
-root = doc.first_child()
-for child in root:
-    print(f"Child: {child.name}, Value: {child.child_value()}")
-```
-
-### Node Comparison and Identity
+### Document Iteration
 
 ```python
 import pygixml
 
 doc = pygixml.parse_string("<root><a/><b/></root>")
-root = doc.first_child()
-a = root.child("a")
-b = root.child("b")
-a2 = root.child("a")
 
-print(a == a2)  # True - same node
-print(a == b)   # False - different nodes
-print(a.mem_id) # Memory address for debugging
+# Depth-first traversal of every node
+for node in doc:
+    print(f"{node.type:12s} {node.name}")
+# document
+# element       root
+# element       a
+# element       b
 ```
 
-## XPath Support
-
-pygixml provides full XPath 1.0 support through pugixml's powerful XPath engine:
+### Node Identity
 
 ```python
 import pygixml
 
-xml_string = """
+doc = pygixml.parse_string("<root><a/><b/></root>")
+root = doc.root
+
+a = root.child("a")
+a2 = root.child("a")
+print(a == a2)          # True — same underlying node
+print(a.mem_id)         # Memory address for debugging
+```
+
+### Modifying XML
+
+```python
+import pygixml
+
+doc = pygixml.parse_string("<person><name>John</name></person>")
+root = doc.root
+
+# Change text content
+root.child("name").set_value("Jane")
+
+# Rename an element
+root.child("name").name = "full_name"
+
+# Add children
+root.append_child("age").set_value("30")
+
+print(root.xml)
+# <person>
+#   <full_name>Jane</full_name>
+#   <age>30</age>
+# </person>
+```
+
+---
+
+## XPath Support
+
+Full XPath 1.0 via pugixml's engine:
+
+```python
+import pygixml
+
+xml = """
 <library>
     <book id="1" category="fiction">
         <title>The Great Gatsby</title>
@@ -264,98 +248,126 @@ xml_string = """
 </library>
 """
 
-doc = pygixml.parse_string(xml_string)
-root = doc.first_child()
+doc = pygixml.parse_string(xml)
+root = doc.root
 
-# Select all books
+# Select nodes
 books = root.select_nodes("book")
 print(f"Found {len(books)} books")
 
-# Select fiction books
-fiction_books = root.select_nodes("book[@category='fiction']")
-print(f"Found {len(fiction_books)} fiction books")
+# Predicates
+fiction = root.select_nodes("book[@category='fiction']")
+print(f"Found {len(fiction)} fiction books")
 
-# Select specific book by ID
-book_2 = root.select_node("book[@id='2']")
-if book_2:
-    title = book_2.node.child("title").child_value()
-    print(f"Book ID 2: {title}")
+# Single node
+book = root.select_node("book[@id='2']")
+if book:
+    print(book.node.child("title").text())    # 1984
 
-# Use XPathQuery for repeated queries
+# Pre-compiled XPathQuery for repeated use
 query = pygixml.XPathQuery("book[year > 1930]")
-recent_books = query.evaluate_node_set(root)
-print(f"Found {len(recent_books)} books published after 1930")
+recent = query.evaluate_node_set(root)
+print(f"Found {len(recent)} books published after 1930")
 
-# XPath boolean evaluation
+# Scalar evaluations
+avg = pygixml.XPathQuery("sum(book/price) div count(book)").evaluate_number(root)
+print(f"Average price: ${avg:.2f}")           # Average price: $11.99
+
 has_orwell = pygixml.XPathQuery("book[author='George Orwell']").evaluate_boolean(root)
-print(f"Has George Orwell books: {has_orwell}")
-
-# XPath number evaluation
-avg_price = pygixml.XPathQuery("sum(book/price) div count(book)").evaluate_number(root)
-print(f"Average price: ${avg_price:.2f}")
+print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 ```
 
+### Supported XPath
 
-## Important Note: Element Nodes vs Text Nodes
+| Category           | Examples                                                        |
+|--------------------|-----------------------------------------------------------------|
+| Node selection     | `//book`, `/library/book`, `book[1]`                            |
+| Attributes         | `book[@id]`, `book[@category='fiction']`                        |
+| Boolean ops        | `and`, `or`, `not()`                                            |
+| Comparisons        | `=`, `!=`, `<`, `>`, `<=`, `>=`                                 |
+| Math               | `+`, `-`, `*`, `div`, `mod`                                     |
+| Functions          | `position()`, `last()`, `count()`, `sum()`, `string()`, `number()` |
+| Axes               | `child::`, `attribute::`, `descendant::`, `ancestor::`          |
+| Wildcards          | `*`, `@*`, `node()`                                             |
 
-In pugixml (and therefore pygixml), **element nodes do not have values directly**. Instead, they contain child text nodes that hold the text content.
+---
+
+## Core API
+
+| Class            | Purpose                                              |
+|------------------|------------------------------------------------------|
+| `XMLDocument`    | Document-level operations: load, save, append-child   |
+| `XMLNode`        | Navigate, read, and modify individual nodes           |
+| `XMLAttribute`   | Attribute name and value access                       |
+| `XPathQuery`     | Pre-compiled XPath queries for repeated evaluation    |
+| `XPathNode`      | Single XPath result (wraps a node or attribute)       |
+| `XPathNodeSet`   | Collection of XPath results                           |
+
+Module-level functions: `parse_string(xml)`, `parse_file(path)`.
+
+---
+
+## Important: Element Nodes vs Text Nodes
+
+In pugixml (and therefore pygixml), **element nodes do not store text as a
+value**.  They contain child **text nodes** instead.
 
 ```python
-# ❌ This will NOT work (element nodes don't have values):
-element_node.value = "some text"
+# ❌  Setting value on an element node does nothing useful:
+element.value = "some text"
 
-# ✅ Correct approach - use child_value() to get text content:
-text_content = element_node.child_value()
-
-# ✅ To set text content, you need to append a text node:
-text_node = element_node.append_child("")  # Empty name creates text node
+# ✅  To SET text, append a text node (empty name) and set its value:
+text_node = element.append_child("")
 text_node.value = "some text"
+
+# ✅  To GET text, use .text():
+print(element.text())                     # "some text"
+
+# ✅  Or read the text node directly:
+print(element.first_child().value)        # "some text"
 ```
+
+For most use-cases, `element.text()` is all you need.
+
+---
 
 ## Benchmarks
 
-Run performance comparisons:
-
 ```bash
-# Run complete benchmark suite
+# Run the benchmark suite
 python benchmarks/clean_visualization.py
 
 # View results
 cat benchmarks/results/benchmark_results.csv
 ```
 
-The benchmark suite compares pygixml against:
-- **lxml** - Industry-standard C-based parser
-- **xml.etree.ElementTree** - Python standard library
+Compares pygixml against **lxml** and **xml.etree.ElementTree**.
 
-**Benchmark Files:**
-- `benchmarks/clean_visualization.py` - Main benchmark runner
-- `benchmarks/benchmark_parsing.py` - Core benchmark logic
-- `benchmarks/results/` - Generated CSV data and SVG charts
+---
 
 ## Documentation
 
-📖 **Full documentation** is available at: [https://mohammadraziei.github.io/pygixml/](https://mohammadraziei.github.io/pygixml/)
+📖 Full docs: [https://mohammadraziei.github.io/pygixml/](https://mohammadraziei.github.io/pygixml/)
 
-The documentation includes:
-- Complete API reference with examples
-- Installation guides for all platforms
-- Performance benchmarks and optimization tips
-- XPath 1.0 usage guide with comprehensive examples
-- Real-world usage scenarios
+* Complete API reference
+* Installation guides for all platforms
+* Performance benchmarks and optimization tips
+* XPath 1.0 usage guide with examples
+* Real-world usage scenarios
+
+---
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE).
 
-**To use this library, you must star the project on GitHub!**
-
-This helps support the development and shows appreciation for the work. Please star the repository before using the library:
-
+Enjoy pygixml?  Star the repository to support the development:
 👉 **[Star pygixml on GitHub](https://github.com/MohammadRaziei/pygixml)**
+
+---
 
 ## Acknowledgments
 
-- [pugixml](https://pugixml.org/) - Fast and lightweight C++ XML processing library
-- [Cython](https://cython.org/) - C extensions for Python
-- [scikit-build](https://scikit-build.readthedocs.io/) - Modern Python build system
+* [pugixml](https://pugixml.org/) — Fast and lightweight C++ XML library
+* [Cython](https://cython.org/) — C extensions for Python
+* [scikit-build](https://scikit-build.readthedocs.io/) — Modern Python build system
