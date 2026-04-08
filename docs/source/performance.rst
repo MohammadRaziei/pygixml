@@ -47,9 +47,9 @@ Parsing Performance
      - 0.009095 s
      - 0.016108 s
 
-Measured with ``PARSE_MINIMAL`` (``pygixml.parse_string(xml, pygixml.PARSE_MINIMAL)``).
+Measured with ``ParseFlags.MINIMAL`` (``pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)``).
 Skips escape processing, EOL normalization, and attribute whitespace conversion
-for maximum throughput.  Use the default (``PARSE_DEFAULT``) when you need
+for maximum throughput.  Use the default (``ParseFlags.DEFAULT``) when you need
 full XML compliance.
 
 Speedup vs ElementTree

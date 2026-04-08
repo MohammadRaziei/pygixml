@@ -50,7 +50,7 @@ def bench_pygixml_parse(xml_str):
 
 def bench_pygixml_parse_minimal(xml_str):
     import pygixml
-    doc = pygixml.parse_string(xml_str, pygixml.PARSE_MINIMAL)
+    doc = pygixml.parse_string(xml_str, pygixml.ParseFlags.MINIMAL)
     return doc
 
 
