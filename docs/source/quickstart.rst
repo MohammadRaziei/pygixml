@@ -1,190 +1,185 @@
 Quick Start
 ===========
 
-This guide will help you get started with pygixml quickly.
-
-Basic Usage
------------
+This guide walks you through the core features of pygixml: parsing, navigating,
+querying, and creating XML documents.
 
 Parsing XML
-~~~~~~~~~~~
+-----------
+
+**From a string**
 
 .. code-block:: python
 
    import pygixml
 
-   # Parse from string
-   xml_string = '''
+   xml = '''
    <library>
-       <book id="1">
+       <book id="1" category="fiction">
            <title>The Great Gatsby</title>
            <author>F. Scott Fitzgerald</author>
            <year>1925</year>
        </book>
+       <book id="2" category="fiction">
+           <title>1984</title>
+           <author>George Orwell</author>
+           <year>1949</year>
+       </book>
    </library>
    '''
-   doc = pygixml.parse_string(xml_string)
 
-   # Parse from file
+   doc = pygixml.parse_string(xml)
+
+**From a file**
+
+.. code-block:: python
+
    doc = pygixml.parse_file("data.xml")
 
-Navigating XML
-~~~~~~~~~~~~~~
+Navigating the Tree
+-------------------
+
+Every parsed document starts at its root element. From there you walk the
+tree with :py:meth:`~pygixml.XMLNode.first_child`,
+:py:meth:`~pygixml.XMLNode.child`, and sibling properties.
 
 .. code-block:: python
 
-   # Get root element
+   # Access the root element directly
    root = doc.root
-   print(f"Root name: {root.name}")  # Output: library
+   print(root.name)               # → library
 
-   # Access children
-   book = root.first_child()
-   print(f"Book name: {book.name}")  # Output: book
+   # Get the first <book> child by name
+   book = root.child("book")
+   print(book.name)               # → book
 
-   # Get specific child by name
+   # Read an attribute
+   book_id = book.attribute("id")
+   print(book_id.value)           # → 1
+
+   # Read text content
    title = book.child("title")
-   print(f"Title: {title.text()}")  # Output: The Great Gatsby
+   print(title.text())            # → The Great Gatsby
 
-   # Iterate through children
-   for child in root:
-       print(f"Node: {child.name}")
+Iterating
+---------
 
-   # Or iterate via sibling properties
+**Depth-first traversal** — the document itself is iterable:
+
+.. code-block:: python
+
+   for node in doc:
+       print(f"{node.type:12s} {node.name}")
+
+**Walking children with siblings:**
+
+.. code-block:: python
+
    child = root.first_child()
    while child:
-       print(f"Node: {child.name}")
+       print(child.name)
        child = child.next_sibling
-
-Working with Attributes
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
-
-   # Get attribute
-   book = root.first_child()
-   book_id = book.attribute("id")
-   print(f"Book ID: {book_id.value}")  # Output: 1
-
-   # Iterate through attributes
-   attr = book.first_attribute()
-   while attr:
-       print(f"Attribute: {attr.name} = {attr.value}")
-       attr = attr.next_attribute
-
-Creating and Modifying XML
---------------------------
-
-Creating New Documents
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
-
-   import pygixml
-
-   # Create new document
-   doc = pygixml.XMLDocument()
-
-   # Add root element
-   root = doc.append_child("library")
-
-   # Add child elements
-   book = root.append_child("book")
-
-   # Note: attribute creation is not yet exposed in the Python API.
-   # Build the XML with attributes using parse_string instead:
-   doc = pygixml.parse_string(
-       '<library><book id="1">'
-       '<title>The Great Gatsby</title>'
-       '<author>F. Scott Fitzgerald</author>'
-       '</book></library>'
-   )
-
-   # Or build structure without attributes:
-   doc = pygixml.XMLDocument()
-   root = doc.append_child("library")
-   book = root.append_child("book")
-   title = book.append_child("title")
-   title.set_value("The Great Gatsby")
-   author = book.append_child("author")
-   author.set_value("F. Scott Fitzgerald")
-
-   # Save to file
-   doc.save_file("output.xml")
-
-Modifying Existing XML
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
-
-   # Load existing XML
-   doc = pygixml.parse_string(xml_string)
-   root = doc.root
-
-   # Modify values
-   book = root.first_child()
-   book.child("title").set_value("New Title")
-
-   # Modify names
-   book.child("title").name = "book_title"
-
-   # Add new elements
-   price = book.append_child("price")
-   price.set_value("12.99")
 
 XPath Queries
 -------------
 
-Basic XPath Usage
-~~~~~~~~~~~~~~~~~
+Select multiple nodes or a single node with standard XPath 1.0 expressions:
 
 .. code-block:: python
 
-   # Select all books
+   # All <book> elements
    books = root.select_nodes("book")
    print(f"Found {len(books)} books")
 
-   # Select specific book by ID
-   book1 = root.select_node("book[@id='1']")
-   if book1:
-       print(f"Book 1 title: {book1.node.child('title').text()}")
+   # Fiction books via attribute filter
+   fiction = root.select_nodes("book[@category='fiction']")
+   for b in fiction:
+       print(b.node.child("title").text())
 
-   # Select books by year
-   old_books = root.select_nodes("book[year < 1950]")
-   print(f"Found {len(old_books)} old books")
+   # Single match
+   match = root.select_node("book[@id='2']")
+   if match:
+       print(match.node.child("title").text())   # → 1984
 
-Advanced XPath
-~~~~~~~~~~~~~~
+**Pre-compiled queries** — reuse an :py:class:`~pygixml.XPathQuery` for
+repeated evaluation:
 
 .. code-block:: python
 
-   # Using XPathQuery for repeated queries
-   query = pygixml.XPathQuery("book[price > 10]")
-   expensive_books = query.evaluate_node_set(root)
+   query = pygixml.XPathQuery("book[year > 1950]")
 
-   # XPath evaluations
-   has_books = pygixml.XPathQuery("book").evaluate_boolean(root)
-   avg_price = pygixml.XPathQuery("sum(book/price) div count(book)").evaluate_number(root)
-   first_title = pygixml.XPathQuery("book[1]/title").evaluate_string(root)
+   # Node set
+   results = query.evaluate_node_set(root)
+
+   # Scalar results
+   avg_price = pygixml.XPathQuery(
+       "sum(book/price) div count(book)"
+   ).evaluate_number(root)
+
+   first_title = pygixml.XPathQuery(
+       "book[1]/title"
+   ).evaluate_string(root)
+
+Creating XML from Scratch
+-------------------------
+
+.. code-block:: python
+
+   doc = pygixml.XMLDocument()
+   root = doc.append_child("catalog")
+
+   product = root.append_child("product")
+   name = product.append_child("name")
+   name.set_value("Laptop")
+
+   price = product.append_child("price")
+   price.set_value("999.99")
+
+   doc.save_file("catalog.xml")
+
+.. tip::
+   Attribute *creation* is not yet exposed in the Python API.  When you need
+   attributes, either parse a string or write the raw XML and load it:
+
+   .. code-block:: python
+
+      doc = pygixml.parse_string(
+          '<catalog><product id="1" name="Laptop"/></catalog>'
+      )
+
+Modifying XML
+-------------
+
+.. code-block:: python
+
+   doc = pygixml.parse_string('<item><name>Old</name></item>')
+   root = doc.root
+
+   # Change element text content
+   root.child("name").set_value("New")
+
+   # Rename an element
+   root.child("name").name = "title"
+
+   # Add a new child
+   root.append_child("price").set_value("29.99")
 
 Error Handling
 --------------
 
+All parsing errors raise :py:class:`~pygixml.PygiXMLError`:
+
 .. code-block:: python
 
    try:
-       doc = pygixml.parse_string(invalid_xml)
+       doc = pygixml.parse_string("not xml")
    except pygixml.PygiXMLError as e:
-       print(f"Failed to parse XML: {e}")
-
-   try:
-       doc.save_file("/invalid/path/file.xml")
-   except Exception as e:
-       print(f"Failed to save file: {e}")
+       print(f"Parse failed: {e}")
 
 Next Steps
 ----------
 
-- Learn about :doc:`XPath capabilities <xpath>`
-- Explore :doc:`API reference <api>`
-- Check out :doc:`examples <examples>`
-- Read about :doc:`performance <performance>`
+- Dive into :doc:`XPath capabilities <xpath>`
+- Browse the full :doc:`API reference <api>`
+- See :doc:`practical examples <examples>`
+- Learn about :doc:`performance <performance>`

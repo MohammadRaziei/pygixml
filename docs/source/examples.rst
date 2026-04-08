@@ -1,7 +1,8 @@
 Examples
 ========
 
-This page contains practical examples of using pygixml for common XML processing tasks.
+This page contains practical examples of using pygixml for common XML
+processing tasks.
 
 Basic Examples
 --------------
@@ -13,7 +14,6 @@ Parsing and Navigating
 
    import pygixml
 
-   # Example XML
    xml_data = '''
    <catalog>
        <book id="bk101">
@@ -22,7 +22,6 @@ Parsing and Navigating
            <genre>Computer</genre>
            <price>44.95</price>
            <publish_date>2000-10-01</publish_date>
-           <description>An in-depth look at creating applications with XML.</description>
        </book>
        <book id="bk102">
            <author>Ralls, Kim</author>
@@ -30,22 +29,51 @@ Parsing and Navigating
            <genre>Fantasy</genre>
            <price>5.95</price>
            <publish_date>2000-12-16</publish_date>
-           <description>A former architect battles corporate zombies.</description>
        </book>
    </catalog>
    '''
 
-   # Parse XML
    doc = pygixml.parse_string(xml_data)
-   catalog = doc.first_child()
+   catalog = doc.root
 
-   # Print all books
-   books = catalog.select_nodes("book")
-   for book in books:
-       title = book.node().child("title").child_value()
-       author = book.node().child("author").child_value()
-       price = book.node().child("price").child_value()
-       print(f"{title} by {author} - ${price}")
+   # Walk through books using the document iterator
+   for book in doc:
+       if book.name == "book":
+           title = book.child("title").text()
+           author = book.child("author").text()
+           price = book.child("price").text()
+           print(f"{title} by {author} - ${price}")
+
+   # Or use XPath to select all books directly
+   for book in catalog.select_nodes("book"):
+       title = book.node.child("title").text()
+       author = book.node.child("author").text()
+       print(f"{title} by {author}")
+
+Working with Attributes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import pygixml
+
+   doc = pygixml.parse_string(
+       '<products>'
+       '  <product id="1" name="Laptop" price="999.99"/>'
+       '  <product id="2" name="Mouse" price="29.99"/>'
+       '</products>'
+   )
+   root = doc.root
+
+   product = root.child("product")
+   print(product.attribute("id").value)       # → 1
+   print(product.attribute("name").value)     # → Laptop
+
+   # Iterate all attributes
+   attr = product.first_attribute()
+   while attr:
+       print(f"  {attr.name} = {attr.value}")
+       attr = attr.next_attribute
 
 Creating XML Documents
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -54,36 +82,67 @@ Creating XML Documents
 
    import pygixml
 
-   # Create new document
    doc = pygixml.XMLDocument()
-
-   # Add catalog root
    catalog = doc.append_child("catalog")
 
-   # Add first book
    book1 = catalog.append_child("book")
-   book1.set_attribute("id", "bk101")
-   
    book1.append_child("author").set_value("Gambardella, Matthew")
    book1.append_child("title").set_value("XML Developer's Guide")
    book1.append_child("genre").set_value("Computer")
    book1.append_child("price").set_value("44.95")
-   book1.append_child("publish_date").set_value("2000-10-01")
-   book1.append_child("description").set_value("An in-depth look at creating applications with XML.")
 
-   # Add second book
    book2 = catalog.append_child("book")
-   book2.set_attribute("id", "bk102")
-   
    book2.append_child("author").set_value("Ralls, Kim")
    book2.append_child("title").set_value("Midnight Rain")
-   book2.append_child("genre").set_value("Fantasy")
    book2.append_child("price").set_value("5.95")
-   book2.append_child("publish_date").set_value("2000-12-16")
-   book2.append_child("description").set_value("A former architect battles corporate zombies.")
 
-   # Save to file
    doc.save_file("catalog.xml")
+
+.. note::
+   Attribute *creation* is not yet exposed in the Python API.  When you need
+   attributes, build the document by parsing a string instead:
+
+   .. code-block:: python
+
+      doc = pygixml.parse_string(
+          '<catalog>'
+          '  <book id="bk101">'
+          '    <author>Gambardella, Matthew</author>'
+          '  </book>'
+          '</catalog>'
+      )
+
+Modifying Existing XML
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import pygixml
+
+   doc = pygixml.parse_string(
+       '<employees>'
+       '  <employee>'
+       '    <name>John Doe</name>'
+       '    <position>Developer</position>'
+       '    <salary>50000</salary>'
+       '  </employee>'
+       '</employees>'
+   )
+   root = doc.root
+   employee = root.child("employee")
+
+   # Change values
+   employee.child("name").set_value("Jane Smith")
+   employee.child("salary").set_value("55000")
+
+   # Add a new element
+   employee.append_child("department").set_value("Engineering")
+
+   # Rename an element
+   employee.child("position").name = "role"
+
+   # Print result
+   print(root.to_string())
 
 Advanced Examples
 -----------------
@@ -95,7 +154,6 @@ XML Data Processing
 
    import pygixml
 
-   # Process sales data
    sales_xml = '''
    <sales>
        <region name="North">
@@ -126,36 +184,35 @@ XML Data Processing
    '''
 
    doc = pygixml.parse_string(sales_xml)
-   sales = doc.first_child()
+   sales = doc.root
 
-   # Calculate total revenue by region
+   # Total revenue by region
    regions = sales.select_nodes("region")
    for region in regions:
-       region_name = region.node().attribute("name").value()
-       products = region.node().select_nodes("product")
-       
-       total_revenue = 0
-       for product in products:
-           price = float(product.node().child("price").child_value())
-           units = int(product.node().child("units_sold").child_value())
-           total_revenue += price * units
-       
-       print(f"Region {region_name}: ${total_revenue:.2f}")
+       region_name = region.node.attribute("name").value
+       products = region.node.select_nodes("product")
 
-   # Find best-selling product
-   all_products = sales.select_nodes("//product")
+       total_revenue = 0.0
+       for product in products:
+           price = float(product.node.child("price").text())
+           units = int(product.node.child("units_sold").text())
+           total_revenue += price * units
+
+       print(f"Region {region_name}: ${total_revenue:,.2f}")
+
+   # Best-selling product across all regions
    best_product = None
    max_units = 0
 
-   for product in all_products:
-       units = int(product.node().child("units_sold").child_value())
+   for product in sales.select_nodes("//product"):
+       units = int(product.node.child("units_sold").text())
        if units > max_units:
            max_units = units
-           best_product = product.node()
+           best_product = product.node
 
    if best_product:
-       name = best_product.child("name").child_value()
-       print(f"Best-selling product: {name} ({max_units} units)")
+       name = best_product.child("name").text()
+       print(f"Best-selling: {name} ({max_units} units)")
 
 XML Configuration Processing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,7 +228,6 @@ XML Configuration Processing
            <port>5432</port>
            <name>mydb</name>
            <user>admin</user>
-           <password>secret</password>
        </database>
        <server>
            <host>0.0.0.0</host>
@@ -188,37 +244,31 @@ XML Configuration Processing
    '''
 
    doc = pygixml.parse_string(config_xml)
-   config = doc.first_child()
+   config = doc.root
 
-   # Extract database configuration
-   db_config = {}
-   database = config.child("database")
-   db_config['host'] = database.child("host").child_value()
-   db_config['port'] = int(database.child("port").child_value())
-   db_config['name'] = database.child("name").child_value()
-   db_config['user'] = database.child("user").child_value()
-   db_config['password'] = database.child("password").child_value()
+   # Database configuration
+   db = config.child("database")
+   db_config = {
+       "host": db.child("host").text(),
+       "port": int(db.child("port").text()),
+       "name": db.child("name").text(),
+       "user": db.child("user").text(),
+   }
+   print("Database:", db_config)
 
-   print("Database Config:", db_config)
-
-   # Extract server configuration
-   server_config = {}
+   # Server configuration
    server = config.child("server")
-   server_config['host'] = server.child("host").child_value()
-   server_config['port'] = int(server.child("port").child_value())
-   server_config['debug'] = server.child("debug").child_value().lower() == 'true'
-   server_config['log_level'] = server.child("log_level").child_value()
+   server_config = {
+       "host": server.child("host").text(),
+       "port": int(server.child("port").text()),
+       "debug": server.child("debug").text().lower() == "true",
+       "log_level": server.child("log_level").text(),
+   }
+   print("Server:", server_config)
 
-   print("Server Config:", server_config)
-
-   # Check enabled features
-   enabled_features = []
-   features = config.select_nodes("features/feature[@enabled='true']")
-   for feature in features:
-       feature_name = feature.node().attribute("name").value()
-       enabled_features.append(feature_name)
-
-   print("Enabled features:", enabled_features)
+   # Enabled features via XPath
+   enabled = config.select_nodes("features/feature[@enabled='true']")
+   print("Enabled:", [f.node.attribute("name").value for f in enabled])
 
 XPath Complex Queries
 ~~~~~~~~~~~~~~~~~~~~~
@@ -227,8 +277,7 @@ XPath Complex Queries
 
    import pygixml
 
-   # Complex XML with nested structure
-   complex_xml = '''
+   company_xml = '''
    <company>
        <department name="Engineering">
            <team name="Frontend">
@@ -238,7 +287,6 @@ XPath Complex Queries
                    <skills>
                        <skill>JavaScript</skill>
                        <skill>React</skill>
-                       <skill>TypeScript</skill>
                    </skills>
                </employee>
                <employee id="102" level="junior">
@@ -257,7 +305,6 @@ XPath Complex Queries
                    <skills>
                        <skill>Python</skill>
                        <skill>Django</skill>
-                       <skill>PostgreSQL</skill>
                    </skills>
                </employee>
            </team>
@@ -267,61 +314,51 @@ XPath Complex Queries
                <employee id="301" level="senior">
                    <name>Diana Prince</name>
                    <salary>110000</salary>
-                   <skills>
-                       <skill>Negotiation</skill>
-                       <skill>CRM</skill>
-                   </skills>
                </employee>
            </team>
        </department>
    </company>
    '''
 
-   doc = pygixml.parse_string(complex_xml)
-   company = doc.first_child()
+   doc = pygixml.parse_string(company_xml)
+   company = doc.root
 
-   # Find all senior employees
-   senior_employees = company.select_nodes("//employee[@level='senior']")
-   print(f"Senior employees: {len(senior_employees)}")
+   # All senior employees
+   seniors = company.select_nodes("//employee[@level='senior']")
+   print(f"Senior employees: {len(seniors)}")
 
-   # Find employees with specific skills
+   # Python developers
    python_devs = company.select_nodes("//employee[skills/skill='Python']")
    print(f"Python developers: {len(python_devs)}")
 
-   # Calculate average salary by department
-   departments = company.select_nodes("department")
-   for dept in departments:
-       dept_name = dept.node().attribute("name").value()
-       employees = dept.node().select_nodes(".//employee")
-       
-       if employees:
-           total_salary = 0
-           for emp in employees:
-               salary = float(emp.node().child("salary").child_value())
-               total_salary += salary
-           
-           avg_salary = total_salary / len(employees)
-           print(f"{dept_name} average salary: ${avg_salary:.2f}")
+   # Average salary per department
+   for dept in company.select_nodes("department"):
+       dept_name = dept.node.attribute("name").value
+       employees = dept.node.select_nodes(".//employee")
 
-   # Find employees earning more than 100k
-   high_earners = company.select_nodes("//employee[salary > 100000]")
-   for emp in high_earners:
-       name = emp.node().child("name").child_value()
-       salary = emp.node().child("salary").child_value()
-       print(f"High earner: {name} (${salary})")
+       if employees:
+           total = sum(
+               float(e.node.child("salary").text()) for e in employees
+           )
+           print(f"{dept_name} avg salary: ${total / len(employees):,.0f}")
+
+   # High earners (>100k)
+   for emp in company.select_nodes("//employee[salary > 100000]"):
+       name = emp.node.child("name").text()
+       salary = emp.node.child("salary").text()
+       print(f"  {name}: ${salary}")
 
 Real-World Use Cases
 --------------------
 
-Web Scraping Data Extraction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Product Data Extraction
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
    import pygixml
 
-   # Example: Extract product information from HTML/XML
-   html_content = '''
+   xml_content = '''
    <products>
        <product>
            <name>Wireless Mouse</name>
@@ -340,31 +377,25 @@ Web Scraping Data Extraction
    </products>
    '''
 
-   doc = pygixml.parse_string(html_content)
-   products = doc.first_child()
+   doc = pygixml.parse_string(xml_content)
+   root = doc.root
 
-   # Extract product data
-   product_list = []
-   for product in products.select_nodes("product"):
-       name = product.node().child("name").child_value()
-       price = float(product.node().child("price").child_value())
-       currency = product.node().child("price").attribute("currency").value()
-       rating = float(product.node().child("rating").child_value())
-       reviews = int(product.node().child("reviews").child_value())
-       
-       product_list.append({
-           'name': name,
-           'price': price,
-           'currency': currency,
-           'rating': rating,
-           'reviews': reviews
+   products = []
+   for p in root.select_nodes("product"):
+       n = p.node
+       price_el = n.child("price")
+       products.append({
+           "name":     n.child("name").text(),
+           "price":    float(price_el.text()),
+           "currency": price_el.attribute("currency").value,
+           "rating":   float(n.child("rating").text()),
+           "reviews":  int(n.child("reviews").text()),
        })
 
    # Sort by rating
-   product_list.sort(key=lambda x: x['rating'], reverse=True)
-   
-   for product in product_list:
-       print(f"{product['name']}: ${product['price']} ({product['rating']} stars)")
+   products.sort(key=lambda x: x["rating"], reverse=True)
+   for p in products:
+       print(f"{p['name']}: ${p['price']} ({p['rating']} stars)")
 
 API Response Processing
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -373,21 +404,15 @@ API Response Processing
 
    import pygixml
 
-   # Example: Process XML API response
-   api_response = '''
+   weather_xml = '''
    <weather>
        <location>
            <city>New York</city>
            <country>US</country>
-           <timezone>America/New_York</timezone>
        </location>
        <current>
            <temperature unit="celsius">22</temperature>
            <humidity unit="percent">65</humidity>
-           <wind>
-               <speed unit="kmh">15</speed>
-               <direction>NE</direction>
-           </wind>
            <condition>Partly Cloudy</condition>
        </current>
        <forecast>
@@ -405,33 +430,65 @@ API Response Processing
    </weather>
    '''
 
-   doc = pygixml.parse_string(api_response)
-   weather = doc.first_child()
+   doc = pygixml.parse_string(weather_xml)
+   w = doc.root
 
-   # Extract current weather
-   location = weather.child("location")
-   current = weather.child("current")
-   
-   city = location.child("city").child_value()
-   temp = current.child("temperature").child_value()
-   condition = current.child("condition").child_value()
-   
-   print(f"Current weather in {city}: {temp}°C, {condition}")
+   location = w.child("location")
+   current  = w.child("current")
 
-   # Extract forecast
-   forecast_days = weather.select_nodes("forecast/day")
-   print("Forecast:")
-   for day in forecast_days:
-       date = day.node().attribute("date").value()
-       high = day.node().child("high").child_value()
-       low = day.node().child("low").child_value()
-       condition = day.node().child("condition").child_value()
-       print(f"  {date}: {high}°C / {low}°C, {condition}")
+   city = location.child("city").text()
+   temp = current.child("temperature").text()
+   cond = current.child("condition").text()
+   print(f"Current in {city}: {temp}°C, {cond}")
+
+   # Forecast
+   for day in w.select_nodes("forecast/day"):
+       d = day.node
+       date = d.attribute("date").value
+       high = d.child("high").text()
+       low  = d.child("low").text()
+       cnd  = d.child("condition").text()
+       print(f"  {date}: {high}°C / {low}°C, {cnd}")
+
+HTML-like Processing
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import pygixml
+
+   # pygixml can parse well-formed HTML/XML fragments
+   html = '''
+   <html>
+       <head><title>My Page</title></head>
+       <body>
+           <h1>Welcome</h1>
+           <p>Hello <b>world</b>!</p>
+           <ul>
+               <li>Item one</li>
+               <li>Item two</li>
+           </ul>
+       </body>
+   </html>
+   '''
+
+   doc = pygixml.parse_string(html)
+
+   # Extract all text from <body>
+   body = doc.select_node("//body").node
+   print(body.text())        # → Welcome\nHello world!\nItem one\nItem two
+
+   # Extract only direct text (non-recursive)
+   print(body.text(recursive=False))   # → \n\n
+
+   # Get all <li> items
+   for li in body.select_nodes(".//li"):
+       print(li.node.text())
 
 Running Examples
 ----------------
 
-All examples in this documentation can be run directly. Make sure you have pygixml installed:
+All examples in this documentation can be run directly:
 
 .. code-block:: bash
 
@@ -443,4 +500,5 @@ Then copy any example into a Python file and run it:
 
    python example.py
 
-For more interactive examples, check the ``examples/`` directory in the pygixml repository.
+For interactive examples, check the ``examples/`` directory in the pygixml
+repository.
