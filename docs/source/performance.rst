@@ -168,7 +168,7 @@ Package Size
    * - lxml
      - 5.48 MB
 
-pygixml is **12.7× smaller** than lxml in installed size.
+pygixml is **12.7× smaller** than lxml in installed size according to [pip-size](http://github.com/mohammadraziei/pip-size) package.
 
 Performance Tips
 ----------------
