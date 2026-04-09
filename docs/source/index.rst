@@ -163,6 +163,7 @@ Documentation Contents
    xml_basics
    quickstart
    xpath
+   advanced
    examples
    api
    performance
