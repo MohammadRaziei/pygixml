@@ -202,15 +202,14 @@ biggest impact on traversal speed.
 Node Identity and Fast Lookup
 -----------------------------
 
-Unlike pugixml, which works exclusively with C++ object references,
-pygixml introduces ``mem_id`` — a **pygixml-specific** numeric
-identifier that uniquely tracks each node.  Each :class:`~pygixml.XMLNode`
-exposes a :attr:`~pygixml.XMLNode.mem_id`, making node identity checks,
-caching, and fast lookups possible directly from Python.
+Each :class:`~pygixml.XMLNode` exposes a :attr:`~pygixml.XMLNode.mem_id` —
+a unique numeric identifier derived from the node's internal address.
+Unlike pugixml, which works exclusively with C++ object references, pygixml
+makes this identifier available as a plain Python integer.
 
-Because ``mem_id`` is a plain integer, it is **hashable and ideal for use
-as a dictionary key** — a common pattern when building indexes, caches, or
-associating extra data with specific nodes:
+Because ``mem_id`` is hashable, it is **ideal for use as a dictionary key**
+— a common pattern when building indexes, caches, or associating extra data
+with specific nodes:
 
 .. code-block:: python
 

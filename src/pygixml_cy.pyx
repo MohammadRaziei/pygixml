@@ -981,6 +981,13 @@ cdef class XMLNode:
     def xpath(self):
         """The absolute XPath to this node (e.g. ``/root/item[1]/name[1]``).
 
+        .. note::
+           This is a **pygixml-specific feature**.  pugixml does not
+           provide XPath generation natively — pygixml implements a custom
+           O(depth) algorithm that walks from the node up to the root,
+           counting same-name siblings to produce accurate positional
+           predicates.
+
         Returns an empty string if the node is not an element.
 
         Returns:

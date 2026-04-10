@@ -26,7 +26,15 @@ For Developers
 To contribute to pygixml or build from source, you need a C++ compiler,
 CMake, and Cython.
 
-1. **Install dev dependencies**
+1. **Clone the repository**
+
+   .. code-block:: bash
+
+      git clone https://github.com/MohammadRaziei/pygixml.git
+      cd pygixml
+      git submodule update --init --recursive
+
+2. **Install dev dependencies**
 
    .. code-block:: bash
 
@@ -34,14 +42,6 @@ CMake, and Cython.
 
    This pulls in Cython, scikit-build-core, pytest, Sphinx, and the
    documentation toolchain.
-
-2. **Clone the repository**
-
-   .. code-block:: bash
-
-      git clone https://github.com/MohammadRaziei/pygixml.git
-      cd pygixml
-      git submodule update --init --recursive
 
 3. **Configure and build**
 

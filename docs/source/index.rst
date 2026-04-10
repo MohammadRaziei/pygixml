@@ -39,7 +39,7 @@ brings that speed directly to Python:
 Features
 --------
 
-* **Blazing-fast parsing** — up to 15.9× faster than ElementTree
+* **Blazing-fast parsing** — up to 8.6× faster than ElementTree
 * **Full XPath 1.0** — complete query engine with all standard functions
 * **Memory efficient** — zero-copy C++ memory management via pugixml
 * **Pythonic API** — intuitive methods and properties, not a direct C++ mirror
@@ -107,6 +107,30 @@ property documented.
      - Single XPath result (wraps a node or attribute)
    * - :py:class:`~pygixml.XPathNodeSet`
      - Collection of XPath results
+
+Pythonic Extensions
+-------------------
+
+pugixml gives pygixml its speed, but the **API you actually use** goes
+well beyond what the C++ library provides.  pygixml adds several features
+that make working with XML from Python natural and productive:
+
+* :attr:`~pygixml.XMLNode.text` — recursive text extraction with
+  configurable joins.  One call to gather all text content from an element
+  and its descendants.
+* :meth:`~pygixml.XMLNode.children` — iterate direct child elements only
+  (or all descendants with ``recursive=True``), no manual sibling walking.
+* :attr:`~pygixml.XMLNode.xpath` — generate an absolute XPath to any node
+  using a custom O(depth) algorithm.  Not available in pugixml natively.
+* :attr:`~pygixml.XMLNode.xml` — serialize a node and its subtree to a
+  formatted XML string in one property.
+* :attr:`~pygixml.XMLNode.mem_id` — a unique numeric identifier for each
+  node, ideal for caching and dictionary-based lookups.
+* :meth:`~pygixml.XMLNode.to_string` — customizable XML serialization with
+  string or integer indentation.
+
+These are pygixml's own contributions — you won't find equivalents in
+pugixml.  See the :doc:`api` for full documentation of every member.
 
 .. note::
    **Properties vs Methods** — pygixml uses properties for simple accessors
