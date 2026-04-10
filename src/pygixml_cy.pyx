@@ -1038,28 +1038,33 @@ cdef class XMLNode:
 
     @staticmethod
     def from_mem_id_unsafe(size_t mem_id):
-        """Reconstruct an ``XMLNode`` from a raw memory address.
+        """Reconstruct an ``XMLNode`` from its memory identifier in **O(1)** time.
 
-        ⚠️ **Warning**: This function treats *mem_id* as a direct pointer
-        to an internal ``xml_node`` object.  If the address is invalid
-        (the document has been freed, the node was deleted, or the ID
-        came from a different process), calling methods on the returned
-        node **may cause a segmentation fault**.
+        Unlike :meth:`find_mem_id`, which walks the entire tree in **O(n)**
+        time to locate a node, this method performs an instant lookup.
 
-        Only use this when you are certain the address still points to
-        a live node within a valid ``XMLDocument``.
+        ⚠️ **Warning**: If the *mem_id* is stale (the node was deleted or
+        the document has been freed), calling methods on the returned
+        object **may cause a segmentation fault**.
+
+        Only use this when you are certain the identifier still belongs
+        to a live node within a valid ``XMLDocument``.
 
         Args:
-            mem_id (int): A raw memory address previously obtained from
+            mem_id (int): An identifier previously obtained from
                 ``node.mem_id``.
 
         Returns:
-            XMLNode: A wrapper around the raw pointer.
+            XMLNode: A wrapper for the node at the given identifier.
+
+        Complexity:
+            **O(1)** — direct lookup, no tree traversal.
+            Compare with :meth:`find_mem_id` which is **O(n)**.
 
         Example::
 
-            >>> addr = root.child('item').mem_id
-            >>> node = XMLNode.from_mem_id_unsafe(addr)
+            >>> mid = root.child('item').mem_id
+            >>> node = XMLNode.from_mem_id_unsafe(mid)
             >>> node.name
             'item'
         """

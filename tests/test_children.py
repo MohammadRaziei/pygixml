@@ -81,10 +81,10 @@ class TestXMLNodeChildren:
         doc = pygixml.parse_string("<root><item>Hello</item></root>")
         root = doc.root
         item = root.child("item")
-        addr = item.mem_id
+        node_id = item.mem_id
 
-        unsafe_node = pygixml.XMLNode.from_mem_id_unsafe(addr)
-        safe_node = root.find_mem_id(addr)
+        unsafe_node = pygixml.XMLNode.from_mem_id_unsafe(node_id)
+        safe_node = root.find_mem_id(node_id)
 
         # Both should wrap the same underlying xml_node
         assert unsafe_node.name == safe_node.name == "item"
