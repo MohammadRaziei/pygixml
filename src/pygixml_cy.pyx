@@ -1073,10 +1073,15 @@ cdef class XMLNode:
 
     @property
     def mem_id(self):
-        """A unique numeric identifier based on the node's memory address.
+        """A unique numeric identifier derived from the node's internal address.
 
-        Useful for debugging and node identity checks.  Returns ``0`` for
-        null nodes.
+        .. note::
+           This is a **pygixml-specific feature**.  The underlying pugixml
+           library does not expose integer node identifiers natively.
+           pygixml provides ``mem_id`` as a safe, hashable handle for
+           debugging, caching, and fast node reconstruction.
+
+        Returns ``0`` for null nodes.
 
         Returns:
             int
