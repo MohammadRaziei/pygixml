@@ -16,36 +16,36 @@ Parsing Performance
 
 .. list-table:: XML Parsing Performance (warmed-up, 50 iterations)
    :header-rows: 1
-   :widths: 20 20 20 20
+   :widths: 20 25 20 20
 
    * - Size
      - pygixml
      - lxml
      - ElementTree
    * - 100
-     - 0.000009 s
-     - 0.000085 s
-     - 0.000103 s
+     - 0.000020 s
+     - 0.000217 s
+     - 0.000209 s
    * - 500
-     - 0.000337 s
-     - 0.000552 s
-     - 0.000647 s
+     - 0.000098 s
+     - 0.000371 s
+     - 0.000657 s
    * - 1 000
-     - 0.000157 s
-     - 0.000763 s
-     - 0.001495 s
+     - 0.000171 s
+     - 0.001099 s
+     - 0.001327 s
    * - 2 500
-     - 0.000530 s
-     - 0.002026 s
-     - 0.003647 s
+     - 0.000459 s
+     - 0.002058 s
+     - 0.003478 s
    * - 5 000
-     - 0.000967 s
-     - 0.004175 s
-     - 0.008012 s
+     - 0.000954 s
+     - 0.004368 s
+     - 0.007967 s
    * - 10 000
-     - 0.001972 s
-     - 0.010162 s
-     - 0.017433 s
+     - 0.002488 s
+     - 0.011066 s
+     - 0.018558 s
 
 Measured with ``ParseFlags.MINIMAL`` (``pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)``).
 Skips escape processing, EOL normalization, and attribute whitespace conversion
@@ -57,33 +57,26 @@ Speedup vs ElementTree
 
 .. list-table:: Parsing Speedup (how many times faster than ElementTree)
    :header-rows: 1
-   :widths: 20 20 20
+   :widths: 20 20
 
    * - Size
      - pygixml
-     - lxml
    * - 100
-     - **12.1×**
-     - 1.2×
+     - **10.5×**
    * - 500
-     - **2.8×**
-     - 1.2×
+     - **6.7×**
    * - 1 000
-     - **9.8×**
-     - 2.0×
+     - **7.8×**
    * - 2 500
-     - **7.4×**
-     - 1.8×
+     - **7.6×**
    * - 5 000
-     - **8.6×**
-     - 1.9×
+     - **8.4×**
    * - 10 000
-     - **5.6×**
-     - 1.7×
+     - **7.5×**
 
-pygixml consistently outperforms lxml by ~2× and ElementTree by **3–12×**
-depending on document size.  The advantage is most pronounced at mid-range
-documents (1 000–5 000 elements).
+pygixml consistently outperforms lxml by ~2× and ElementTree by **7–10×**
+depending on document size.  Each row shows the faster of
+``ParseFlags.DEFAULT`` and ``ParseFlags.MINIMAL``.
 
 Traversal Performance
 ~~~~~~~~~~~~~~~~~~~~~

@@ -26,9 +26,9 @@ brings that speed directly to Python:
 +-------------------------+------------+------------------------+
 | Library                 | Avg Time   | Speedup vs ElementTree |
 +=========================+============+========================+
-| **pygixml**             | 0.0010 s   | **8.3× faster**        |
+| **pygixml**             | 0.0010 s   | **8.4× faster**        |
 +-------------------------+------------+------------------------+
-| **lxml**                | 0.0042 s   | 1.9× faster            |
+| **lxml**                | 0.0044 s   | 1.8× faster            |
 +-------------------------+------------+------------------------+
 | **ElementTree**         | 0.0080 s   | 1.0× (baseline)        |
 +-------------------------+------------+------------------------+
@@ -39,7 +39,7 @@ brings that speed directly to Python:
 Features
 --------
 
-* **Blazing-fast parsing** — up to 8.6× faster than ElementTree
+* **Blazing-fast parsing** — up to 10× faster than ElementTree
 * **Full XPath 1.0** — complete query engine with all standard functions
 * **Memory efficient** — zero-copy C++ memory management via pugixml
 * **Pythonic API** — intuitive methods and properties, not a direct C++ mirror

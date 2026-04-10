@@ -130,9 +130,10 @@ endif()
 # Define a custom target for running benchmarks
 add_custom_target(run_benchmarks
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running benchmarks..."
-    COMMAND ${Python3_EXECUTABLE} -m benchmark_parsing
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_INSTALL_DIR}
+        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/benchmark_parsing.py
     COMMENT "Running benchmark suite..."
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+    WORKING_DIRECTORY ${PYTHON_INSTALL_DIR}
     USES_TERMINAL
     DEPENDS build_python
 )
@@ -140,9 +141,10 @@ add_custom_target(run_benchmarks
 # Define a custom target for generating benchmark charts
 add_custom_target(gen_benchmark_charts
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running benchmarks and generating charts..."
-    COMMAND ${Python3_EXECUTABLE} -m clean_visualization
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_INSTALL_DIR}
+        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/clean_visualization.py
     COMMENT "Generating benchmark charts..."
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+    WORKING_DIRECTORY ${PYTHON_INSTALL_DIR}
     USES_TERMINAL
     DEPENDS build_python
 )
@@ -151,9 +153,10 @@ add_custom_target(gen_benchmark_charts
 # (parsing + memory + package size across multiple XML sizes)
 add_custom_target(run_full_benchmarks
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running full benchmark suite..."
-    COMMAND ${Python3_EXECUTABLE} -m full_benchmark
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${PYTHON_INSTALL_DIR}
+        ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/full_benchmark.py
     COMMENT "Running full benchmarks..."
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
+    WORKING_DIRECTORY ${PYTHON_INSTALL_DIR}
     USES_TERMINAL
     DEPENDS build_python
 )

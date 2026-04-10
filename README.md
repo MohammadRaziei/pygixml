@@ -23,12 +23,12 @@ clean Pythonic API for reading, writing, and transforming XML.
 **Speed, memory, and size.**  pygixml brings pugixml's battle-tested C++
 parser directly to Python — with numbers that speak for themselves.
 
-### Parsing Performance (5 000 elements)
+### Parsing Performance (5 000 elements, 50 iterations)
 
 | Library         | Avg Time | Speedup vs ElementTree |
 |-----------------|----------|------------------------|
-| **pygixml**     | 0.0009 s | **8.6× faster**        |
-| **lxml**        | 0.0042 s | 1.9× faster            |
+| **pygixml**     | 0.0010 s | **8.4× faster**        |
+| **lxml**        | 0.0044 s | 1.8× faster            |
 | **ElementTree** | 0.0080 s | 1.0× (baseline)        |
 
 ### Memory Usage (5 000 elements, peak)
@@ -52,7 +52,7 @@ the full comparison across 6 XML sizes.*
 
 ### Features
 
-* **Blazing-fast parsing** — up to 12× faster than ElementTree
+* **Blazing-fast parsing** — up to 10× faster than ElementTree
 * **Low memory** — 7× less than ElementTree, on par with lxml
 * **Tiny footprint** — 0.43 MB installed (12.7× smaller than lxml)
 * **Full XPath 1.0** — complete query engine with all standard functions

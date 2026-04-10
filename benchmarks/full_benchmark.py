@@ -286,8 +286,8 @@ def print_table(results):
         et_avg = results[size]['elementtree']['parse_avg_s']
         for lib in ['pygixml', 'pygixml_min', 'lxml', 'elementtree']:
             d = results[size][lib]
-            speedup = et_avg / d['parse_avg_s'] if d['parse_avg_s'] > 0 else 0
-            print(f"{size:>8} | {lib:12} | {d['parse_avg_s']:>10.6f} | {d['parse_min_s']:>10.6f} | {speedup:>13.1f}x")
+            speedup_et = et_avg / d['parse_avg_s'] if d['parse_avg_s'] > 0 else 0
+            print(f"{size:>8} | {lib:12} | {d['parse_avg_s']:>10.6f} | {d['parse_min_s']:>10.6f} | {speedup_et:>13.1f}x")
         print("-" * 85)
 
     print("\n" + "=" * 85)
