@@ -33,8 +33,8 @@ brings that speed directly to Python:
 | **ElementTree**         | 0.0076 s       | 1.0× (baseline)        |
 +-------------------------+----------------+------------------------+
 
-*(Benchmark: parsing a document with 5 000 elements.  See
-:doc:`performance` for the full comparison.)*
+(Benchmark: parsing a document with 5 000 elements.  See
+:doc:`performance` for the full comparison.)
 
 Features
 --------

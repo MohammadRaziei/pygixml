@@ -1001,6 +1001,13 @@ cdef class XMLNode:
     def to_string(self, indent="  "):
         """Serialize this element (and its subtree) to an XML string.
 
+        .. note::
+           This is a **pygixml-specific feature**.  pugixml can serialize
+           to a file via ``save_file()``, but it does not provide a
+           method that returns the serialized XML as a Python string.
+           pygixml implements this using an internal ``std::ostringstream``
+           buffer.
+
         Args:
             indent (str | int): Indentation string or number of spaces.
                 Defaults to two spaces.
@@ -1036,6 +1043,11 @@ cdef class XMLNode:
     def find_mem_id(self, size_t mem_id):
         """Look up a descendant node by its memory identifier
         (see :attr:`mem_id`).
+
+        .. note::
+           This is a **pygixml-specific feature**.  pugixml has no
+           equivalent — pygixml walks the descendant tree in DFS order
+           comparing node addresses until a match is found.
 
         Returns:
             XMLNode | None
@@ -1179,6 +1191,13 @@ cdef class XMLNode:
 
     def text(self, bint recursive=True, str join="\n"):
         """Return the combined text content of this node.
+
+        .. note::
+           This is a **pygixml-specific feature**.  pugixml provides
+           ``child_value()`` for a single child's text, but ``text()``
+           recursively collects text from all descendants (optionally
+           non-recursive) and joins the fragments with a configurable
+           separator.
 
         Args:
             recursive (bool): When ``True`` (default), gathers text from
