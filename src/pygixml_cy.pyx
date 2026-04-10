@@ -867,49 +867,6 @@ cdef class XMLNode:
         cdef xml_node node = find_node_by_address(self._node, mem_id)
         return XMLNode.create_from_cpp(node)
 
-    def text(self, bint recursive=True, str join="\n"):
-        """Get the text content of this node."""
-        if self._node.type() == node_null:
-            return ""
-
-        cdef list out = []  
-        cdef xml_node current
-        cdef xml_node_type ct
-        cdef vector[xml_node] stack
-        cdef xml_node child
-        cdef string val
-
-        if not recursive:
-            current = self._node.first_child()
-            while current.type() != node_null:
-                ct = current.type()
-                if ct == node_pcdata or ct == node_cdata:
-                    val = current.value()
-                    if not val.empty():
-                        out.append(val.decode('utf-8'))
-                current = current.next_sibling()
-        else:
-            current = self._node.first_child()
-            while current.type() != node_null:
-                stack.push_back(current)
-                current = current.next_sibling()
-
-            while stack.size() > 0:
-                current = stack.back()
-                stack.pop_back()
-
-                ct = current.type()
-                if ct == node_pcdata or ct == node_cdata:
-                    val = current.value()
-                    if not val.empty():
-                        out.append(val.decode('utf-8'))
-                elif ct in (node_element, node_document, node_declaration, node_doctype):
-                    child = current.last_child()
-                    while child.type() != node_null:
-                        stack.push_back(child)
-                        child = child.previous_sibling()
-
-        return join.join(out)
 
     @property
     def mem_id(self):
@@ -925,23 +882,89 @@ cdef class XMLNode:
     def __bool__(self):
         return self._node.type() != node_null
 
-    def __iter__(self):
-        """Iterate over all descendant nodes in DFS preorder."""
-        if self._node.type() == node_null:
-            return
-        cdef vector[xml_node] stack
-        stack.push_back(self._node)
-        cdef xml_node current
+    def children(self, bint recursive=False):
+        """Iterate over child element nodes.
+
+        Yields only **element** nodes, skipping text, comment, and
+        processing-instruction nodes.
+
+        Args:
+            recursive (bool): Yield only direct children (False) or all
+                descendants (True).  Defaults to False.
+
+        Yields:
+            XMLNode: Each matching element node.
+
+        Example:
+            >>> doc = pygixml.parse_string(
+            ...     '<root><a><a1/></a><b/></root>')
+            >>> [c.name for c in doc.root.children()]
+            ['a', 'b']
+            >>> [c.name for c in doc.root.children(recursive=True)]
+            ['a', 'a1', 'b']
+        """
+        cdef xml_node current = self._node.first_child()
         cdef xml_node child
+        cdef vector[xml_node] stack
+
+        if not recursive:
+            while current.type() != node_null:
+                if current.type() == node_element:
+                    yield XMLNode.create_from_cpp(current)
+                current = current.next_sibling()
+            return
+
+        # Recursive DFS
+        current = self._node.last_child()
+        while current.type() != node_null:
+            stack.push_back(current)
+            current = current.previous_sibling()
+
         while stack.size() > 0:
             current = stack.back()
             stack.pop_back()
-            yield XMLNode.create_from_cpp(current)
-            # Traverse children in reverse order (right to left)
+            if current.type() == node_element:
+                yield XMLNode.create_from_cpp(current)
             child = current.last_child()
             while child.type() != node_null:
                 stack.push_back(child)
                 child = child.previous_sibling()
+
+    def __iter__(self):
+        """Iterate over all descendant element nodes in DFS preorder."""
+        yield from self.children(True)
+
+    def text(self, bint recursive=True, str join="\n"):
+        """Get the text content of this node."""
+        if self._node.type() == node_null:
+            return ""
+
+        cdef list out = []
+        cdef xml_node current
+        cdef string val
+        cdef vector[xml_node] stack
+
+        # Initialize stack with direct children (reverse order for left-to-right)
+        current = self._node.last_child()
+        while current.type() != node_null:
+            stack.push_back(current)
+            current = current.previous_sibling()
+
+        while stack.size() > 0:
+            current = stack.back()
+            stack.pop_back()
+            if current.type() == node_pcdata or current.type() == node_cdata:
+                val = current.value()
+                if not val.empty():
+                    out.append(val.decode('utf-8'))
+            # Expand children only in recursive mode
+            if recursive:
+                current = current.last_child()
+                while current.type() != node_null:
+                    stack.push_back(current)
+                    current = current.previous_sibling()
+
+        return join.join(out)
     
 
 cdef class XMLAttribute:
