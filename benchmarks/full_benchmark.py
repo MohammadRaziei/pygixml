@@ -169,7 +169,7 @@ def get_package_size_fallback(pkg_name):
 # ---------------------------------------------------------------------------
 
 XML_SIZES = [100, 500, 1_000, 2_500, 5_000, 10_000]
-ITERATIONS = 5
+ITERATIONS = 50
 
 
 def run_parsing_benchmarks():

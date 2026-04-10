@@ -14,7 +14,7 @@ All numbers below come from the included benchmark suite
 Parsing Performance
 ~~~~~~~~~~~~~~~~~~~
 
-.. list-table:: XML Parsing Performance (warmed-up, 5 iterations)
+.. list-table:: XML Parsing Performance (warmed-up, 50 iterations)
    :header-rows: 1
    :widths: 20 20 20 20
 
@@ -23,29 +23,29 @@ Parsing Performance
      - lxml
      - ElementTree
    * - 100
-     - 0.000008 s
-     - 0.000094 s
-     - 0.000112 s
+     - 0.000009 s
+     - 0.000085 s
+     - 0.000103 s
    * - 500
-     - 0.000097 s
-     - 0.000394 s
-     - 0.000558 s
+     - 0.000337 s
+     - 0.000552 s
+     - 0.000647 s
    * - 1 000
-     - 0.000147 s
-     - 0.001127 s
-     - 0.001146 s
+     - 0.000157 s
+     - 0.000763 s
+     - 0.001495 s
    * - 2 500
-     - 0.000433 s
-     - 0.001937 s
-     - 0.003441 s
+     - 0.000530 s
+     - 0.002026 s
+     - 0.003647 s
    * - 5 000
-     - 0.000883 s
-     - 0.004108 s
-     - 0.007614 s
+     - 0.000967 s
+     - 0.004175 s
+     - 0.008012 s
    * - 10 000
-     - 0.001649 s
-     - 0.009095 s
-     - 0.016108 s
+     - 0.001972 s
+     - 0.010162 s
+     - 0.017433 s
 
 Measured with ``ParseFlags.MINIMAL`` (``pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)``).
 Skips escape processing, EOL normalization, and attribute whitespace conversion
@@ -63,26 +63,27 @@ Speedup vs ElementTree
      - pygixml
      - lxml
    * - 100
-     - **14.4×**
+     - **12.1×**
      - 1.2×
    * - 500
-     - **5.8×**
-     - 1.4×
+     - **2.8×**
+     - 1.2×
    * - 1 000
-     - **7.8×**
-     - 1.0×
+     - **9.8×**
+     - 2.0×
    * - 2 500
-     - **8.0×**
+     - **7.4×**
      - 1.8×
    * - 5 000
      - **8.6×**
      - 1.9×
    * - 10 000
-     - **9.8×**
-     - 1.8×
+     - **5.6×**
+     - 1.7×
 
-pygixml consistently outperforms lxml by ~2× and ElementTree by **6–10×**
-depending on document size.  The advantage grows with larger documents.
+pygixml consistently outperforms lxml by ~2× and ElementTree by **3–12×**
+depending on document size.  The advantage is most pronounced at mid-range
+documents (1 000–5 000 elements).
 
 Traversal Performance
 ~~~~~~~~~~~~~~~~~~~~~

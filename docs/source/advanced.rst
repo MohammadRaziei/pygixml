@@ -104,6 +104,76 @@ Use it when:
 On real-world XML with lots of escaped content, MINIMAL can be up to **~16%
 faster** than DEFAULT.
 
+Extracting Text: ``child_value()`` vs ``text()``
+------------------------------------------------
+
+pygixml offers two ways to read text content.  Choosing the right one
+depends on your XML structure.
+
+``child_value()`` — single child, direct text only
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Returns the text content of the **first child node** of the element.  If
+you pass a name, it finds the first child with that tag and returns its
+text.  It does **not** recurse into deeper levels.
+
+.. code-block:: python
+
+   doc = pygixml.parse_string('<book><title>Python 101</title></book>')
+   root = doc.root
+
+   root.child_value()                  # "Python 101"
+   root.child_value("title")           # "Python 101"
+
+Best for: simple key-value XML where each element holds a single text node
+directly inside it.
+
+``text()`` — full recursive text extraction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Walks the entire subtree, collecting **all** text and CDATA nodes, and
+joins them with a configurable separator (default: newline).
+
+.. code-block:: python
+
+   doc = pygixml.parse_string("""
+   <article>
+       <p>Hello <b>world</b>! This is <i>rich</i> text.</p>
+   </article>
+   """)
+   p = doc.root.child("p")
+
+   p.text()                     # "Hello\nworld!\nThis is\nrich\ntext."
+   p.text(recursive=False)      # "Hello "  (direct text only)
+   p.text(join=" ")             # "Hello world! This is rich text."
+
+Best for: mixed content, documents, or any element with nested children
+where you want all the text at once.
+
+Quick comparison:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Feature
+     - ``child_value()``
+     - ``text()``
+   * - Scope
+     - First child node only
+     - Entire subtree (recursive)
+   * - Nested elements
+     - Ignored
+     - Collected
+   * - Join separator
+     - N/A
+     - Configurable (``join`` arg)
+   * - Speed
+     - **Fastest** — single lookup
+     - Slightly slower — walks the tree
+   * - Typical use
+     - Simple config / data XML
+     - Documents, articles, mixed content
+
 XPathQuery for Repeated Queries
 -------------------------------
 
