@@ -75,3 +75,18 @@ class TestXMLNodeChildren:
         assert len(students) == 2
         assert students[0].attribute("firstName").value == "Alice"
         assert students[1].attribute("firstName").value == "Bob"
+
+    def test_from_mem_id_unsafe_matches_find_mem_id(self):
+        """from_mem_id_unsafe should produce the same node as find_mem_id"""
+        doc = pygixml.parse_string("<root><item>Hello</item></root>")
+        root = doc.root
+        item = root.child("item")
+        addr = item.mem_id
+
+        unsafe_node = pygixml.XMLNode.from_mem_id_unsafe(addr)
+        safe_node = root.find_mem_id(addr)
+
+        # Both should wrap the same underlying xml_node
+        assert unsafe_node.name == safe_node.name == "item"
+        assert unsafe_node.text() == safe_node.text() == "Hello"
+        assert unsafe_node == safe_node

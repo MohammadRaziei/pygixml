@@ -133,6 +133,11 @@ cdef extern from *:
     #include <vector>
     #include "pugixml.hpp"
 
+    // Reconstruct xml_node from raw internal pointer
+    static inline pugi::xml_node node_from_raw_ptr(size_t addr) {
+        return pugi::xml_node(reinterpret_cast<pugi::xml_node_struct*>(addr));
+    }
+
     std::string pugi_serialize_node(
         const pugi::xml_node& node,
         const char* indent
@@ -243,6 +248,7 @@ cdef extern from *:
     size_t get_pugi_node_address(xml_node& node)
     xml_node find_node_by_address(xml_node& root, size_t target_addr)
     string get_xpath_for_node(const xml_node& node)
+    xml_node node_from_raw_ptr(size_t addr)
 
 
 # Parse flags as an IntFlag enum (supports bitwise OR)
@@ -320,6 +326,10 @@ class PygiXMLNullNodeError(PygiXMLError):
     """
     pass
 
+cdef inline XMLNode _node_from_raw_ptr(size_t addr):
+    cdef XMLNode wrapper = XMLNode()
+    wrapper._node = node_from_raw_ptr(addr)
+    return wrapper
 
 
 cdef class XMLDocument:
@@ -1025,6 +1035,35 @@ cdef class XMLNode:
         """
         cdef xml_node node = find_node_by_address(self._node, mem_id)
         return XMLNode.create_from_cpp(node)
+
+    @staticmethod
+    def from_mem_id_unsafe(size_t mem_id):
+        """Reconstruct an ``XMLNode`` from a raw memory address.
+
+        ⚠️ **Warning**: This function treats *mem_id* as a direct pointer
+        to an internal ``xml_node`` object.  If the address is invalid
+        (the document has been freed, the node was deleted, or the ID
+        came from a different process), calling methods on the returned
+        node **may cause a segmentation fault**.
+
+        Only use this when you are certain the address still points to
+        a live node within a valid ``XMLDocument``.
+
+        Args:
+            mem_id (int): A raw memory address previously obtained from
+                ``node.mem_id``.
+
+        Returns:
+            XMLNode: A wrapper around the raw pointer.
+
+        Example::
+
+            >>> addr = root.child('item').mem_id
+            >>> node = XMLNode.from_mem_id_unsafe(addr)
+            >>> node.name
+            'item'
+        """
+        return _node_from_raw_ptr(mem_id)
 
 
     @property
