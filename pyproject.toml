@@ -4,8 +4,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.9.0"
-description = "Python wrapper for pugixml using Cython - Please star the project on GitHub to use!"
+version = "0.9.1"
+description = "High-performance Cython XML parser for Python — pugixml with a Pythonic API"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
 ]
@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = []
 requires-python = ">=3.9"
