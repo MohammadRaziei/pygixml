@@ -86,6 +86,9 @@ Quick Example
 Core Classes
 ------------
 
+See the :doc:`api` for the complete reference with every class, method, and
+property documented.
+
 .. list-table::
    :widths: 25 75
    :header-rows: 1
