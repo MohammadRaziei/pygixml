@@ -198,3 +198,40 @@ need rather than walking the entire tree in Python:
 Every ``.child()``, ``.attribute()``, and ``.text()`` call crosses the
 Python↔Cython boundary.  Minimizing these calls in tight loops has the
 biggest impact on traversal speed.
+
+Node Identity and Fast Lookup
+-----------------------------
+
+Each ``XMLNode`` exposes a :attr:`~pygixml.XMLNode.mem_id` — a unique
+numeric identifier derived from the node's position in memory.  You can use
+it to retrieve a node later without keeping a Python reference around.
+
+There are two ways to look up a node by its identifier:
+
+:meth:`~pygixml.XMLNode.find_mem_id` — safe, **O(n)**
+   Walks the tree from the current node, comparing identifiers.  Returns
+   ``None`` if the node is not found.
+
+   .. code-block:: python
+
+      node_id = item.mem_id
+      found = root.find_mem_id(node_id)   # safe, but O(n)
+
+:meth:`~pygixml.XMLNode.from_mem_id_unsafe` — instant, **O(1)**
+   Reconstructs an ``XMLNode`` directly from the identifier.  No tree
+   traversal — the lookup is instantaneous.
+
+   .. code-block:: python
+
+      node_id = item.mem_id
+      node = pygixml.XMLNode.from_mem_id_unsafe(node_id)  # O(1)
+
+   ⚠️ **Warning**: If the identifier is stale (the document was freed or the
+   node was deleted), calling methods on the returned object **may cause a
+   segmentation fault**.  Use this only when you are certain the identifier
+   still belongs to a live node.
+
+**Which to choose?**  For most code, ``find_mem_id`` is the right choice —
+it's safe and fast enough for typical use.  ``from_mem_id_unsafe`` is
+reserved for performance-critical hot paths where you've profiled and
+confirmed that the **O(n)** tree walk is a bottleneck.
