@@ -249,15 +249,25 @@ cdef extern from *:
 from enum import IntFlag as _IntFlag
 
 class ParseFlags(_IntFlag):
-    """Parse options for :func:`parse_string` and :func:`parse_file`.
+    """Bitmask of parse options for :func:`parse_string` and :func:`parse_file`.
 
-    Members can be combined with the bitwise OR operator (``|``).
+    Members are combined with the bitwise OR operator (``|``).  When no
+    flags are supplied the parser uses ``ParseFlags.DEFAULT`` (all standard
+    processing enabled).
 
-    Example:
+    Use ``ParseFlags.MINIMAL`` when you only care about element structure
+    and want the fastest possible parse — it skips escape processing,
+    EOL normalization, and all whitespace handling.
+
+    Example::
+
         >>> doc = pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)
-        >>> # Or combine specific flags:
+        >>> # Combine specific flags:
         >>> flags = pygixml.ParseFlags.COMMENTS | pygixml.ParseFlags.CDATA
         >>> doc = pygixml.parse_string(xml, flags)
+
+    See the :ref:`parse-flags` section in the documentation for a complete
+    description of each flag.
     """
     MINIMAL             = parse_minimal
     PI                  = parse_pi
@@ -295,56 +305,90 @@ __version__ = PYGIXML_VERSION.decode("utf-8")
 
 
 class PygiXMLError(ValueError):
-    """General exception raised by pygixml."""
+    """Raised when a pygixml operation fails.
+
+    Typical causes include malformed XML passed to :func:`parse_string` or
+    :func:`parse_file`, or an attempt to set a name/value on a null or
+    otherwise invalid node.
+    """
     pass
 
 
 class PygiXMLNullNodeError(PygiXMLError):
+    """Raised when an operation that requires a valid node is called on a
+    null node (e.g. setting attributes on an element that was never found).
+    """
     pass
 
 
 
-# Python wrapper classes
 cdef class XMLDocument:
-    """XML document wrapper providing document-level operations.
-    
-    This class represents an XML document and provides methods for loading,
-    saving, and manipulating the document structure.
-    
-    Example:
-        >>> import pygixml
+    """An XML document, providing document-level operations.
+
+    Use this class to load, create, save, and manipulate XML documents,
+    or to access the root element and top-level children.
+
+    The most common entry point is :func:`parse_string` or
+    :func:`parse_file`, which return an ``XMLDocument``::
+
         >>> doc = pygixml.parse_string('<root><item>value</item></root>')
-        >>> root = doc.root
-        >>> print(root.name)
-        'root'
+        >>> doc.root.child('item').text()
+        'value'
+
+    You can also build a document from scratch::
+
+        >>> doc = pygixml.XMLDocument()
+        >>> root = doc.append_child('catalog')
+        >>> item = root.append_child('item')
+        >>> item.set_value('content')
+
+    When processing many files in a loop, reuse a single document with
+    :meth:`reset` to avoid repeated allocations.
     """
     cdef xml_document* _doc
-    
+
     def __cinit__(self):
+        """Create an empty ``XMLDocument``.
+
+        The document starts with no content.  Use :meth:`load_string`,
+        :meth:`load_file`, or :meth:`append_child` to populate it.
+        """
         self._doc = new xml_document()
-    
+
     def __dealloc__(self):
         if self._doc != NULL:
             del self._doc
     
     def load_string(self, str content, options=0xFFFFFFFF):
-        """Load XML from string.
+        """Parse XML from a string and replace the current document content.
+
+        Parses *content* and replaces whatever the document previously held.
+        Returns ``True`` on success, ``False`` if the string is not
+        well-formed.
 
         Args:
-            content (str): XML content as string
-            options (ParseFlags, optional): Parse flags
-                (default: ``ParseFlags.DEFAULT``).
-                Combine flags with bitwise OR.  Use ``ParseFlags.MINIMAL``
-                for fastest parsing when you don't need comments, CDATA,
-                or escape processing.
+            content (str): The XML source text.
+            options (ParseFlags): Which parse flags to use.  Defaults to
+                ``ParseFlags.DEFAULT`` (full compliance).  Use
+                ``ParseFlags.MINIMAL`` for faster parsing when you don't
+                need escape processing, EOL normalization, or whitespace
+                handling.
 
         Returns:
-            bool: True if parsing succeeded, False otherwise
+            bool: ``True`` if parsing succeeded, ``False`` otherwise.
 
-        Example:
+        Example::
+
             >>> doc = pygixml.XMLDocument()
-            >>> success = doc.load_string('<root>content</root>')
-            >>> success = doc.load_string(xml, pygixml.ParseFlags.MINIMAL)
+            >>> doc.load_string('<root><item>value</item></root>')
+            True
+            >>> doc.root.child('item').text()
+            'value'
+
+        Raises:
+            PygiXMLError: When the input is not well-formed XML (raised
+                by :func:`parse_string`; this method returns ``False``
+                instead).
         """
         cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes content_bytes = content.encode('utf-8')
@@ -353,23 +397,27 @@ cdef class XMLDocument:
         return <bool>self._doc.load_string(content_bytes, opts)
 
     def load_file(self, str path, options=0xFFFFFFFF):
-        """Load XML from file.
+        """Parse XML from a file and replace the current document content.
+
+        Reads and parses the file at *path*.  Returns ``True`` on success,
+        ``False`` if the file cannot be opened or does not contain
+        well-formed XML.
 
         Args:
-            path (str): Path to XML file
-            options (ParseFlags, optional): Parse flags
-                (default: ``ParseFlags.DEFAULT``).
-                Combine flags with bitwise OR.  Use ``ParseFlags.MINIMAL``
-                for fastest parsing when you don't need comments, CDATA,
-                or escape processing.
+            path (str): Path to the XML file.
+            options (ParseFlags): Which parse flags to use.  Defaults to
+                ``ParseFlags.DEFAULT``.
 
         Returns:
-            bool: True if loading succeeded, False otherwise
+            bool: ``True`` if loading succeeded, ``False`` otherwise.
 
-        Example:
+        Example::
+
             >>> doc = pygixml.XMLDocument()
-            >>> success = doc.load_file('data.xml')
-            >>> success = doc.load_file('data.xml', pygixml.ParseFlags.MINIMAL)
+            >>> doc.load_file('data.xml')
+            True
+            >>> doc.root.name
+            'root'
         """
         cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes path_bytes = path.encode('utf-8')
@@ -378,78 +426,90 @@ cdef class XMLDocument:
         return <bool>self._doc.load_file(path_bytes, opts)
     
     def save_file(self, str path, str indent="  "):
-        """Save XML to file.
-        
+        """Serialize the document and write it to a file.
+
         Args:
-            path (str): Path where to save the file
-            indent (str): Indentation string (default: two spaces)
-            
-        Example:
-            >>> doc = pygixml.parse_string('<root>content</root>')
-            >>> doc.save_file('output.xml', indent='    ')
+            path (str): Output file path.  Existing files will be
+                overwritten.
+            indent (str): Indentation string used for pretty-printing.
+                Defaults to two spaces.  Pass an empty string for compact
+                output with no indentation.
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><item>value</item></root>')
+            >>> doc.save_file('output.xml')              # 2-space indent
+            >>> doc.save_file('compact.xml', indent='')  # no indent
         """
         cdef bytes path_bytes = path.encode('utf-8')
         cdef bytes indent_bytes = indent.encode('utf-8')
         self._doc.save_file(path_bytes, indent_bytes)
-    
-    
+
     def reset(self):
-        """Reset the document to empty state.
-        
-        Clears all content and resets the document to its initial state.
-        
-        Example:
+        """Clear all content, returning the document to its initial empty state.
+
+        Reuses the same underlying C++ document object, avoiding
+        reallocation overhead when processing many files in a loop.
+
+        Example::
+
             >>> doc = pygixml.parse_string('<root>content</root>')
-            >>> doc.reset()  # Document is now empty
+            >>> doc.reset()
+            >>> doc.root  # None — document is empty
         """
         self._doc.reset()
     
     def append_child(self, str name):
-        """Append a child node to the document.
-        
+        """Append a new child element and return it.
+
         Args:
-            name (str): Name of the new element
-            
+            name (str): Tag name for the new element.  Pass an empty
+                string to create a text node instead.
+
         Returns:
-            XMLNode: The newly created node
-            
-        Example:
+            XMLNode: The newly created element (or text node).
+
+        Example::
+
             >>> doc = pygixml.XMLDocument()
-            >>> root = doc.append_child('root')
+            >>> root = doc.append_child('catalog')
             >>> item = root.append_child('item')
+            >>> item.set_value('content')
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._doc.append_child(name_bytes)
         return XMLNode.create_from_cpp(node)
     
     def first_child(self):
-        """Get first child node of the document.
-        
+        """Return the first child element, or ``None`` if the document is
+        empty.
+
         Returns:
-            XMLNode: First child node or None if no children
-            
-        Example:
+            XMLNode | None
+
+        Example::
+
             >>> doc = pygixml.parse_string('<root><child/></root>')
-            >>> first = doc.first_child()
-            >>> print(first.name)
+            >>> doc.first_child().name
             'root'
         """
         cdef xml_node node = self._doc.first_child()
         return XMLNode.create_from_cpp(node)
     
     def child(self, str name):
-        """Get child node by name.
-        
+        """Return the first child element whose tag matches *name*, or
+        ``None`` if no match is found.
+
         Args:
-            name (str): Name of the child element to find
-            
+            name (str): Element tag to look for.
+
         Returns:
-            XMLNode: Child node with specified name or None if not found
-            
-        Example:
+            XMLNode | None
+
+        Example::
+
             >>> doc = pygixml.parse_string('<root><item>value</item></root>')
-            >>> item = doc.child('item')
-            >>> print(item.text())
+            >>> doc.child('item').text()
             'value'
         """
         cdef bytes name_bytes = name.encode('utf-8')
@@ -457,23 +517,23 @@ cdef class XMLDocument:
         return XMLNode.create_from_cpp(node)
 
     def to_string(self, indent="  "):
-        """Serialize the document to XML string with custom indentation.
-        
+        """Serialize the document to an XML string.
+
         Args:
-            indent (str or int): Indentation string or number of spaces 
-                                (default: two spaces)
-            
+            indent (str | int): Indentation — either a string
+                (e.g. ``'    '``) or a number of spaces (e.g. ``4``).
+                Defaults to two spaces.
+
         Returns:
-            str: XML content as string
-            
-        Example:
+            str: The serialized XML.
+
+        Example::
+
             >>> doc = pygixml.parse_string('<root><item>value</item></root>')
-            >>> # Default indentation (2 spaces)
-            >>> xml_string = doc.to_string()
-            >>> # Custom string indentation
-            >>> xml_string = doc.to_string('    ')
-            >>> # Number of spaces
-            >>> xml_string = doc.to_string(4)
+            >>> doc.to_string()
+            '<root>\\n  <item>value</item>\\n</root>'
+            >>> doc.to_string(4)
+            '<root>\\n    <item>value</item>\\n</root>'
         """
         cdef str indent_str
         if isinstance(indent, int):
@@ -486,57 +546,69 @@ cdef class XMLDocument:
         return s.decode('utf-8')
 
     def __iter__(self):
-        """Iterate over all nodes in the document.
-        
+        """Iterate over every element node in the document in depth-first
+        order, starting from the root element.
+
         Yields:
-            XMLNode: Each node in depth-first order
-            
-        Example:
+            XMLNode: Each element node encountered.
+
+        Example::
+
             >>> doc = pygixml.parse_string('<root><a><b/></a></root>')
-            >>> for node in doc:
-            ...     print(node.name)
-            root
-            a
-            b
+            >>> [n.name for n in doc]
+            ['root', 'a', 'b']
         """
         root = self.root
         return iter(root) if root else iter(())
 
     @property
     def root(self):
-        """Get the root element of the document.
-        
+        """Return the root element of the document.
+
+        Equivalent to calling :meth:`first_child`.  Returns ``None`` if
+        the document is empty.
+
         Returns:
-            XMLNode: Root element node or None if no root element
-            
-        Example:
+            XMLNode | None: The root element, or ``None``.
+
+        Example::
+
             >>> doc = pygixml.parse_string('<root><item>value</item></root>')
-            >>> root = doc.root
-            >>> print(root.name)
+            >>> doc.root.name
             'root'
         """
         return self.first_child()
 
 
 cdef class XMLNode:
-    """XML node wrapper providing node-level operations.
-    
-    This class represents an XML node and provides methods for accessing
-    and manipulating node properties, children, attributes, and text content.
-    
-    Example:
-        >>> import pygixml
+    """A single node in the XML tree.
+
+    Represents an element, text, comment, processing instruction, or other
+    node type.  Provides methods for navigating to related nodes
+    (parent, children, siblings), reading and modifying content, and
+    executing XPath queries scoped to this node.
+
+    The most commonly used members are:
+
+    - :attr:`name` / :attr:`value` — tag name and text value
+    - :meth:`child` — first child with a given tag
+    - :meth:`children` — iterate direct child elements
+    - :meth:`text` — combined text content
+    - :meth:`select_nodes` / :meth:`select_node` — XPath selection
+    - :attr:`xml` — serialized XML of this node and its subtree
+
+    Example::
+
         >>> doc = pygixml.parse_string('<root><item>value</item></root>')
         >>> root = doc.root
-        >>> item = root.child('item')
-        >>> print(item.text())
+        >>> root.child('item').text()
         'value'
     """
     cdef xml_node _node
 
     def __init__(self):
-        pass  
-    
+        pass
+
     @staticmethod
     cdef XMLNode create_from_cpp(xml_node node):
         cdef XMLNode wrapper = XMLNode()
@@ -545,16 +617,22 @@ cdef class XMLNode:
 
     @property
     def type(self):
-        """Get node type.
-        
+        """Return the node type as a human-readable string.
+
+        Possible values: ``'element'``, ``'pcdata'``, ``'cdata'``,
+        ``'comment'``, ``'pi'``, ``'declaration'``, ``'doctype'``,
+        ``'document'``, ``'null'``.
+
         Returns:
-            str: Node type as string ('null', 'document', 'element', 'pcdata', 'cdata', 
-                 'comment', 'pi', 'declaration', 'doctype')
-            
-        Example:
-            >>> node = doc.first_child()
-            >>> print(node.type)
+            str
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root>text</root>')
+            >>> doc.root.type
             'element'
+            >>> doc.root.first_child().type
+            'pcdata'
         """
         cdef xml_node_type node_type = self._node.type()
         
@@ -579,14 +657,18 @@ cdef class XMLNode:
     
     @property
     def name(self):
-        """Get node name.
-        
+        """Return the tag name of this node.
+
+        For element nodes this is the element's tag name.  For text,
+        comment, and other non-element nodes this is ``None``.
+
         Returns:
-            str: Node name or None if no name
-            
-        Example:
-            >>> node = doc.first_child()
-            >>> print(node.name)
+            str | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root/>')
+            >>> doc.root.name
             'root'
         """
         cdef string name = self._node.name()
@@ -595,48 +677,63 @@ cdef class XMLNode:
     
     @property
     def value(self):
-        """Get node value.
-        
+        """Return the raw text value of this node.
+
+        For element nodes the value is always ``None`` — element content
+        is stored in child *text nodes*, not on the element itself.
+        Use :meth:`text()` or :meth:`child_value` to read element text
+        content.
+
         Returns:
-            str: Node value or None if no value
-            
-        Example:
-            >>> text_node = node.first_child()
-            >>> print(text_node.value)
-            'text content'
+            str | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root>hello</root>')
+            >>> doc.root.value          # elements have no value
+            >>> doc.root.first_child().value
+            'hello'
         """
         cdef string value = self._node.value()
         return value.decode('utf-8') if not value.empty() else None
     
     def set_name(self, str name):
-        """Set node name.
-        
+        """Change the tag name of this element.
+
+        Returns ``False`` if the node is null.
+
         Args:
-            name (str): New name for the node
-            
+            name (str): New tag name.
+
         Returns:
-            bool: True if successful, False if node is null or invalid
-            
-        Example:
-            >>> success = node.set_name('new_name')
-            >>> print(success)
+            bool
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<old/>')
+            >>> doc.root.set_name('new')
             True
+            >>> doc.root.name
+            'new'
         """
         cdef bytes name_bytes = name.encode('utf-8')
         return self._node.set_name(name_bytes)
 
     def set_value(self, str value):
-        """Set node value.
-        
+        """Replace the text content of this node.
+
+        Returns ``False`` if the node is null.
+
         Args:
-            value (str): New value for the node
-            
+            value (str): New text content.
+
         Returns:
-            bool: True if successful, False if node is null or invalid
-            
-        Example:
-            >>> success = node.set_value('new value')
-            >>> print(success)
+            bool
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><item>old</item></root>')
+            >>> doc.root.child('item').first_child().set_value('new')
             True
         """
         cdef bytes value_bytes = value.encode('utf-8')
@@ -644,103 +741,100 @@ cdef class XMLNode:
 
     @name.setter
     def name(self, str name):
-        """Set node name.
-        
-        Args:
-            name (str): New name for the node
-            
-        Raises:
-            PygiXMLError: If node is null or invalid
-            
-        Example:
-            >>> node.name = 'new_name'
+        """Set the tag name, raising :class:`PygiXMLError` on failure.
+
+        Example::
+
+            >>> node.name = 'renamed'
         """
         if not self.set_name(name):
             raise PygiXMLError("Cannot set name: node is null or invalid")
 
-    
     @value.setter
     def value(self, str value):
-        """Set node value.
-        
-        Args:
-            value (str): New value for the node
-            
-        Raises:
-            PygiXMLError: If node is null or invalid
-            
-        Example:
-            >>> node.value = 'new value'
+        """Set the text value, raising :class:`PygiXMLError` on failure.
+
+        Example::
+
+            >>> text_node.value = 'updated'
         """
         if not self.set_value(value):
             raise PygiXMLError("Cannot set value: node is null or invalid")
-    
+
     def first_child(self):
-        """Get first child node.
-        
+        """Return the first child element, or ``None``.
+
         Returns:
-            XMLNode: First child node or None if no children
-            
-        Example:
-            >>> root = doc.first_child()
-            >>> first_child = root.first_child()
-            >>> print(first_child.name)
-            'child'
+            XMLNode | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><a/><b/></root>')
+            >>> doc.root.first_child().name
+            'a'
         """
         cdef xml_node node = self._node.first_child()
         return XMLNode.create_from_cpp(node)
-    
+
     def child(self, str name):
-        """Get child node by name.
-        
+        """Return the first child element whose tag matches *name*, or
+        ``None``.
+
         Args:
-            name (str): Name of the child element to find
-            
+            name (str): Element tag to look for.
+
         Returns:
-            XMLNode: Child node with specified name or None if not found
-            
-        Example:
-            >>> root = doc.first_child()
-            >>> item = root.child('item')
-            >>> print(item.text())
+            XMLNode | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><item>value</item></root>')
+            >>> doc.root.child('item').text()
             'value'
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.child(name_bytes)
         return XMLNode.create_from_cpp(node)
-    
+
     def append_child(self, str name):
-        """Append a child node.
-        
+        """Append a new child element and return it.
+
         Args:
-            name (str): Name of the new child element
-            
+            name (str): Tag name.  Use an empty string to create a text
+                node instead.
+
         Returns:
-            XMLNode: The newly created child node
-            
-        Example:
-            >>> root = doc.first_child()
-            >>> new_child = root.append_child('new_element')
+            XMLNode: The newly created child.
+
+        Example::
+
+            >>> root = doc.root
+            >>> root.append_child('title').set_value('My Title')
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.append_child(name_bytes)
         return XMLNode.create_from_cpp(node)
     
     def child_value(self, str name=None):
-        """Get child value.
-        
+        """Return the text content of a child element.
+
+        If *name* is given, finds the first child with that tag and
+        returns its text.  Without *name*, returns the direct text
+        content of this node (i.e. text immediately inside this element,
+        not inside a child).
+
         Args:
-            name (str, optional): Name of specific child element. 
-                                 If None, returns direct text content.
-            
+            name (str | None): Child tag to look up, or ``None`` for
+                direct text.
+
         Returns:
-            str: Text content or None if no content
-            
-        Example:
-            >>> # Get direct text content
-            >>> text = node.child_value()
-            >>> # Get text from specific child
-            >>> title = node.child_value('title')
+            str | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><title>Book</title></root>')
+            >>> doc.root.child_value('title')
+            'Book'
         """
         cdef string value
         cdef bytes name_bytes
@@ -755,16 +849,16 @@ cdef class XMLNode:
     
     @property
     def next_sibling(self):
-        """Get next sibling node"""
+        """The next sibling node, or ``None`` if this is the last child."""
         cdef xml_node node = self._node.next_sibling()
         if node.type() == node_null:
             return None
         return XMLNode.create_from_cpp(node)
 
-    
     @property
     def previous_sibling(self):
-        """Get previous sibling node"""
+        """The previous sibling node, or ``None`` if this is the first
+        child."""
         cdef xml_node node = self._node.previous_sibling()
         if node.type() == node_null:
             return None
@@ -772,15 +866,17 @@ cdef class XMLNode:
 
     @property
     def next_element_sibling(self):
-        """Get next sibling that is an element node."""
+        """The next sibling that is an element node, skipping text,
+        comment, and other non-element nodes.  ``None`` if none."""
         sibling = self.next_sibling
         while sibling and sibling.type != "element":
             sibling = sibling.next_sibling
         return sibling
-        
+
     @property
     def previous_element_sibling(self):
-        """Get previous sibling that is an element node."""
+        """The previous sibling that is an element node.  ``None`` if
+        none."""
         sibling = self.previous_sibling
         while sibling and sibling.type != "element":
             sibling = sibling.previous_sibling
@@ -788,62 +884,118 @@ cdef class XMLNode:
 
     @property
     def parent(self):
-        """Get parent node"""
+        """The parent element node.  Returns ``None`` for the document
+        root."""
         cdef xml_node node = self._node.parent()
         return XMLNode.create_from_cpp(node)
     
     def first_attribute(self):
-        """Get first attribute"""
+        """Return the first attribute on this element, or ``None`` if it
+        has none.
+
+        Returns:
+            XMLAttribute | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root id="1" class="main"/>')
+            >>> doc.root.first_attribute().name
+            'id'
+        """
         cdef xml_attribute attr = self._node.first_attribute()
         return XMLAttribute.create_from_cpp(attr)
-    
+
     def attribute(self, str name):
-        """Get attribute by name"""
+        """Return the attribute with the given *name*, or ``None``.
+
+        Args:
+            name (str): Attribute name.
+
+        Returns:
+            XMLAttribute | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root id="1"/>')
+            >>> doc.root.attribute('id').value
+            '1'
+        """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_attribute attr = self._node.attribute(name_bytes)
         return XMLAttribute.create_from_cpp(attr)
     
     # XPath methods using XPathQuery internally
     def select_nodes(self, str query):
-        """Select nodes using XPath query"""
+        """Run an XPath expression and return all matching nodes.
+
+        Args:
+            query (str): XPath 1.0 expression.
+
+        Returns:
+            XPathNodeSet
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><a/><b/><a/></root>')
+            >>> len(doc.root.select_nodes('a'))
+            2
+        """
         cdef XPathQuery xpath_query = XPathQuery(query)
         return xpath_query.evaluate_node_set(self)
-    
+
     def select_node(self, str query):
-        """Select single node using XPath query"""
+        """Run an XPath expression and return the first match, or
+        ``None``.
+
+        Args:
+            query (str): XPath 1.0 expression.
+
+        Returns:
+            XPathNode | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><a/><b/></root>')
+            >>> doc.root.select_node('b').node.name
+            'b'
+        """
         cdef XPathQuery xpath_query = XPathQuery(query)
         return xpath_query.evaluate_node(self)
 
     def is_null(self):
-        """Return True if this node is null."""
+        """Return ``True`` if this node is null (i.e. was not found or is
+        invalid)."""
         return self._node.type() == node_null
     
     @property
     def xpath(self):
-        """Return the absolute XPath of this node (e.g., '/root/item[1]/name[1]')."""
+        """The absolute XPath to this node (e.g. ``/root/item[1]/name[1]``).
+
+        Returns an empty string if the node is not an element.
+
+        Returns:
+            str
+        """
         if self._node.type() != node_element:
             return ""
         cdef string xpath_str = get_xpath_for_node(self._node)
         return xpath_str.decode('utf-8')
 
     def to_string(self, indent="  "):
-        """Serialize this node to XML string with custom indentation.
-        
+        """Serialize this element (and its subtree) to an XML string.
+
         Args:
-            indent (str or int): Indentation string or number of spaces 
-                                (default: two spaces)
-            
+            indent (str | int): Indentation string or number of spaces.
+                Defaults to two spaces.
+
         Returns:
-            str: XML content as string
-            
-        Example:
-            >>> node = doc.first_child()
-            >>> # Default indentation (2 spaces)
-            >>> xml_string = node.to_string()
-            >>> # Custom string indentation
-            >>> xml_string = node.to_string('    ')
-            >>> # Number of spaces
-            >>> xml_string = node.to_string(4)
+            str
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><item>val</item></root>')
+            >>> doc.root.child('item').to_string()
+            '<item>val</item>'
         """
         if self._node.type() == node_null:
             return ""
@@ -860,47 +1012,68 @@ cdef class XMLNode:
 
     @property
     def xml(self):
-        """XML representation with default indent (two spaces)."""
-        return self.to_string()    
-        
+        """Shorthand for ``self.to_string()`` — serialized XML with
+        default two-space indentation."""
+        return self.to_string()
+
     def find_mem_id(self, size_t mem_id):
+        """Look up a descendant node by its memory identifier
+        (see :attr:`mem_id`).
+
+        Returns:
+            XMLNode | None
+        """
         cdef xml_node node = find_node_by_address(self._node, mem_id)
         return XMLNode.create_from_cpp(node)
 
 
     @property
     def mem_id(self):
+        """A unique numeric identifier based on the node's memory address.
+
+        Useful for debugging and node identity checks.  Returns ``0`` for
+        null nodes.
+
+        Returns:
+            int
+        """
         if self._node.type() == node_null:
             return 0
         return get_pugi_node_address(self._node)
 
     def __eq__(self, other: XMLNode) -> bool:
+        """Return ``True`` if both objects wrap the same underlying
+        pugixml node.
+
+        This is an identity check, not a structural comparison.
+        """
         if not isinstance(other, XMLNode):
             return False
         return self._node == other._node
 
     def __bool__(self):
+        """Return ``True`` if this node is not null."""
         return self._node.type() != node_null
 
     def children(self, bint recursive=False):
-        """Iterate over child element nodes.
+        """Iterate over child **element** nodes.
 
-        Yields only **element** nodes, skipping text, comment, and
-        processing-instruction nodes.
+        Text, comment, and processing-instruction nodes are skipped.
 
         Args:
-            recursive (bool): Yield only direct children (False) or all
-                descendants (True).  Defaults to False.
+            recursive (bool): Yield only direct children (``False``, the
+                default) or all descendants in depth-first order
+                (``True``).
 
         Yields:
-            XMLNode: Each matching element node.
+            XMLNode
 
-        Example:
-            >>> doc = pygixml.parse_string(
-            ...     '<root><a><a1/></a><b/></root>')
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><a><a1/></a><b/></root>')
             >>> [c.name for c in doc.root.children()]
             ['a', 'b']
-            >>> [c.name for c in doc.root.children(recursive=True)]
+            >>> [c.name for c in doc.root.children(True)]
             ['a', 'a1', 'b']
         """
         cdef xml_node current = self._node.first_child()
@@ -931,11 +1104,39 @@ cdef class XMLNode:
                 child = child.previous_sibling()
 
     def __iter__(self):
-        """Iterate over all descendant element nodes in DFS preorder."""
+        """Iterate over all descendant **element** nodes in depth-first
+        order.
+
+        Equivalent to ``self.children(recursive=True)``.
+
+        Yields:
+            XMLNode
+        """
         yield from self.children(True)
 
     def text(self, bint recursive=True, str join="\n"):
-        """Get the text content of this node."""
+        """Return the combined text content of this node.
+
+        Args:
+            recursive (bool): When ``True`` (default), gathers text from
+                all descendant text and CDATA nodes.  When ``False``,
+                returns only text that is a *direct* child of this
+                element.
+            join (str): String used to join multiple text fragments.
+                Defaults to ``\\n``.
+
+        Returns:
+            str
+
+        Example::
+
+            >>> doc = pygixml.parse_string(
+            ...     '<root><a>hello</a><b>world</b></root>')
+            >>> doc.root.text()
+            'hello\\nworld'
+            >>> doc.root.text(join=', ')
+            'hello, world'
+        """
         if self._node.type() == node_null:
             return ""
 
@@ -968,18 +1169,17 @@ cdef class XMLNode:
     
 
 cdef class XMLAttribute:
-    """XML attribute wrapper providing attribute operations.
-    
-    This class represents an XML attribute and provides methods for accessing
-    and manipulating attribute properties.
-    
-    Example:
-        >>> import pygixml
-        >>> doc = pygixml.parse_string('<root id="123" name="test"/>')
-        >>> root = doc.first_child()
-        >>> attr = root.attribute('id')
-        >>> print(attr.value)
-        '123'
+    """An XML attribute on an element (e.g. ``id="123"``).
+
+    Use :meth:`XMLNode.attribute` or :meth:`XMLNode.first_attribute` to
+    obtain attributes.
+
+    Example::
+
+        >>> doc = pygixml.parse_string('<root id="42" class="main"/>')
+        >>> root = doc.root
+        >>> root.attribute('id').value
+        '42'
     """
     cdef xml_attribute _attr
     
@@ -991,97 +1191,45 @@ cdef class XMLAttribute:
     
     @property
     def name(self):
-        """Get attribute name.
-        
+        """Return the attribute name.
+
         Returns:
-            str: Attribute name or None if no name
-            
-        Example:
-            >>> attr = node.attribute('id')
-            >>> print(attr.name)
-            'id'
+            str | None
         """
         cdef string name = self._attr.name()
         return name.decode('utf-8') if not name.empty() else None
-    
+
     @property
     def value(self):
-        """Get attribute value.
-        
+        """Return the attribute value.
+
         Returns:
-            str: Attribute value or None if no value
-            
-        Example:
-            >>> attr = node.attribute('id')
-            >>> print(attr.value)
-            '123'
+            str | None
         """
         cdef string value = self._attr.value()
         return value.decode('utf-8') if not value.empty() else None
-    
+
     def set_name(self, str name):
-        """Set attribute name.
-        
-        Args:
-            name (str): New name for the attribute
-            
-        Returns:
-            bool: True if successful, False if attribute is null or invalid
-            
-        Example:
-            >>> success = attr.set_name('new_name')
-            >>> print(success)
-            True
-        """
+        """Change the attribute name.  Returns ``False`` if null."""
         cdef bytes name_bytes = name.encode('utf-8')
         return self._attr.set_name(name_bytes)
 
     def set_value(self, str value):
-        """Set attribute value.
-        
-        Args:
-            value (str): New value for the attribute
-            
-        Returns:
-            bool: True if successful, False if attribute is null or invalid
-            
-        Example:
-            >>> success = attr.set_value('new_value')
-            >>> print(success)
-            True
-        """
+        """Change the attribute value.  Returns ``False`` if null."""
         cdef bytes value_bytes = value.encode('utf-8')
         return self._attr.set_value(value_bytes)
 
     @name.setter
     def name(self, str name):
-        """Set attribute name.
-        
-        Args:
-            name (str): New name for the attribute
-            
-        Raises:
-            PygiXMLError: If attribute is null or invalid
-            
-        Example:
-            >>> attr.name = 'new_name'
-        """
+        """Set the attribute name, raising :class:`PygiXMLError` on
+        failure."""
         if not self.set_name(name):
             raise PygiXMLError("Cannot set attribute name")
 
     @value.setter
     def value(self, str value):
-        """Set attribute value.
-        
-        Args:
-            value (str): New value for the attribute
-            
-        Raises:
-            PygiXMLError: If attribute is null or invalid
-            
-        Example:
-            >>> attr.value = 'new_value'
-        """
+        """Set the attribute value, raising :class:`PygiXMLError` on
+        failure."""
         if not self.set_value(value):
             raise PygiXMLError("Cannot set attribute value")
 
@@ -1130,175 +1278,117 @@ cdef class XMLAttribute:
 
 # XPath wrapper classes
 cdef class XPathNode:
-    """XPath node wrapper containing either an XML node or attribute.
-    
-    This class represents the result of an XPath query and can contain
-    either an XML node or an XML attribute.
-    
-    Example:
-        >>> import pygixml
+    """A single result from an XPath query.
+
+    Wraps either an :class:`XMLNode` (``.node``) or an
+    :class:`XMLAttribute` (``.attribute``).  One of these properties will
+    be ``None`` depending on what the query matched.
+
+    Example::
+
         >>> doc = pygixml.parse_string('<root><item id="1">value</item></root>')
-        >>> node = doc.select_node('//item')
-        >>> print(node.node.name)
+        >>> result = doc.select_node('//item')
+        >>> result.node.name
         'item'
     """
     cdef xpath_node _xpath_node
-    
+
     @staticmethod
     cdef XPathNode create_from_cpp(xpath_node xpath_node):
         cdef XPathNode wrapper = XPathNode()
         wrapper._xpath_node = xpath_node
         return wrapper
-    
+
     @property
     def node(self):
-        """Get XML node from XPath node.
-        
-        Returns:
-            XMLNode: XML node or None if this XPath node contains an attribute
-            
-        Example:
-            >>> xpath_node = doc.select_node('//item')
-            >>> node = xpath_node.node
-            >>> print(node.name)
-            'item'
-        """
-        cdef xml_node node = self._xpath_node.node()
-        return XMLNode.create_from_cpp(node)
-    
+        """The matched element, or ``None`` if the query matched an
+        attribute instead."""
+        cdef xml_node n = self._xpath_node.node()
+        return XMLNode.create_from_cpp(n)
+
     @property
     def attribute(self):
-        """Get XML attribute from XPath node.
-        
-        Returns:
-            XMLAttribute: XML attribute or None if this XPath node contains a node
-            
-        Example:
-            >>> xpath_node = doc.select_node('//item/@id')
-            >>> attr = xpath_node.attribute
-            >>> print(attr.value)
-            '1'
-        """
+        """The matched attribute, or ``None`` if the query matched an
+        element instead."""
         cdef xml_attribute attr = self._xpath_node.attribute()
         return XMLAttribute.create_from_cpp(attr)
-    
+
     @property
     def parent(self):
-        """Get parent node of this XPath node.
-        
-        Returns:
-            XMLNode: Parent node
-            
-        Example:
-            >>> xpath_node = doc.select_node('//item/@id')
-            >>> parent = xpath_node.parent
-            >>> print(parent.name)
-            'item'
-        """
-        cdef xml_node node = self._xpath_node.parent()
-        return XMLNode.create_from_cpp(node)
+        """The parent of the matched node (``None`` for attributes or the
+        document root)."""
+        cdef xml_node n = self._xpath_node.parent()
+        return XMLNode.create_from_cpp(n)
+
 
 cdef class XPathNodeSet:
-    """XPath node set containing multiple XPath nodes.
-    
-    This class represents a collection of XPath nodes returned by
-    an XPath query that matches multiple nodes.
-    
-    Example:
-        >>> import pygixml
+    """A collection of :class:`XPathNode` results from an XPath query.
+
+    Supports ``len()``, indexing (``node_set[0]``), and iteration.
+
+    Example::
+
         >>> doc = pygixml.parse_string('<root><item>1</item><item>2</item></root>')
         >>> nodes = doc.select_nodes('//item')
-        >>> for node in nodes:
-        ...     print(node.node.text())
-        1
+        >>> len(nodes)
         2
+        >>> nodes[0].node.text()
+        '1'
     """
     cdef xpath_node_set _xpath_node_set
-    
+
     def __cinit__(self):
         self._xpath_node_set = xpath_node_set()
-    
+
     @staticmethod
     cdef XPathNodeSet create_from_cpp(xpath_node_set xpath_node_set):
         cdef XPathNodeSet wrapper = XPathNodeSet()
         wrapper._xpath_node_set = xpath_node_set
         return wrapper
-    
+
     def __len__(self):
-        """Get number of nodes in the set.
-        
-        Returns:
-            int: Number of XPath nodes in the set
-            
-        Example:
-            >>> nodes = doc.select_nodes('//item')
-            >>> print(len(nodes))
-            2
-        """
+        """Number of matched nodes."""
         return self._xpath_node_set.size()
-    
+
     def __getitem__(self, size_t index):
-        """Get node at specified index.
-        
-        Args:
-            index (int): Index of the node to retrieve
-            
-        Returns:
-            XPathNode: XPath node at specified index
-            
+        """Return the :class:`XPathNode` at *index*.
+
         Raises:
-            IndexError: If index is out of range
-            
-        Example:
-            >>> nodes = doc.select_nodes('//item')
-            >>> first_node = nodes[0]
-            >>> print(first_node.node.text())
-            '1'
+            IndexError: If *index* is out of range.
         """
         if index >= self._xpath_node_set.size():
             raise IndexError("XPath node set index out of range")
         cdef xpath_node node = self._xpath_node_set[index]
         return XPathNode.create_from_cpp(node)
-    
+
     def __iter__(self):
-        """Iterate over nodes in the set.
-        
-        Yields:
-            XPathNode: Each XPath node in the set
-            
-        Example:
-            >>> nodes = doc.select_nodes('//item')
-            >>> for node in nodes:
-            ...     print(node.node.text())
-        """
+        """Iterate over matched :class:`XPathNode` objects."""
         cdef size_t i
         for i in range(self._xpath_node_set.size()):
             yield self[i]
 
+
 cdef class XPathQuery:
-    """XPath query wrapper for evaluating XPath expressions.
-    
-    This class represents a compiled XPath query that can be evaluated
-    against XML nodes to retrieve nodes, attributes, or values.
-    
-    Example:
-        >>> import pygixml
+    """A compiled XPath 1.0 query.
+
+    Compiling a query once and re-using it is faster than calling
+    ``select_nodes()`` repeatedly, because the expression is parsed only
+    once.
+
+    Example::
+
         >>> doc = pygixml.parse_string('<root><item>value</item></root>')
         >>> query = pygixml.XPathQuery('//item')
-        >>> result = query.evaluate_node(doc.first_child())
-        >>> print(result.node.text())
+        >>> query.evaluate_node(doc.root).node.text()
         'value'
     """
     cdef xpath_query* _query
-    
+
     def __cinit__(self, str query):
-        """Create XPath query from string.
-        
+        """Compile an XPath expression.
+
         Args:
-            query (str): XPath expression string
-            
-        Example:
-            >>> query = pygixml.XPathQuery('//item[@id="1"]')
+            query (str): XPath 1.0 expression.
         """
         cdef bytes query_bytes = query.encode('utf-8')
         self._query = new xpath_query(query_bytes)
