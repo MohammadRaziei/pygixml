@@ -66,6 +66,8 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         xml_attribute attribute(const char* name)
         xml_node append_child(const char* name)
         xml_node prepend_child(const char* name)
+        xml_node append_child(xml_node_type type)
+        xml_node prepend_child(xml_node_type type)
         xml_node insert_child_before(const char* name, const xml_node& node)
         xml_node insert_child_after(const char* name, const xml_node& node)
         xml_attribute append_attribute(const char* name)
@@ -687,25 +689,39 @@ cdef class XMLNode:
     
     @property
     def value(self):
-        """Return the raw text value of this node.
+        """Return the text content of this node.
 
-        For element nodes the value is always ``None`` — element content
-        is stored in child *text nodes*, not on the element itself.
-        Use :meth:`text()` or :meth:`child_value` to read element text
-        content.
+        For text, CDATA, comment, and processing-instruction nodes, returns
+        the raw value directly.
+
+        For **element** nodes, this is a convenience shortcut that returns
+        the value of the first text/CDATA child (or ``None`` if no text
+        child exists).
 
         Returns:
             str | None
 
         Example::
 
-            >>> doc = pygixml.parse_string('<root>hello</root>')
-            >>> doc.root.value          # elements have no value
-            >>> doc.root.first_child().value
+            # Text node — returns raw value
+            >>> doc = pygixml.parse_string('<root><item>hello</item></root>')
+            >>> doc.root.child('item').first_child().value
+            'hello'
+
+            # Element node — returns first text child's value
+            >>> doc.root.child('item').value
             'hello'
         """
-        cdef string value = self._node.value()
-        return value.decode('utf-8') if not value.empty() else None
+        cdef string val
+        cdef xml_node child
+        if self._node.type() == node_element:
+            child = self._node.first_child()
+            if child.type() == node_pcdata or child.type() == node_cdata:
+                val = child.value()
+                return val.decode('utf-8') if not val.empty() else None
+            return None
+        val = self._node.value()
+        return val.decode('utf-8') if not val.empty() else None
     
     def set_name(self, str name):
         """Change the tag name of this element.
@@ -762,14 +778,40 @@ cdef class XMLNode:
 
     @value.setter
     def value(self, str value):
-        """Set the text value, raising :class:`PygiXMLError` on failure.
+        """Set the text value of this node.
+
+        For text, CDATA, and comment nodes, sets the raw value directly.
+
+        For **element** nodes, this is a convenience shortcut that creates
+        or replaces the first text-node child — equivalent to::
+
+            text_node = node.first_child()
+            if text_node and text_node.type in ('pcdata', 'cdata'):
+                text_node.set_value(value)
+            else:
+                node.prepend_child('').set_value(value)
 
         Example::
 
-            >>> text_node.value = 'updated'
+            # Text node — sets raw value
+            text_node.value = 'hello'
+
+            # Element node — creates/replaces text child
+            element.value = 'hello'   # <element>hello</element>
         """
-        if not self.set_value(value):
-            raise PygiXMLError("Cannot set value: node is null or invalid")
+        cdef bytes value_bytes = value.encode('utf-8')
+        cdef xml_node child
+        if self._node.type() == node_element:
+            child = self._node.first_child()
+            if child.type() == node_pcdata or child.type() == node_cdata:
+                child.set_value(value_bytes)
+            else:
+                # Create a new text (pcdata) node and prepend it
+                child = self._node.prepend_child(node_pcdata)
+                child.set_value(value_bytes)
+        else:
+            if not self._node.set_value(value_bytes):
+                raise PygiXMLError("Cannot set value: node is null or invalid")
 
     def first_child(self):
         """Return the first child element, or ``None``.

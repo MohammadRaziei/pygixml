@@ -166,3 +166,37 @@ class TestXMLNodeText:
 
         assert root.text(recursive=True) == "content"
 
+    def test_element_value_setter(self):
+        """element.value = 'text' should create/replace a text child node"""
+        doc = pygixml.parse_string("<root><item/></root>")
+        item = doc.root.child("item")
+
+        # Setting value on an element creates a text child
+        item.value = "Hello"
+        assert item.value == "Hello"
+        assert item.text() == "Hello"
+        assert item.first_child().type == "pcdata"
+        assert item.first_child().value == "Hello"
+
+    def test_element_value_replaces_text(self):
+        """element.value = 'new' should replace existing text child"""
+        doc = pygixml.parse_string("<root><item>old</item></root>")
+        item = doc.root.child("item")
+        item.value = "new"
+        assert item.value == "new"
+        assert item.text() == "new"
+        assert item.first_child().value == "new"
+
+    def test_value_getter_on_text_node(self):
+        """value property on text nodes returns the raw text content"""
+        doc = pygixml.parse_string("<root><item>hello</item></root>")
+        item = doc.root.child("item")
+        text_node = item.first_child()
+        assert text_node.value == "hello"
+
+    def test_value_getter_on_element_node(self):
+        """value property on element nodes returns the first text child's value"""
+        doc = pygixml.parse_string("<root><item>hello</item></root>")
+        item = doc.root.child("item")
+        assert item.value == "hello"
+
