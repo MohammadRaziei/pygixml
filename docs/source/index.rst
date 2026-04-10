@@ -191,7 +191,6 @@ Documentation Contents
    quickstart
    xpath
    advanced
-   examples
    api
    performance
 
