@@ -1037,7 +1037,12 @@ cdef class XMLNode:
     @property
     def xml(self):
         """Shorthand for ``self.to_string()`` — serialized XML with
-        default two-space indentation."""
+        default two-space indentation.
+
+        .. note::
+           This is a **pygixml-specific convenience property**.
+           pugixml has no equivalent.
+        """
         return self.to_string()
 
     def find_mem_id(self, size_t mem_id):
