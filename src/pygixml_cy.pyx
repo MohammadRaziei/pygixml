@@ -1114,6 +1114,13 @@ cdef class XMLNode:
     def children(self, bint recursive=False):
         """Iterate over child **element** nodes.
 
+        .. note::
+           This is a **pygixml-specific feature**.  pugixml provides
+           ``first_child()`` and ``next_sibling()`` for manual traversal,
+           but ``children()`` offers a Pythonic one-liner for iterating
+           direct child elements — or all descendants with
+           ``recursive=True``.
+
         Text, comment, and processing-instruction nodes are skipped.
 
         Args:
