@@ -27,9 +27,9 @@ parser directly to Python — with numbers that speak for themselves.
 
 | Library         | Avg Time | Speedup vs ElementTree |
 |-----------------|----------|------------------------|
-| **pygixml**     | 0.0010 s | **8.4× faster**        |
-| **lxml**        | 0.0044 s | 1.8× faster            |
-| **ElementTree** | 0.0080 s | 1.0× (baseline)        |
+| **pygixml**     | 0.0009 s | **9.2× faster**        |
+| **lxml**        | 0.0041 s | 2.0× faster            |
+| **ElementTree** | 0.0083 s | 1.0× (baseline)        |
 
 ### Memory Usage (5 000 elements, peak)
 
@@ -52,7 +52,7 @@ the full comparison across 6 XML sizes.*
 
 ### Features
 
-* **Blazing-fast parsing** — up to 10× faster than ElementTree
+* **Blazing-fast parsing** — up to 14× faster than ElementTree
 * **Low memory** — 7× less than ElementTree, on par with lxml
 * **Tiny footprint** — 0.43 MB installed (12.7× smaller than lxml)
 * **Full XPath 1.0** — complete query engine with all standard functions

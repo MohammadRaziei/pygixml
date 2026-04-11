@@ -19,33 +19,33 @@ Parsing Performance
    :widths: 20 25 20 20
 
    * - Size
-     - pygixml
+     - pygixml (best of default/minimal)
      - lxml
      - ElementTree
    * - 100
-     - 0.000020 s
-     - 0.000217 s
-     - 0.000209 s
+     - 0.000008 s
+     - 0.000081 s
+     - 0.000105 s
    * - 500
-     - 0.000098 s
-     - 0.000371 s
-     - 0.000657 s
+     - 0.000096 s
+     - 0.000442 s
+     - 0.000643 s
    * - 1 000
-     - 0.000171 s
-     - 0.001099 s
-     - 0.001327 s
+     - 0.000152 s
+     - 0.000764 s
+     - 0.001282 s
    * - 2 500
-     - 0.000459 s
-     - 0.002058 s
-     - 0.003478 s
+     - 0.000440 s
+     - 0.001944 s
+     - 0.003395 s
    * - 5 000
-     - 0.000954 s
-     - 0.004368 s
-     - 0.007967 s
+     - 0.000899 s
+     - 0.004096 s
+     - 0.008256 s
    * - 10 000
-     - 0.002488 s
-     - 0.011066 s
-     - 0.018558 s
+     - 0.001880 s
+     - 0.009338 s
+     - 0.016710 s
 
 Measured with ``ParseFlags.MINIMAL`` (``pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)``).
 Skips escape processing, EOL normalization, and attribute whitespace conversion
@@ -62,19 +62,19 @@ Speedup vs ElementTree
    * - Size
      - pygixml
    * - 100
-     - **10.5×**
+     - **13.6×**
    * - 500
      - **6.7×**
    * - 1 000
-     - **7.8×**
+     - **8.5×**
    * - 2 500
-     - **7.6×**
+     - **7.7×**
    * - 5 000
-     - **8.4×**
+     - **9.2×**
    * - 10 000
-     - **7.5×**
+     - **8.9×**
 
-pygixml consistently outperforms lxml by ~2× and ElementTree by **7–10×**
+pygixml consistently outperforms lxml by ~2× and ElementTree by **7–14×**
 depending on document size.  Each row shows the faster of
 ``ParseFlags.DEFAULT`` and ``ParseFlags.MINIMAL``.
 
