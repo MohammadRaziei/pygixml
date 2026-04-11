@@ -1,94 +1,64 @@
-# GSPOptimize.cmake
+# Optimize.cmake
 #
-# Aggressive optimization flags for maximum runtime performance.
-# Works with GCC, Clang, and MSVC.
+# Cross-platform optimization flags for maximum runtime performance.
+# Supports GCC, Clang, and MSVC on all operating systems.
 #
 # Usage:
-#   include(GSPOptimize)
-#   set_default_optimizations()
-#   enable_optimizations(<target>)
+#   include(Optimize)
 
-
-# Set build type to Release for better performance
+# Default to Release if no build type was specified
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Optimize for performance
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
-endif()
+# ── Compiler-specific optimization flags ──────────────────────────
 
-# Additional optimization flags for GCC/Clang
+# GCC / Clang
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(SAFE_FLAGS "-fomit-frame-pointer -fno-stack-protector")
-    if(NOT APPLE AND NOT DEFINED ENV{CI})
-        set(SAFE_FLAGS "${SAFE_FLAGS} -march=native -mtune=native")
-    endif()
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SAFE_FLAGS}")
-endif()
-
-
-option(ARCH_NATIVE "Enable -march=native (tune to local CPU)" ON)
-option(FAST_MATH  "Enable fast-math (unsafe for strict IEEE compliance)" ON)
-
-# --- Helper: enable IPO/LTO if available ---
-function(__enable_ipo target)
-    include(CheckIPOSupported)
-    check_ipo_supported(RESULT _ipo_ok OUTPUT _ipo_msg)
-    if(_ipo_ok)
-        set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-    else()
-        message(STATUS "IPO not supported for ${target}: ${_ipo_msg}")
-    endif()
-endfunction()
-
-# --- Apply optimization flags per target ---
-function(enable_optimizations target)
-    target_compile_definitions(${target} PRIVATE
-            $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:NDEBUG>
+    # Base Release optimizations
+    set(OPT_FLAGS_RELEASE
+        -O3
+        -DNDEBUG
+        -fomit-frame-pointer
+        -fno-stack-protector
     )
 
-    if(MSVC)
-        target_compile_options(${target} PRIVATE
-                $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:/O2 /GL /Oi /Ot /Ob3 /DNDEBUG>
-                $<$<BOOL:${FAST_MATH}>:/fp:fast>
-        )
-        target_link_options(${target} PRIVATE
-                $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:/LTCG>
-        )
-    else()
-        target_compile_options(${target} PRIVATE
-                $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-O3 -fno-plt -funroll-loops -finline-functions -fstrict-aliasing>
-                $<$<BOOL:${ARCH_NATIVE}>:-march=native>
-                $<$<BOOL:${FAST_MATH}>:-ffast-math>
-        )
-        target_link_options(${target} PRIVATE
-                $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:-flto>
-        )
+    # -march=native gives the best performance but:
+    #   • doesn't work on Apple Silicon cross-builds
+    #   • breaks reproducible builds in CI
+    # Skip it in those environments
+    if(NOT APPLE AND NOT DEFINED ENV{CI} AND NOT DEFINED ENV{GITHUB_ACTIONS})
+        list(APPEND OPT_FLAGS_RELEASE -march=native -mtune=native)
     endif()
 
-    _enable_ipo(${target})
-endfunction()
+# MSVC (Windows)
+elseif(MSVC)
+    set(OPT_FLAGS_RELEASE
+        /O2          # Maximum optimization for speed
+        /DNDEBUG     # Disable assert()
+        /GL          # Whole-program optimization
+    )
 
-# --- Apply global defaults ---
-function(set_default_optimizations)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Unknown compiler — use conservative defaults
+else()
+    message(STATUS "Optimize: unknown compiler '${CMAKE_CXX_COMPILER_ID}', using safe defaults")
+    set(OPT_FLAGS_RELEASE -O2 -DNDEBUG)
+endif()
 
-    if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
-        set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+# ── Apply flags to Release builds ─────────────────────────────────
+
+list(JOIN OPT_FLAGS_RELEASE " " OPT_FLAGS_RELEASE_STR)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    string(APPEND CMAKE_CXX_FLAGS " ${OPT_FLAGS_RELEASE_STR}")
+    string(APPEND CMAKE_C_FLAGS   " ${OPT_FLAGS_RELEASE_STR}")
+else()
+    # Non-Release builds still get basic optimization
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        string(APPEND CMAKE_CXX_FLAGS " -O2")
+        string(APPEND CMAKE_C_FLAGS   " -O2")
+    elseif(MSVC)
+        string(APPEND CMAKE_CXX_FLAGS " /O2")
+        string(APPEND CMAKE_C_FLAGS   " /O2")
     endif()
-
-    include(CheckIPOSupported)
-    check_ipo_supported(RESULT _ipo_ok OUTPUT _ipo_msg)
-    if(_ipo_ok)
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-
-    if(MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-    endif()
-endfunction()
+endif()
