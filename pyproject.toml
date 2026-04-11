@@ -1,10 +1,14 @@
 [build-system]
-requires = ["scikit-build-core", "cython", "stubgen-pyx"]
+requires = [
+    "scikit-build-core",
+    "cython",
+    "stubgen-pyx; python_version >= '3.9'",
+]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.9.2"
+version = "0.10.0"
 description = "High-performance Cython XML parser for Python — pugixml with a Pythonic API"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
@@ -25,7 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = []
-requires-python = ">=3.9"
+requires-python = ">=3.6"
 
 [project.optional-dependencies]
 test = [

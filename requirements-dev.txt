@@ -1,7 +1,7 @@
 # Development dependencies for pygixml
 cython
-stubgen-pyx
 scikit-build-core
+stubgen-pyx; python_version >= '3.9'
 # Packaging dependencies
 build
 twine

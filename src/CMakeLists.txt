@@ -22,7 +22,7 @@ if(DEFINED SKBUILD)
         VERSION_INFO=${PROJECT_VERSION}
     )
 
-    if (NOT WIN32)
+    if (Python_VERSION VERSION_GREATER_EQUAL "3.9")
         # Generate .pyi stub file from .pyx source using stubgen-pyx
         add_custom_command(TARGET pygixml_cy POST_BUILD
             COMMAND ${Python3_EXECUTABLE} -m stubgen_pyx
