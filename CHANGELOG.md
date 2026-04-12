@@ -42,3 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added explicit clarification of **zero runtime dependencies** across all documentation and marketing materials.
 
 
+## [0.9.0] - 2026-04-08
+
+### Added
+- Exposed all 18 pugixml parse flags as module-level integer constants (e.g., `PARSE_MINIMAL`, `PARSE_FULL`, `PARSE_DEFAULT`) allowing users to configure parsing behavior for speed vs. strictness.
