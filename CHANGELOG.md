@@ -19,19 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimum Python version lowered from 3.9 to **3.6** to broaden ecosystem compatibility.
 - `.pyi` stub generation via `stubgen-pyx` is now conditional: only runs on Python >= 3.9 where the package is available. Builds succeed on 3.6–3.8 without type stubs.
 
-## [0.9.2] - 2026-04-09
+## [0.9.2] - 2026-04-10
 
 ### Added
 - `ParseFlags` `IntFlag` enum exposing all 18 pugixml parse options (e.g., `MINIMAL`, `COMMENTS`, `CDATA`, `ESCAPES`) for type-safe parsing configuration.
 
-### Documentation
-- Complete rewrite of `quickstart.rst`, `xpath.rst`, `advanced.rst`, and `installation.rst` for clearer onboarding.
-- Added `xml_basics.rst` primer covering XML structure, well-formedness, XPath, and real-world applications with academic references.
-- Updated `performance.rst` and `README.md` with stable 50-iteration benchmark results across 6 XML sizes.
-- Added explicit clarification of **zero runtime dependencies** across all documentation and marketing materials.
-
 ### Testing
-- Added `tests/test_children.py` covering `children()`, `text()`, `value` symmetry, and `mem_id` lookup workflows.
 - Expanded `tests/test_xml_text.py` with assertions for element `value` getter/setter behavior.
 - All **93 tests** passing across the supported Python version range.
 
@@ -39,3 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Benchmarks stabilized at 50 iterations per configuration.
 - 5 000 element parsing consistently **8.4×–9.2× faster** than `xml.etree.ElementTree` and **~5× faster** than `lxml`.
 - Memory footprint remains at ~0.67 MB for 5 000 elements (~7× less than ElementTree).
+
+## [0.9.1] - 2026-04-09
+
+### Documentation
+- Complete rewrite of `quickstart.rst`, `xpath.rst`, `advanced.rst`, and `installation.rst` for clearer onboarding.
+- Added `xml_basics.rst` primer covering XML structure, well-formedness, XPath, and real-world applications with academic references.
+- Updated `performance.rst` and `README.md` with stable 50-iteration benchmark results across 6 XML sizes.
+- Added explicit clarification of **zero runtime dependencies** across all documentation and marketing materials.
+
+
