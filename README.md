@@ -3,7 +3,7 @@
 <img src="https://github.com/MohammadRaziei/pygixml/raw/master/docs/images/pygixml.svg" width="450" />
 
 
-[![Python Versions](https://img.shields.io/badge/Python-3.6%20--%203.13-blue)](https://www.python.org/)
+[![Python Versions](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
 [![PyPI version](https://img.shields.io/pypi/v/pygixml.svg?color=blue)](https://pypi.org/project/pygixml/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/wheels.yml/badge.svg)](https://github.com/MohammadRaziei/pygixml/actions)
