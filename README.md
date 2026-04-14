@@ -327,20 +327,20 @@ Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 
 ## Working with Text Content
 
-pygixml abstracts away pugixml's underlying text-node structure so you can work with text intuitively:
+pygixml automatically shadows pugixml's internal text-node structure so you can work with text intuitively, without manually managing text nodes.
+
+### Setting Text Content
+When you set `.value` on an element, pygixml automatically creates or replaces the underlying text child:
 
 ```python
-# Create new text content
 item = root.append_child("item")
 item.value = "Hello World"  # Automatically creates/replaces a text child
 print(item.value)           # "Hello World"
 print(item.xml)             # <item>Hello World</item>
-
-# Replace existing content
-item.value = "New Content"
 ```
 
-For extracting *all* text from a subtree (including nested elements and mixed content), use `text()`:
+### Extracting Text Content
+Use `text()` to extract all text from a subtree, including nested elements and mixed content:
 
 ```python
 doc = pygixml.parse_string('<root><a>Hi</a> and <b>Bye</b></root>')

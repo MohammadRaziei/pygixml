@@ -104,75 +104,79 @@ Use it when:
 On real-world XML with lots of escaped content, MINIMAL can be up to **~16%
 faster** than DEFAULT.
 
-Extracting Text: ``child_value()`` vs ``text()``
-------------------------------------------------
+Working with Text: ``value``, ``child_value()``, and ``text()``
+---------------------------------------------------------------
 
-pygixml offers two ways to read text content.  Choosing the right one
-depends on your XML structure.
+pygixml automatically shadows pugixml's internal text-node structure. In pugixml, elements do not hold text directly; they contain child text nodes. pygixml handles this complexity for you, offering multiple ways to get and set text depending on your needs.
 
-``child_value()`` — single child, direct text only
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Setting Text Content
+~~~~~~~~~~~~~~~~~~~~
 
-Returns the text content of the **first child node** of the element.  If
-you pass a name, it finds the first child with that tag and returns its
-text.  It does **not** recurse into deeper levels.
+You can set text on an element, and pygixml will automatically create or replace the underlying text node:
 
 .. code-block:: python
 
-   doc = pygixml.parse_string('<book><title>Python 101</title></book>')
-   root = doc.root
+   item = root.append_child("item")
+   item.value = "Hello World"  # Automatically creates/replaces a text child
 
-   root.child_value()                  # "Python 101"
-   root.child_value("title")           # "Python 101"
-
-Best for: simple key-value XML where each element holds a single text node
-directly inside it.
-
-``text()`` — full recursive text extraction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Walks the entire subtree, collecting **all** text and CDATA nodes, and
-joins them with a configurable separator (default: newline).
+You can also modify the text node directly. Both approaches work seamlessly because pygixml shadows the underlying structure:
 
 .. code-block:: python
 
-   doc = pygixml.parse_string("""
-   <article>
-       <p>Hello <b>world</b>! This is <i>rich</i> text.</p>
-   </article>
-   """)
-   p = doc.root.child("p")
+   # Setting via element (creates/replaces child)
+   item.value = "Hello"
 
-   p.text()                     # "Hello\nworld!\nThis is\nrich\ntext."
-   p.text(recursive=False)      # "Hello "  (direct text only)
-   p.text(join=" ")             # "Hello world! This is rich text."
+   # Setting via the text node directly (equivalent result)
+   item.first_child().value = "World"
 
-Best for: mixed content, documents, or any element with nested children
-where you want all the text at once.
+Reading Text Content
+~~~~~~~~~~~~~~~~~~~~
 
-Quick comparison:
+Depending on how much of the tree you need to read, choose the right accessor:
+
+``value`` — direct access
+   Returns the raw value of the node. For **text nodes**, this is the content. For **element nodes**, this returns the value of the first text/CDATA child (or ``None`` if no text exists). This is a convenient shortcut that shadows the underlying child-access.
+
+   .. code-block:: python
+
+      item.value  # Returns "Hello" (from first text child)
+
+``child_value()`` — targeted single child
+   Returns the text of the first child element, or the child with a specific tag. It does **not** recurse. Best for simple key-value XML where elements hold a single text node.
+
+   .. code-block:: python
+
+      doc.root.child_value()          # "Hello"
+      doc.root.child_value("title")   # "Python 101"
+
+``text()`` — full recursive extraction
+   Walks the entire subtree, collecting **all** text and CDATA nodes, and joins them. Use this when you need to extract all text from mixed content.
+
+   .. code-block:: python
+
+      doc.root.text()             # "Hello\nworld!\nThis is\nrich\ntext."
+      doc.root.text(join=" ")     # "Hello world! This is rich text."
+
+### Summary Table
 
 .. list-table::
    :header-rows: 1
 
-   * - Feature
-     - ``child_value()``
-     - ``text()``
-   * - Scope
-     - First child node only
+   * - Method
+     - Scope
+     - Best For
+   * - ``element.value``
+     - First text child (or ``None``)
+     - Quick read/write of simple element text
+   * - ``element.first_child().value``
+     - The text node directly
+     - Direct manipulation of the text node
+   * - ``child_value()``
+     - First child element's text
+     - Key-value XML structures
+   * - ``text()``
      - Entire subtree (recursive)
-   * - Nested elements
-     - Ignored
-     - Collected
-   * - Join separator
-     - N/A
-     - Configurable (``join`` arg)
-   * - Speed
-     - **Fastest** — single lookup
-     - Slightly slower — walks the tree
-   * - Typical use
-     - Simple config / data XML
-     - Documents, articles, mixed content
+     - Mixed content, documents, rich text
 
 XPathQuery for Repeated Queries
 -------------------------------
