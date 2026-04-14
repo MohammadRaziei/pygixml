@@ -118,6 +118,37 @@ class TestXMLNode:
         year = book.child("year")
         assert year.name == "year"
         assert year.child_value() is None  # No text content yet
+
+    def test_remove_child(self):
+        """Test removing a child node"""
+        doc = pygixml.parse_string(
+            "<root>"
+            "  <item id='1'>One</item>"
+            "  <item id='2'>Two</item>"
+            "  <item id='3'>Three</item>"
+            "</root>"
+        )
+        root = doc.root
+
+        # Verify 3 children exist
+        assert len(list(root.children())) == 3
+
+        # Find and remove the second item
+        target = root.child("item") # Gets first
+        # Move to the second one manually or find specific one
+        second = target.next_sibling
+        assert second.name == "item"
+        
+        success = root.remove_child(second)
+        assert success is True
+
+        # Verify count decreased
+        assert len(list(root.children())) == 2
+        
+        # Verify the text content matches what's left
+        items = list(root.children())
+        assert items[0].text() == "One"
+        assert items[1].text() == "Three"
         
     def test_first_child(self):
         """Test getting first child"""

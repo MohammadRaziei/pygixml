@@ -866,6 +866,24 @@ cdef class XMLNode:
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.append_child(name_bytes)
         return XMLNode.create_from_cpp(node)
+
+    def remove_child(self, XMLNode node):
+        """Remove a direct child element from this node.
+
+        Args:
+            node (XMLNode): The child node to remove. Must be a direct
+                child of this node.
+
+        Returns:
+            bool: True if the node was successfully removed, False otherwise.
+
+        Example::
+
+            >>> child = root.child('old_item')
+            >>> if child:
+            ...     root.remove_child(child)
+        """
+        return self._node.remove_child(node._node)
     
     def child_value(self, str name=None):
         """Return the text content of a child element.
