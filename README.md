@@ -325,27 +325,29 @@ Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 
 ---
 
-## Important: Element Nodes vs Text Nodes
+## Working with Text Content
 
-In pugixml (and therefore pygixml), **element nodes do not store text as a
-value**.  They contain child **text nodes** instead.
+pygixml abstracts away pugixml's underlying text-node structure so you can work with text intuitively:
 
 ```python
-# ❌  Setting value on an element node does nothing useful:
-element.value = "some text"
+# Create new text content
+item = root.append_child("item")
+item.value = "Hello World"  # Automatically creates/replaces a text child
+print(item.value)           # "Hello World"
+print(item.xml)             # <item>Hello World</item>
 
-# ✅  To SET text, append a text node (empty name) and set its value:
-text_node = element.append_child("")
-text_node.value = "some text"
-
-# ✅  To GET text, use .text():
-print(element.text())                     # "some text"
-
-# ✅  Or read the text node directly:
-print(element.first_child().value)        # "some text"
+# Replace existing content
+item.value = "New Content"
 ```
 
-For most use-cases, `element.text()` is all you need.
+For extracting *all* text from a subtree (including nested elements and mixed content), use `text()`:
+
+```python
+doc = pygixml.parse_string('<root><a>Hi</a> and <b>Bye</b></root>')
+print(doc.root.text())              # "Hi\nand\nBye"
+print(doc.root.text(recursive=False)) # "\nand\n"
+print(doc.root.text(join=" "))      # "Hi and Bye"
+```
 
 ---
 
