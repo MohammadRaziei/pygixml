@@ -828,6 +828,21 @@ cdef class XMLNode:
         cdef xml_node node = self._node.first_child()
         return XMLNode.create_from_cpp(node)
 
+    def last_child(self):
+        """Return the last child element, or ``None``.
+
+        Returns:
+            XMLNode | None
+
+        Example::
+
+            >>> doc = pygixml.parse_string('<root><a/><b/></root>')
+            >>> doc.root.last_child().name
+            'b'
+        """
+        cdef xml_node node = self._node.last_child()
+        return XMLNode.create_from_cpp(node)
+
     def child(self, str name):
         """Return the first child element whose tag matches *name*, or
         ``None``.

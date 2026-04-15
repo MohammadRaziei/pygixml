@@ -98,6 +98,31 @@ class TestXMLNodeChildren:
         assert elements[0].attribute("id") is not None
         assert elements[0].attribute("id").value == "007"
 
+    def test_last_child(self):
+        """last_child() should return the last child element"""
+        doc = pygixml.parse_string(
+            '<class name="CS101">'
+            '  <student id="001" firstName="Alice"/>'
+            '  <student id="002" firstName="Bob"/>'
+            '  <student id="003" firstName="Charlie"/>'
+            '</class>'
+        )
+        class_item = doc.first_child()
+        last_student = class_item.last_child()
+
+        assert last_student is not None
+        assert last_student.name == "student"
+        assert last_student.attribute("id").value == "003"
+        assert last_student.attribute("firstName").value == "Charlie"
+
+    def test_last_child_empty(self):
+        """last_child() on element with no children should return a null node"""
+        doc = pygixml.parse_string("<empty_class/>")
+        empty_item = doc.first_child()
+        last = empty_item.last_child()
+        assert last.is_null()
+        assert not bool(last)
+
     def test_from_mem_id_unsafe_matches_find_mem_id(self):
         """from_mem_id_unsafe should produce the same node as find_mem_id"""
         doc = pygixml.parse_string("<root><item>Hello</item></root>")
