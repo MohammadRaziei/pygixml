@@ -867,6 +867,25 @@ cdef class XMLNode:
         cdef xml_node node = self._node.append_child(name_bytes)
         return XMLNode.create_from_cpp(node)
 
+    def prepend_child(self, str name):
+        """Preppend a new child element and return it.
+
+        Args:
+            name (str): Tag name.  Use an empty string to create a text
+                node instead.
+
+        Returns:
+            XMLNode: The newly created child.
+
+        Example::
+
+            >>> root = doc.root
+            >>> root.preppend_child('title').set_value('My Title')
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef xml_node node = self._node.prepend_child(name_bytes)
+        return XMLNode.create_from_cpp(node)
+
     def remove_child(self, XMLNode node):
         """Remove a direct child element from this node.
 
@@ -884,7 +903,7 @@ cdef class XMLNode:
             ...     root.remove_child(child)
         """
         return self._node.remove_child(node._node)
-    
+
     def child_value(self, str name=None):
         """Return the text content of a child element.
 
@@ -993,6 +1012,63 @@ cdef class XMLNode:
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_attribute attr = self._node.attribute(name_bytes)
         return XMLAttribute.create_from_cpp(attr)
+
+    def append_attribute(self, str name):
+        """Append a new attribute and return it.
+
+        Args:
+            name (str): Attribute name.
+
+        Returns:
+            XMLAttribute: The newly created attribute.
+
+        Example::
+
+            >>> root = doc.root
+            >>> attr = root.append_attribute('id')
+            >>> attr.value = '123'
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef xml_attribute attr = self._node.append_attribute(name_bytes)
+        return XMLAttribute.create_from_cpp(attr)
+
+    def prepend_attribute(self, str name):
+        """Prepend a new attribute and return it.
+
+        Args:
+            name (str): Attribute name.
+
+        Returns:
+            XMLAttribute: The newly created attribute.
+
+        Example::
+
+            >>> root = doc.root
+            >>> attr = root.prepend_attribute('id')
+            >>> attr.value = '123'
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef xml_attribute attr = self._node.prepend_attribute(name_bytes)
+        return XMLAttribute.create_from_cpp(attr)
+
+    def remove_attribute(self, XMLAttribute attr):
+        """Remove an attribute from this node.
+
+        Args:
+            attr (XMLAttribute): The attribute to remove.
+
+        Returns:
+            bool: True if the attribute was successfully removed, False otherwise.
+
+        Example::
+
+            >>> root = doc.root
+            >>> attr = root.attribute('id')
+            >>> root.remove_attribute(attr)
+            True
+        """
+        return self._node.remove_attribute(attr._attr)
+
     
     # XPath methods using XPathQuery internally
     def select_nodes(self, str query):
