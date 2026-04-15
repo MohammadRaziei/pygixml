@@ -76,6 +76,28 @@ class TestXMLNodeChildren:
         assert students[0].attribute("firstName").value == "Alice"
         assert students[1].attribute("firstName").value == "Bob"
 
+    def test_prepend_child(self):
+        doc = pygixml.parse_string(
+            '<class name="CS101">'
+            '  <student id="001" firstName="Alice"/>'
+            '  <student id="002" firstName="Bob"/>'
+            '</class>'
+        )
+        class_item = doc.first_child()
+        new_student = class_item.prepend_child("student")
+        attr = new_student.append_attribute("id")
+        attr.set_value("007")
+
+        elements = list(class_item.children())
+
+        assert new_student is not None
+        assert new_student.name == "student"
+        assert new_student.attribute("id") is not None
+        assert new_student.attribute("id").value == "007"
+        assert len(elements) == 3
+        assert elements[0].attribute("id") is not None
+        assert elements[0].attribute("id").value == "007"
+
     def test_from_mem_id_unsafe_matches_find_mem_id(self):
         """from_mem_id_unsafe should produce the same node as find_mem_id"""
         doc = pygixml.parse_string("<root><item>Hello</item></root>")
