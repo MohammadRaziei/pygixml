@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.10.2"
+version = "0.11.0"
 description = "High-performance Cython XML parser for Python — pugixml with a Pythonic API"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
