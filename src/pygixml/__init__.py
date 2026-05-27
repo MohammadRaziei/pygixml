@@ -22,6 +22,7 @@ from .pygixml_cy import (
     parse_file,
 )
 
+from . import objectify
 
 
 __all__ = [
@@ -36,4 +37,5 @@ __all__ = [
     "ParseFlags",
     "parse_string",
     "parse_file",
+    "objectify",
 ]
