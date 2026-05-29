@@ -1,4 +1,17 @@
 # ---------------------------------------------------------------------------
+# Null-check helpers
+# ---------------------------------------------------------------------------
+# xml_node  : type() == node_null  means null  (mirrors XMLNode.__bool__)
+# xml_attribute : name().empty()   means null  (mirrors XMLAttribute.__bool__)
+
+cdef inline bint _node_is_null(xml_node n):
+    return n.type() == node_null
+
+cdef inline bint _attr_is_null(xml_attribute a):
+    cdef string name = a.name()   # copy into std::string — same pattern as XMLAttribute.__bool__
+    return name.empty()
+
+# ---------------------------------------------------------------------------
 # Internal helpers (cdef — not visible from Python)
 # ---------------------------------------------------------------------------
 
@@ -36,17 +49,21 @@ cdef list _obj_candidate_names(str py_name):
 
 
 cdef list _obj_collect_siblings(xml_node parent, bytes tag_b, object doc_ref):
-    """Collect direct children of *parent* whose name == tag_b."""
-    cdef xml_node child = parent.first_child()
-    cdef list result = []
-    while not child.empty():
-        if child.type() == node_element and child.name() == tag_b:
-            result.append(ObjectifiedElement._from_raw(child, doc_ref))
+    """Return ObjectifiedElements for every direct child of parent named tag_b."""
+    cdef xml_node child    = parent.first_child()
+    cdef list     result   = []
+    # child.name() returns const char* — copy into string for reliable comparison
+    cdef string   tag_s    = tag_b
+    cdef string   child_name
+    while not _node_is_null(child):
+        if child.type() == node_element:
+            child_name = child.name()
+            if child_name == tag_s:
+                result.append(ObjectifiedElement._from_raw(child, doc_ref))
         child = child.next_sibling()
     return result
 
 
-# Names that must never be forwarded to the XML lookup path.
 _OBJ_RESERVED = frozenset({"_node", "_doc_ref"})
 
 
@@ -58,7 +75,7 @@ cdef class NodeSequence:
     """A sequence of :class:`ObjectifiedElement` siblings sharing a tag.
 
     Supports integer indexing (including negative), ``len()``, and iteration.
-    When exactly one element is present, calling or converting to ``str``
+    When exactly one element is present, calling or ``str()``-ing the sequence
     delegates to that sole item.
     """
 
@@ -93,7 +110,8 @@ cdef class NodeSequence:
         )
 
     def __bool__(self):
-        return bool(self._items)
+        # Avoid 'bool(...)' — conflicts with 'from libcpp cimport bool' in pyx
+        return len(self._items) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -104,40 +122,31 @@ cdef class ObjectifiedElement:
     """Wraps an XML element node with attribute-style navigation.
 
     Stores the pugixml ``xml_node`` struct directly as a C-level field —
-    no intermediate :class:`XMLNode` Python object is allocated per access.
-    ``_doc_ref`` holds the owning :class:`XMLDocument` alive so the
+    no intermediate Python wrapper is allocated per access.
+    ``_doc_ref`` keeps the owning :class:`XMLDocument` alive so the
     underlying pugixml memory is never freed while a wrapper exists.
 
     Navigation
     ----------
-    * ``elem.child_tag``   – first ``<child_tag>`` child element; falls
-      back to ``<child-tag>`` if the underscore form is not found.
-    * ``elem.attr_name``   – XML attribute value (type-inferred) when no
+    * ``elem.child_tag``  – first ``<child_tag>`` child element; falls back
+      to ``<child-tag>`` via underscore→hyphen mapping.
+    * ``elem.attr_name``  – XML attribute value (type-inferred) when no
       matching child element exists; also tries the hyphen form.
-    * ``elem.tag[n]``      – *n*-th sibling among direct siblings sharing
-      the same tag; returns a :class:`NodeSequence` when multiple exist.
+    * ``elem.tag[n]``     – n-th sibling among direct siblings sharing the
+      same tag; returns a :class:`NodeSequence` when multiple exist.
 
-    Type inference
-    --------------
-    ``"true"``/``"false"`` → ``bool``, integer strings → ``int``,
-    decimal / scientific strings → ``float``, everything else → ``str``.
+    Type inference: ``"true"``/``"false"`` → ``bool``, integer strings →
+    ``int``, decimal/scientific strings → ``float``, everything else → ``str``.
 
-    Text access
-    -----------
-    * ``str(elem)``  – raw text content, always a plain ``str``.
-    * ``elem()``     – type-inferred text content.
-
-    Priority
-    --------
-    Child elements win over same-named attributes.  To read an attribute
-    that is shadowed by a child, use ``elem.attrib['name']``.
+    Priority: child elements win over same-named attributes.
+    To read a shadowed attribute use ``elem.attrib['name']``.
     """
 
     cdef xml_node _node     # C struct — zero Python object overhead
     cdef object   _doc_ref  # XMLDocument ref — prevents GC of the document
 
     def __cinit__(self):
-        pass  # _node default-constructed (empty) by Cython
+        pass  # _node is default-constructed (empty/null) by Cython
 
     @staticmethod
     cdef ObjectifiedElement _from_raw(xml_node node, object doc_ref):
@@ -154,34 +163,36 @@ cdef class ObjectifiedElement:
         if name in _OBJ_RESERVED:
             raise AttributeError(name)
 
-        cdef list   candidates = _obj_candidate_names(name)
-        cdef bytes  cb
+        cdef list       candidates = _obj_candidate_names(name)
+        cdef bytes      cb
         cdef xml_node   probe
         cdef xml_attribute attr_c
-        cdef list   siblings
-        cdef str    found_tag = None
+        cdef list       siblings
+        cdef str        found_tag = None
 
-        # 1. child element lookup (exact name, then hyphen form)
+        # 1. Child element lookup (exact name, then hyphen form)
         for candidate in candidates:
             cb = (<str>candidate).encode("utf-8")
             probe = self._node.child(cb)
-            if not probe.empty():
+            if not _node_is_null(probe):
                 found_tag = candidate
                 break
 
         if found_tag is not None:
             siblings = _obj_collect_siblings(
-                self._node, (<str>found_tag).encode("utf-8"), self._doc_ref
+                self._node,
+                (<str>found_tag).encode("utf-8"),
+                self._doc_ref,
             )
             if len(siblings) == 1:
                 return siblings[0]
             return NodeSequence(siblings)
 
-        # 2. attribute lookup (exact name, then hyphen form)
+        # 2. Attribute lookup (exact name, then hyphen form)
         for candidate in candidates:
             cb = (<str>candidate).encode("utf-8")
             attr_c = self._node.attribute(cb)
-            if not attr_c.empty():
+            if not _attr_is_null(attr_c):
                 return _infer_type(attr_c.value().decode("utf-8"))
 
         raise AttributeError(
@@ -203,7 +214,9 @@ cdef class ObjectifiedElement:
     def __str__(self):
         """Raw text content, always a plain ``str``."""
         cdef string raw = self._node.child_value()
-        return raw.decode("utf-8") if not raw.empty() else ""
+        if raw.empty():
+            return ""
+        return raw.decode("utf-8")
 
     def __repr__(self):
         return f"ObjectifiedElement(<{self._node.name().decode('utf-8')}>)"
@@ -213,9 +226,9 @@ cdef class ObjectifiedElement:
     # ------------------------------------------------------------------
 
     def __iter__(self):
-        """Iterate over direct child *element* nodes."""
+        """Iterate over direct child element nodes."""
         cdef xml_node child = self._node.first_child()
-        while not child.empty():
+        while not _node_is_null(child):
             if child.type() == node_element:
                 yield ObjectifiedElement._from_raw(child, self._doc_ref)
             child = child.next_sibling()
@@ -223,14 +236,14 @@ cdef class ObjectifiedElement:
     def __len__(self):
         cdef xml_node child = self._node.first_child()
         cdef int count = 0
-        while not child.empty():
+        while not _node_is_null(child):
             if child.type() == node_element:
                 count += 1
             child = child.next_sibling()
         return count
 
     def __bool__(self):
-        return not self._node.empty()
+        return not _node_is_null(self._node)
 
     def __eq__(self, other):
         if isinstance(other, ObjectifiedElement):
@@ -256,12 +269,12 @@ cdef class ObjectifiedElement:
     def attrib(self):
         """All attributes as a ``{name: typed_value}`` dict.
 
-        Values are type-inferred (``bool`` / ``int`` / ``float`` / ``str``).
         Walks the C-level attribute linked list directly — no Python wrappers.
+        Values are type-inferred (bool / int / float / str).
         """
         cdef xml_attribute a = self._node.first_attribute()
         cdef dict result = {}
-        while not a.empty():
+        while not _attr_is_null(a):
             result[a.name().decode("utf-8")] = _infer_type(a.value().decode("utf-8"))
             a = a.next_attribute()
         return result
@@ -278,7 +291,7 @@ cdef class ObjectifiedElement:
 # ---------------------------------------------------------------------------
 
 def objectify_from_string(str xml):
-    """Parse an XML *string* and return the root as :class:`ObjectifiedElement`.
+    """Parse an XML string and return the root as :class:`ObjectifiedElement`.
 
     Args:
         xml (str): XML source text.
@@ -287,25 +300,26 @@ def objectify_from_string(str xml):
         ObjectifiedElement: The document root element.
 
     Raises:
-        PygiXMLError: If the XML is malformed or has no root.
+        PygiXMLError: If the XML is malformed or has no root element.
 
     Example::
 
-        root = objectify_from_string('<db ver="2"><item>x</item></db>')
-        print(root.ver)         # 2  (int)
-        print(str(root.item))   # 'x'
+        root = objectify.from_string('<db ver="2"><item>x</item></db>')
+        print(root.ver)        # 2  (int)
+        print(str(root.item))  # 'x'
     """
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_string(xml):
         raise PygiXMLError("Failed to parse XML string")
-    cdef xml_node root_raw = doc._doc.document_element()
-    if root_raw.empty():
+    # doc._doc is an xml_document* ; first_child() returns xml_node directly
+    cdef xml_node root_raw = doc._doc.first_child()
+    if _node_is_null(root_raw):
         raise PygiXMLError("Parsed document has no root element")
     return ObjectifiedElement._from_raw(root_raw, doc)
 
 
 def objectify_from_file(str path):
-    """Parse an XML *file* and return the root as :class:`ObjectifiedElement`.
+    """Parse an XML file and return the root as :class:`ObjectifiedElement`.
 
     Args:
         path (str): Filesystem path to the XML file.
@@ -318,13 +332,13 @@ def objectify_from_file(str path):
 
     Example::
 
-        root = objectify_from_file("config.xml")
+        root = objectify.from_file("config.xml")
         print(root.server.host)
     """
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_file(path):
         raise PygiXMLError(f"Failed to parse XML file: {path}")
-    cdef xml_node root_raw = doc._doc.document_element()
-    if root_raw.empty():
+    cdef xml_node root_raw = doc._doc.first_child()
+    if _node_is_null(root_raw):
         raise PygiXMLError(f"File {path!r} has no root element")
     return ObjectifiedElement._from_raw(root_raw, doc)
