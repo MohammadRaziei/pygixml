@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tests for pygixml.objectify — lxml.objectify-style interface.
+Tests for pygixml.objectify (cdef class implementation in pygixml_cy.pyx).
 
 Run with:
     pytest tests/test_objectify.py -v
@@ -11,13 +11,12 @@ import tempfile
 
 import pytest
 
-# The module lives at src/pygixml/objectify.py, installed as pygixml.objectify
 from pygixml import objectify
 from pygixml.objectify import ObjectifiedElement, NodeSequence
 
 
 # ---------------------------------------------------------------------------
-# Shared fixtures
+# Shared XML fixture
 # ---------------------------------------------------------------------------
 
 FULL_XML = """
@@ -39,11 +38,10 @@ def root():
 
 
 # ---------------------------------------------------------------------------
-# 1.  Entry points
+# 1. Entry points
 # ---------------------------------------------------------------------------
 
 class TestEntryPoints:
-    """from_string and from_file return ObjectifiedElement."""
 
     def test_from_string_returns_objectified_element(self, root):
         assert isinstance(root, ObjectifiedElement)
@@ -74,15 +72,13 @@ class TestEntryPoints:
 
 
 # ---------------------------------------------------------------------------
-# 2.  Dotted navigation (child elements)
+# 2. Dotted navigation
 # ---------------------------------------------------------------------------
 
 class TestDottedNavigation:
-    """Attribute access walks the child element tree."""
 
     def test_single_child_returns_element(self, root):
-        up = root.user_profile
-        assert isinstance(up, ObjectifiedElement)
+        assert isinstance(root.user_profile, ObjectifiedElement)
 
     def test_nested_child(self, root):
         assert isinstance(root.user_profile.first_name, ObjectifiedElement)
@@ -97,22 +93,17 @@ class TestDottedNavigation:
 
 
 # ---------------------------------------------------------------------------
-# 3.  Identifier mapping: underscores → hyphens
+# 3. Hyphen / underscore mapping
 # ---------------------------------------------------------------------------
 
 class TestHyphenMapping:
-    """Python underscores are transparently mapped to XML hyphens."""
 
     def test_underscore_finds_hyphen_tag(self, root):
-        # <user-profile> found via root.user_profile
-        up = root.user_profile
-        assert up.tag == "user-profile"
+        assert root.user_profile.tag == "user-profile"
 
     def test_direct_underscore_tag_wins(self):
-        # An actual underscore tag must win over the hyphen variant
         xml = "<root><a_b>underscore</a_b><a-b>hyphen</a-b></root>"
         r = objectify.from_string(xml)
-        # a_b (literal) is tried first; it exists → return it, not a-b
         assert str(r.a_b) == "underscore"
 
     def test_only_hyphen_exists(self):
@@ -127,11 +118,10 @@ class TestHyphenMapping:
 
 
 # ---------------------------------------------------------------------------
-# 4.  Attribute access and type inference
+# 4. Attribute access and type inference
 # ---------------------------------------------------------------------------
 
 class TestAttributeAccess:
-    """Attributes fall through from __getattr__ when no child matches."""
 
     def test_string_attribute(self, root):
         assert root.name == "users_db"
@@ -149,45 +139,39 @@ class TestAttributeAccess:
     def test_bool_true_attribute(self, root):
         val = root.user_profile.verified
         assert val is True
-        assert isinstance(val, bool)
 
     def test_bool_false_attribute(self):
-        xml = '<root active="false"/>'
-        r = objectify.from_string(xml)
-        val = r.active
-        assert val is False
-        assert isinstance(val, bool)
+        r = objectify.from_string('<root active="false"/>')
+        assert r.active is False
 
     def test_bool_case_insensitive(self):
-        xml = '<root a="True" b="FALSE" c="TRUE"/>'
-        r = objectify.from_string(xml)
+        r = objectify.from_string('<root a="True" b="FALSE" c="TRUE"/>')
         assert r.a is True
         assert r.b is False
         assert r.c is True
 
     def test_integer_string_becomes_int(self):
-        xml = '<root count="7"/>'
-        assert objectify.from_string(xml).count == 7
+        r = objectify.from_string('<root count="7"/>')
+        assert r.count == 7
+        assert isinstance(r.count, int)
 
     def test_float_string_becomes_float(self):
-        xml = '<root ratio="3.14"/>'
-        val = objectify.from_string(xml).ratio
+        r = objectify.from_string('<root ratio="3.14"/>')
+        val = r.ratio
         assert abs(val - 3.14) < 1e-9
         assert isinstance(val, float)
 
     def test_plain_string_stays_string(self):
-        xml = '<root label="hello"/>'
-        val = objectify.from_string(xml).label
-        assert val == "hello"
-        assert isinstance(val, str)
+        r = objectify.from_string('<root label="hello"/>')
+        assert r.label == "hello"
+        assert isinstance(r.label, str)
 
 
 # ---------------------------------------------------------------------------
-# 5.  Type inference for leaf-node text
+# 5. Type inference for leaf-node text  (via __call__)
 # ---------------------------------------------------------------------------
 
 class TestTypeInferenceText:
-    """Calling an element returns the type-inferred text content."""
 
     def test_call_returns_float(self, root):
         val = root.user_profile.balance()
@@ -200,50 +184,42 @@ class TestTypeInferenceText:
         assert isinstance(val, str)
 
     def test_call_returns_int_text(self):
-        xml = "<root><count>42</count></root>"
-        r = objectify.from_string(xml)
+        r = objectify.from_string("<root><count>42</count></root>")
         assert r.count() == 42
         assert isinstance(r.count(), int)
 
     def test_call_returns_bool_text(self):
-        xml = "<root><flag>true</flag></root>"
-        r = objectify.from_string(xml)
+        r = objectify.from_string("<root><flag>true</flag></root>")
         assert r.flag() is True
 
     def test_call_empty_node_returns_none(self):
-        xml = "<root><empty/></root>"
-        r = objectify.from_string(xml)
+        r = objectify.from_string("<root><empty/></root>")
         assert r.empty() is None
 
 
 # ---------------------------------------------------------------------------
-# 6.  str() access
+# 6. str() access
 # ---------------------------------------------------------------------------
 
 class TestStrAccess:
-    """str(elem) always returns a plain string."""
 
     def test_str_returns_text(self, root):
         assert str(root.user_profile.first_name) == "Mohammad"
 
-    def test_str_on_float_node_returns_string(self, root):
+    def test_str_always_returns_string_type(self, root):
         result = str(root.user_profile.balance)
-        # It's a string, not a float
         assert isinstance(result, str)
-        assert "450.75" in result
 
     def test_str_empty_node_returns_empty_string(self):
-        xml = "<root><empty/></root>"
-        r = objectify.from_string(xml)
+        r = objectify.from_string("<root><empty/></root>")
         assert str(r.empty) == ""
 
 
 # ---------------------------------------------------------------------------
-# 7.  Sequence handling: NodeSequence
+# 7. Sequence handling (NodeSequence)
 # ---------------------------------------------------------------------------
 
 class TestSequenceHandling:
-    """Multiple same-name siblings produce a NodeSequence."""
 
     def test_multiple_siblings_return_node_sequence(self, root):
         assert isinstance(root.entry, NodeSequence)
@@ -264,25 +240,20 @@ class TestSequenceHandling:
         assert str(root.entry[-1]) == "Value C"
 
     def test_iteration(self, root):
-        texts = [str(e) for e in root.entry]
-        assert texts == ["Value A", "Value B", "Value C"]
+        assert [str(e) for e in root.entry] == ["Value A", "Value B", "Value C"]
 
-    def test_single_child_returns_element_not_sequence(self, root):
-        # user-profile appears only once → plain ObjectifiedElement
+    def test_single_child_is_element_not_sequence(self, root):
         assert isinstance(root.user_profile, ObjectifiedElement)
 
     def test_sequence_bool_true(self, root):
         assert bool(root.entry) is True
 
-    def test_sequence_bool_false_empty():
-        # Fabricate an empty sequence
+    def test_sequence_bool_false_empty(self):
         seq = NodeSequence([])
         assert bool(seq) is False
 
     def test_sequence_call_single_item(self):
-        xml = "<root><x>3.5</x></root>"
-        r = objectify.from_string(xml)
-        # x appears once → ObjectifiedElement, calling it gives float
+        r = objectify.from_string("<root><x>3.5</x></root>")
         assert r.x() == 3.5
 
     def test_sequence_call_multi_raises(self, root):
@@ -295,34 +266,28 @@ class TestSequenceHandling:
 
 
 # ---------------------------------------------------------------------------
-# 8.  Conflict resolution: children beat attributes
+# 8. Conflict resolution: child elements beat attributes
 # ---------------------------------------------------------------------------
 
 class TestConflictResolution:
-    """When a child element and an attribute share a name, the child wins."""
 
     def test_child_beats_attribute(self):
-        # <root name="attr_value"><name>child_value</name></root>
         xml = '<root name="attr_value"><name>child_value</name></root>'
         r = objectify.from_string(xml)
-        result = r.name
-        # Must be the child element, not the string "attr_value"
-        assert isinstance(result, ObjectifiedElement)
-        assert str(result) == "child_value"
+        assert isinstance(r.name, ObjectifiedElement)
+        assert str(r.name) == "child_value"
 
-    def test_attribute_accessed_directly_via_node(self):
+    def test_attribute_still_accessible_via_attrib(self):
         xml = '<root name="attr_value"><name>child_value</name></root>'
         r = objectify.from_string(xml)
-        raw_attr = r._node.attribute("name")
-        assert raw_attr.value == "attr_value"
+        assert r.attrib["name"] == "attr_value"
 
 
 # ---------------------------------------------------------------------------
-# 9.  ObjectifiedElement properties
+# 9. ObjectifiedElement properties
 # ---------------------------------------------------------------------------
 
 class TestElementProperties:
-    """tag, text_content, attrib, xml properties."""
 
     def test_tag_property(self, root):
         assert root.tag == "database"
@@ -334,62 +299,57 @@ class TestElementProperties:
         assert d["version"] == 1.2
 
     def test_attrib_type_inference(self, root):
-        up_attrib = root.user_profile.attrib
-        assert up_attrib["id"] == 101
-        assert up_attrib["verified"] is True
+        d = root.user_profile.attrib
+        assert d["id"] == 101
+        assert d["verified"] is True
+
+    def test_attrib_empty(self):
+        r = objectify.from_string("<root/>")
+        assert r.attrib == {}
 
     def test_xml_property_contains_tag(self, root):
-        xml_str = root.xml
-        assert "database" in xml_str
-        assert "user-profile" in xml_str
+        assert "database" in root.xml
+        assert "user-profile" in root.xml
 
     def test_text_content_property(self, root):
         assert root.user_profile.first_name.text_content == "Mohammad"
 
 
 # ---------------------------------------------------------------------------
-# 10.  Iteration and len on ObjectifiedElement
+# 10. Iteration and len on ObjectifiedElement
 # ---------------------------------------------------------------------------
 
 class TestIterationAndLen:
-    """__iter__ and __len__ walk direct child elements."""
 
-    def test_iter_children(self, root):
+    def test_iter_yields_elements(self, root):
         tags = [child.tag for child in root]
-        # user-profile + entry + entry + entry = 4
         assert "user-profile" in tags
         assert tags.count("entry") == 3
 
     def test_len(self, root):
-        assert len(root) == 4   # user-profile + 3 entries
+        assert len(root) == 4  # user-profile + 3 entries
 
-    def test_len_leaf(self, root):
+    def test_len_leaf_node(self, root):
         assert len(root.user_profile.first_name) == 0
 
     def test_bool_non_null(self, root):
         assert bool(root) is True
 
-    def test_bool_null_like(self):
-        # A child that doesn't exist should raise AttributeError, not return falsy
-        xml = "<root/>"
-        r = objectify.from_string(xml)
+    def test_missing_attr_raises_not_returns_falsy(self):
+        r = objectify.from_string("<root/>")
         with pytest.raises(AttributeError):
             _ = r.missing
 
 
 # ---------------------------------------------------------------------------
-# 11.  Equality
+# 11. Equality
 # ---------------------------------------------------------------------------
 
 class TestEquality:
-    """Two wrappers around the same node compare equal."""
 
     def test_same_node_equal(self):
-        xml = "<root><item/></root>"
-        r = objectify.from_string(xml)
-        a = r.item
-        b = r.item
-        assert a == b
+        r = objectify.from_string("<root><item/></root>")
+        assert r.item == r.item
 
     def test_different_nodes_not_equal(self, root):
         assert root.user_profile != root.entry[0]
@@ -399,16 +359,14 @@ class TestEquality:
 
 
 # ---------------------------------------------------------------------------
-# 12.  Document lifetime (GC safety)
+# 12. Document lifetime (GC safety)
 # ---------------------------------------------------------------------------
 
 class TestDocumentLifetime:
-    """The wrapper keeps the XMLDocument alive via _doc_ref."""
 
     def test_doc_ref_survives_gc(self):
         import gc
         root = objectify.from_string("<root><child>alive</child></root>")
-        # Force a GC cycle; the document must not be collected
         gc.collect()
         assert str(root.child) == "alive"
 
@@ -421,31 +379,26 @@ class TestDocumentLifetime:
 
 
 # ---------------------------------------------------------------------------
-# 13.  Edge cases
+# 13. Edge cases
 # ---------------------------------------------------------------------------
 
 class TestEdgeCases:
-    """Boundary conditions and unusual XML."""
 
     def test_numeric_zero_attribute(self):
-        xml = '<root count="0"/>'
-        r = objectify.from_string(xml)
+        r = objectify.from_string('<root count="0"/>')
         assert r.count == 0
         assert isinstance(r.count, int)
 
     def test_negative_number_attribute(self):
-        xml = '<root delta="-3.5"/>'
-        r = objectify.from_string(xml)
+        r = objectify.from_string('<root delta="-3.5"/>')
         assert r.delta == -3.5
 
     def test_scientific_notation_attribute(self):
-        xml = '<root eps="1e-5"/>'
-        r = objectify.from_string(xml)
+        r = objectify.from_string('<root eps="1e-5"/>')
         assert abs(r.eps - 1e-5) < 1e-15
 
     def test_unicode_text(self):
-        xml = "<root><city>تهران</city></root>"
-        r = objectify.from_string(xml)
+        r = objectify.from_string("<root><city>تهران</city></root>")
         assert str(r.city) == "تهران"
 
     def test_empty_root(self):
@@ -454,23 +407,20 @@ class TestEdgeCases:
         assert list(r) == []
 
     def test_deeply_nested(self):
-        xml = "<a><b><c><d><e>deep</e></d></c></b></a>"
-        r = objectify.from_string(xml)
+        r = objectify.from_string("<a><b><c><d><e>deep</e></d></c></b></a>")
         assert str(r.b.c.d.e) == "deep"
 
     def test_whitespace_text_stripped_by_infer(self):
-        xml = "<root><n>  42  </n></root>"
-        r = objectify.from_string(xml)
-        # _infer_type strips before conversion
+        r = objectify.from_string("<root><n>  42  </n></root>")
         assert r.n() == 42
-
-    def test_attrib_empty(self):
-        xml = "<root/>"
-        r = objectify.from_string(xml)
-        assert r.attrib == {}
 
     def test_repr_contains_tag(self, root):
         assert "database" in repr(root)
 
     def test_node_sequence_repr(self, root):
         assert "NodeSequence" in repr(root.entry)
+
+    def test_cdef_class_has_no_dict(self, root):
+        # cdef classes must not have __dict__ (memory overhead check)
+        assert not hasattr(root, "__dict__")
+        

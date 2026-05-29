@@ -1763,3 +1763,6 @@ def parse_file(str file_path, options=0xFFFFFFFF):
         return doc
     else:
         raise PygiXMLError(f"Failed to parse XML file: {file_path}")
+
+
+include "objectify.pxi"
