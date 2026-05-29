@@ -1,13 +1,6 @@
 
 # dictify.pxi
 # -------------
-# Include at the END of pygixml_cy.pyx (after objectify.pxi include):
-#     include "objectify.pxi"
-#     include "dictify.pxi"
-#
-# Provides xmltodict-compatible parse/unparse for pygixml.
-# All C types are already in scope from pygixml_cy.pyx.
-#
 # Usage:
 #   from pygixml import dictify
 #   d = dictify.parse(xml_string)
