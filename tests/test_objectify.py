@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Tests for pygixml.objectify (cdef class implementation in pygixml_cy.pyx).
 
@@ -12,14 +11,15 @@ import tempfile
 import pytest
 
 from pygixml import objectify
-from pygixml.objectify import ObjectifiedElement, NodeSequence
 
 
 # ---------------------------------------------------------------------------
-# Shared XML fixture
+# Fixtures
 # ---------------------------------------------------------------------------
 
-FULL_XML = """
+@pytest.fixture
+def xml_database():
+    return """
 <database name="users_db" version="1.2">
     <user-profile id="101" verified="true">
         <first_name>Mohammad</first_name>
@@ -31,10 +31,27 @@ FULL_XML = """
 </database>
 """
 
+@pytest.fixture
+def root(xml_database):
+    return objectify.from_string(xml_database)
+
 
 @pytest.fixture
-def root():
-    return objectify.from_string(FULL_XML)
+def xml_nested():
+    return """
+<root>
+    <item>a</item>
+    <group>
+        <item>b</item>
+        <item>c</item>
+    </group>
+    <item>d</item>
+</root>
+"""
+
+@pytest.fixture
+def root_nested(xml_nested):
+    return objectify.from_string(xml_nested)
 
 
 # ---------------------------------------------------------------------------
@@ -44,20 +61,20 @@ def root():
 class TestEntryPoints:
 
     def test_from_string_returns_objectified_element(self, root):
-        assert isinstance(root, ObjectifiedElement)
+        assert isinstance(root, objectify.ObjectifiedElement)
 
     def test_from_string_root_tag(self, root):
         assert root.tag == "database"
 
-    def test_from_file_roundtrip(self, root):
+    def test_from_file_roundtrip(self, xml_database):
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".xml", delete=False, encoding="utf-8"
         ) as f:
-            f.write(FULL_XML)
+            f.write(xml_database)
             tmp = f.name
         try:
             loaded = objectify.from_file(tmp)
-            assert isinstance(loaded, ObjectifiedElement)
+            assert isinstance(loaded, objectify.ObjectifiedElement)
             assert loaded.tag == "database"
         finally:
             os.unlink(tmp)
@@ -78,10 +95,10 @@ class TestEntryPoints:
 class TestDottedNavigation:
 
     def test_single_child_returns_element(self, root):
-        assert isinstance(root.user_profile, ObjectifiedElement)
+        assert isinstance(root.user_profile, objectify.ObjectifiedElement)
 
     def test_nested_child(self, root):
-        assert isinstance(root.user_profile.first_name, ObjectifiedElement)
+        assert isinstance(root.user_profile.first_name, objectify.ObjectifiedElement)
 
     def test_missing_child_raises_attribute_error(self, root):
         with pytest.raises(AttributeError):
@@ -137,8 +154,7 @@ class TestAttributeAccess:
         assert isinstance(val, int)
 
     def test_bool_true_attribute(self, root):
-        val = root.user_profile.verified
-        assert val is True
+        assert root.user_profile.verified is True
 
     def test_bool_false_attribute(self):
         r = objectify.from_string('<root active="false"/>')
@@ -168,7 +184,7 @@ class TestAttributeAccess:
 
 
 # ---------------------------------------------------------------------------
-# 5. Type inference for leaf-node text  (via __call__)
+# 5. Type inference for leaf-node text
 # ---------------------------------------------------------------------------
 
 class TestTypeInferenceText:
@@ -207,8 +223,7 @@ class TestStrAccess:
         assert str(root.user_profile.first_name) == "Mohammad"
 
     def test_str_always_returns_string_type(self, root):
-        result = str(root.user_profile.balance)
-        assert isinstance(result, str)
+        assert isinstance(str(root.user_profile.balance), str)
 
     def test_str_empty_node_returns_empty_string(self):
         r = objectify.from_string("<root><empty/></root>")
@@ -222,7 +237,7 @@ class TestStrAccess:
 class TestSequenceHandling:
 
     def test_multiple_siblings_return_node_sequence(self, root):
-        assert isinstance(root.entry, NodeSequence)
+        assert isinstance(root.entry, objectify.NodeSequence)
 
     def test_node_sequence_len(self, root):
         assert len(root.entry) == 3
@@ -243,13 +258,13 @@ class TestSequenceHandling:
         assert [str(e) for e in root.entry] == ["Value A", "Value B", "Value C"]
 
     def test_single_child_is_element_not_sequence(self, root):
-        assert isinstance(root.user_profile, ObjectifiedElement)
+        assert isinstance(root.user_profile, objectify.ObjectifiedElement)
 
     def test_sequence_bool_true(self, root):
         assert bool(root.entry) is True
 
     def test_sequence_bool_false_empty(self):
-        seq = NodeSequence([])
+        seq = objectify.NodeSequence([])
         assert bool(seq) is False
 
     def test_sequence_call_single_item(self):
@@ -266,7 +281,7 @@ class TestSequenceHandling:
 
 
 # ---------------------------------------------------------------------------
-# 8. Conflict resolution: child elements beat attributes
+# 8. Conflict resolution: child beats attribute
 # ---------------------------------------------------------------------------
 
 class TestConflictResolution:
@@ -274,7 +289,7 @@ class TestConflictResolution:
     def test_child_beats_attribute(self):
         xml = '<root name="attr_value"><name>child_value</name></root>'
         r = objectify.from_string(xml)
-        assert isinstance(r.name, ObjectifiedElement)
+        assert isinstance(r.name, objectify.ObjectifiedElement)
         assert str(r.name) == "child_value"
 
     def test_attribute_still_accessible_via_attrib(self):
@@ -316,7 +331,7 @@ class TestElementProperties:
 
 
 # ---------------------------------------------------------------------------
-# 10. Iteration and len on ObjectifiedElement
+# 10. Iteration and len
 # ---------------------------------------------------------------------------
 
 class TestIterationAndLen:
@@ -370,9 +385,9 @@ class TestDocumentLifetime:
         gc.collect()
         assert str(root.child) == "alive"
 
-    def test_nested_access_after_gc(self):
+    def test_nested_access_after_gc(self, xml_database):
         import gc
-        root = objectify.from_string(FULL_XML)
+        root = objectify.from_string(xml_database)
         up = root.user_profile
         gc.collect()
         assert str(up.first_name) == "Mohammad"
@@ -421,6 +436,131 @@ class TestEdgeCases:
         assert "NodeSequence" in repr(root.entry)
 
     def test_cdef_class_has_no_dict(self, root):
-        # cdef classes must not have __dict__ (memory overhead check)
         assert not hasattr(root, "__dict__")
-        
+
+
+# ---------------------------------------------------------------------------
+# 14. get() — safe attribute access
+# ---------------------------------------------------------------------------
+
+class TestGet:
+
+    def test_get_existing_int(self, root):
+        assert root.user_profile.get("id") == 101
+
+    def test_get_existing_bool(self, root):
+        assert root.user_profile.get("verified") is True
+
+    def test_get_existing_string(self, root):
+        assert root.get("name") == "users_db"
+
+    def test_get_missing_returns_none(self, root):
+        assert root.get("no_such_attr") is None
+
+    def test_get_missing_returns_default(self, root):
+        assert root.get("no_such_attr", -1) == -1
+
+    def test_get_missing_default_zero(self, root):
+        assert root.get("missing", 0) == 0
+
+    def test_get_missing_default_false(self, root):
+        assert root.get("missing", False) is False
+
+    def test_get_hyphen_mapping(self):
+        r = objectify.from_string('<root data-id="7"/>')
+        assert r.get("data_id") == 7
+
+    def test_get_does_not_find_child_elements(self, root):
+        assert root.get("entry") is None
+        assert root.get("entry", "nope") == "nope"
+
+    def test_get_never_raises(self, root):
+        assert root.get("__totally_missing__", "safe") == "safe"
+
+    def test_get_type_inference(self):
+        r = objectify.from_string('<r x="3.14" y="0" z="false"/>')
+        assert isinstance(r.get("x"), float)
+        assert r.get("y") == 0
+        assert r.get("z") is False
+
+
+# ---------------------------------------------------------------------------
+# 15. find() — first matching descendant
+# ---------------------------------------------------------------------------
+
+class TestFind:
+
+    def test_find_direct_child(self, root):
+        result = root.find("entry")
+        assert isinstance(result, objectify.ObjectifiedElement)
+        assert str(result) == "Value A"
+
+    def test_find_deep(self, root):
+        result = root.find("first_name")
+        assert result is not None
+        assert str(result) == "Mohammad"
+
+    def test_find_missing_returns_none(self, root):
+        assert root.find("no_such_tag") is None
+
+    def test_find_non_recursive_direct_hit(self, root):
+        result = root.find("entry", recursive=False)
+        assert result is not None
+        assert str(result) == "Value A"
+
+    def test_find_non_recursive_misses_deep(self, root):
+        assert root.find("first_name", recursive=False) is None
+
+    def test_find_hyphen_mapping(self, root):
+        result = root.find("user_profile")
+        assert result is not None
+        assert result.tag == "user-profile"
+
+    def test_find_returns_first(self):
+        r = objectify.from_string("<root><item>first</item><item>second</item></root>")
+        assert str(r.find("item")) == "first"
+
+    def test_find_deeply_nested(self):
+        r = objectify.from_string("<a><b><c><d><target>deep</target></d></c></b></a>")
+        assert str(r.find("target")) == "deep"
+
+    def test_find_on_leaf_returns_none(self, root):
+        assert root.user_profile.first_name.find("anything") is None
+
+
+# ---------------------------------------------------------------------------
+# 16. findall() — all matching descendants
+# ---------------------------------------------------------------------------
+
+class TestFindAll:
+
+    def test_findall_direct_children(self, root):
+        results = root.findall("entry", recursive=False)
+        assert [str(r) for r in results] == ["Value A", "Value B", "Value C"]
+
+    def test_findall_recursive(self, root_nested):
+        results = root_nested.findall("item")
+        assert [str(x) for x in results] == ["a", "b", "c", "d"]
+
+    def test_findall_non_recursive_skips_nested(self, root_nested):
+        results = root_nested.findall("item", recursive=False)
+        assert [str(x) for x in results] == ["a", "d"]
+
+    def test_findall_missing_returns_empty(self, root):
+        assert root.findall("no_such_tag") == []
+
+    def test_findall_hyphen_mapping(self, root):
+        results = root.findall("user_profile")
+        assert len(results) == 1
+        assert results[0].tag == "user-profile"
+
+    def test_findall_returns_objectified_elements(self, root):
+        for elem in root.findall("entry"):
+            assert isinstance(elem, objectify.ObjectifiedElement)
+
+    def test_findall_document_order(self):
+        r = objectify.from_string("<root><x>1</x><y><x>2</x></y><x>3</x></root>")
+        assert [str(x) for x in r.findall("x")] == ["1", "2", "3"]
+
+    def test_findall_on_leaf_returns_empty(self, root):
+        assert root.user_profile.first_name.findall("anything") == []
