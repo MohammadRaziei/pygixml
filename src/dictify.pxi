@@ -1,3 +1,4 @@
+
 # dictify.pxi
 # -------------
 # Include at the END of pygixml_cy.pyx (after objectify.pxi include):
@@ -9,8 +10,8 @@
 #
 # Usage:
 #   from pygixml import dictify
-#   d = xmltodict.parse(xml_string)
-#   s = xmltodict.unparse(d)
+#   d = dictify.parse(xml_string)
+#   s = dictify.unparse(d)
 
 # ---------------------------------------------------------------------------
 # Internal: convert a single xml_node to a Python object (recursive)
@@ -137,7 +138,7 @@ def dictify_parse(str xml,
     Example::
 
         from pygixml import dictify
-        d = xmltodict.parse('<root id="1"><item>a</item><item>b</item></root>')
+        d = dictify.parse('<root id="1"><item>a</item><item>b</item></root>')
         # {'root': {'@id': '1', 'item': ['a', 'b']}}
     """
     cdef XMLDocument doc = XMLDocument()
@@ -251,7 +252,7 @@ def dictify_unparse(object input_dict,
                       bint pretty=False):
     """Emit an XML string from a dict produced by :func:`dictify_parse`.
 
-    Matches the ``xmltodict.unparse`` signature.
+    Matches the ``dictify.unparse`` signature.
 
     Args:
         input_dict (dict): A ``{root_tag: value}`` dict.
@@ -274,7 +275,7 @@ def dictify_unparse(object input_dict,
 
         from pygixml import dictify
         d = {'root': {'@id': '1', 'item': ['a', 'b']}}
-        print(xmltodict.unparse(d, pretty=True))
+        print(dictify.unparse(d, pretty=True))
     """
     if not isinstance(input_dict, dict) or len(input_dict) != 1:
         raise ValueError("unparse expects a dict with exactly one root key")
