@@ -1766,3 +1766,4 @@ def parse_file(str file_path, options=0xFFFFFFFF):
 
 
 include "objectify.pxi"
+include "dictify.pxi"

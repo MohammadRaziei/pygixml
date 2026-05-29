@@ -4,9 +4,6 @@ pygixml - Python wrapper for pugixml using Cython
 A fast and efficient XML parser and manipulator for Python.
 """
 
-import importlib.metadata
-
-
 from .pygixml_cy import (
     __version__,
     XMLDocument,
@@ -23,7 +20,7 @@ from .pygixml_cy import (
 )
 
 from . import objectify
-
+from . import dictify
 
 __all__ = [
     "XMLDocument",
@@ -38,4 +35,5 @@ __all__ = [
     "parse_string",
     "parse_file",
     "objectify",
+    "dictify",
 ]
