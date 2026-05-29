@@ -1,7 +1,4 @@
-.. pygixml documentation master file, created by
-   sphinx-quickstart on Thu Oct  9 17:47:58 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. pygixml documentation master file
 
 Welcome to pygixml
 ==================
@@ -43,9 +40,11 @@ Features
 * **Full XPath 1.0** — complete query engine with all standard functions
 * **Memory efficient** — zero-copy C++ memory management via pugixml
 * **Pythonic API** — intuitive methods and properties, not a direct C++ mirror
+* **objectify** — lxml.objectify-style dotted navigation (``root.user.name``)
+* **dictify** — xmltodict-compatible XML → dict conversion
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
-* **XML serialization** — output with custom indentation (spaces or integer)
+* **XML serialization** — output with custom indentation
 * **Node iteration** — depth-first traversal of the entire document
 * **Node identity** — memory-based ID for debugging and comparison
 
@@ -65,12 +64,11 @@ Quick Example
    </library>
    """)
 
-   # Access elements and attributes
+   # Low-level API
    root = doc.root
    book = root.child("book")
-   print(book.name)                              # → book
-   print(book.attribute("id").value)             # → 1
-   print(book.child("title").text())             # → The Great Gatsby
+   print(book.attribute("id").value)        # → 1
+   print(book.child("title").text())        # → The Great Gatsby
 
    # XPath queries
    titles = root.select_nodes("book/title")
@@ -83,17 +81,27 @@ Quick Example
    root.append_child("item").set_value("Hello")
    doc.save_file("output.xml")
 
+   # objectify — dotted navigation
+   from pygixml import objectify
+   root = objectify.from_string(xml)
+   print(root.book.title())                 # → 'The Great Gatsby'
+   print(root.book.id)                      # → 1  (int)
+
+   # dictify — XML to dict
+   from pygixml import dictify
+   d = dictify.parse(xml)
+   print(d['library']['book']['@id']) 
+
 Core Classes
 ------------
 
-See the :doc:`api` for the complete reference with every class, method, and
-property documented.
+See the :doc:`api` for the complete reference.
 
 .. list-table::
    :widths: 25 75
    :header-rows: 1
 
-   * - Class
+   * - Class / Module
      - Description
    * - :py:class:`~pygixml.XMLDocument`
      - Document-level operations: load, save, append-child
@@ -107,30 +115,32 @@ property documented.
      - Single XPath result (wraps a node or attribute)
    * - :py:class:`~pygixml.XPathNodeSet`
      - Collection of XPath results
+   * - :doc:`objectify <objectify>`
+     - lxml.objectify-style dotted navigation
+   * - :doc:`dictify <dictify>`
+     - xmltodict-compatible XML → dict conversion
 
 Pythonic Extensions
 -------------------
 
-pugixml gives pygixml its speed, but the **API you actually use** goes
-well beyond what the C++ library provides.  pygixml adds several features
-that make working with XML from Python natural and productive:
+pugixml gives pygixml its speed, but the **API you actually use** goes well
+beyond what the C++ library provides:
 
-* :attr:`~pygixml.XMLNode.text` — recursive text extraction with
-  configurable joins.  One call to gather all text content from an element
+* :attr:`~pygixml.XMLNode.text` — recursive text extraction with configurable
+  joins. One call to gather all text content from an element
   and its descendants.
-* :meth:`~pygixml.XMLNode.children` — iterate direct child elements only
-  (or all descendants with ``recursive=True``), no manual sibling walking.
+* :meth:`~pygixml.XMLNode.children` — iterate direct child elements only (or
+  all descendants with ``recursive=True``), no manual sibling walking.s
 * :attr:`~pygixml.XMLNode.xpath` — generate an absolute XPath to any node
-  using a custom O(depth) algorithm.  Not available in pugixml natively.
-* :attr:`~pygixml.XMLNode.xml` — serialize a node and its subtree to a
-  formatted XML string in one property.
+ using a custom O(depth) algorithm.  Not available in pugixml natively.
+* :attr:`~pygixml.XMLNode.xml` — serialize a node to formatted XML in one
+  property.
 * :attr:`~pygixml.XMLNode.mem_id` — a unique numeric identifier for each
   node, ideal for caching and dictionary-based lookups.
 * :meth:`~pygixml.XMLNode.to_string` — customizable XML serialization with
   string or integer indentation.
-
-These are pygixml's own contributions — you won't find equivalents in
-pugixml.  See the :doc:`api` for full documentation of every member.
+* :doc:`objectify <objectify>` — navigate XML like a Python object tree.
+* :doc:`dictify <dictify>` — convert XML to dict / JSON with one call.
 
 .. note::
    **Properties vs Methods** — pygixml uses properties for simple accessors
@@ -189,10 +199,13 @@ Documentation Contents
    installation
    xml_basics
    quickstart
+   objectify
+   dictify
    xpath
    advanced
-   api
+   examples
    performance
+   api
 
 
 Indices and tables
