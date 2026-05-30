@@ -1,6 +1,6 @@
 .. _objectify:
 
-objectify — Dotted Navigation
+Objectify — Dotted Navigation
 ==============================
 
 ``pygixml.objectify`` provides an `lxml.objectify
@@ -335,3 +335,74 @@ Performance Notes
 * ``_doc_ref`` is the only Python-level field — it keeps the
   :class:`~pygixml.XMLDocument` alive and prevents premature GC of the
   underlying pugixml memory pool.
+
+
+Write Support
+-------------
+
+:class:`~pygixml.ObjectifiedElement` supports in-place modification via
+normal Python assignment and ``del``.
+
+.. rubric:: Assignment (``elem.name = value``)
+
+.. describe:: elem.child_tag = value
+
+   Updates the text content of an existing child element, updates an existing
+   attribute, or creates a new child element — in that priority order.
+
+   Values are automatically converted to ``str`` before writing.
+
+   .. code-block:: python
+
+      root = objectify.from_string("""
+      <db version="1.0">
+          <host>localhost</host>
+      </db>
+      """)
+
+      # Update existing child element text
+      root.host = "newhost"
+      str(root.host)          # 'newhost'
+
+      # Update existing attribute
+      root.version = 2.0
+      root.version            # 2.0  (float, type-inferred on read)
+
+      # Create new child element when neither exists
+      root.port = 5432
+      str(root.port)          # '5432'
+
+   Priority rules for assignment mirror read priority:
+
+   1. **Child element exists** → update its text content.
+   2. **Attribute exists** → update the attribute value.
+   3. **Neither exists** → create a new ``<name>value</name>`` child.
+
+   When both a child element and an attribute share a name, the child is
+   updated and the attribute is left untouched — consistent with
+   :meth:`__getattr__` behaviour.
+
+   .. code-block:: python
+
+      xml = '<root name="attr"><name>child</name></root>'
+      r = objectify.from_string(xml)
+
+      r.name = "updated"
+      str(r.name)          # 'updated'       ← child updated
+      r.attrib['name']     # 'attr'           ← attribute untouched
+
+.. rubric:: Deletion (``del elem.name``)
+
+.. describe:: del elem.child_tag
+
+   Removes a child element or attribute.  Child elements take priority over
+   attributes with the same name.  The underscore→hyphen fallback applies.
+
+   :raises AttributeError: If no matching child or attribute exists.
+
+   .. code-block:: python
+
+      del root.host       # removes <host> element
+      del root.version    # removes version="..." attribute
+
+      del root.user_profile   # removes <user-profile> via hyphen mapping

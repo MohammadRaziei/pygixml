@@ -1,6 +1,6 @@
 .. _dictify:
 
-dictify — XML to Dict
+Dictify — XML to Dict
 =====================
 
 ``pygixml.dictify`` converts XML to a nested Python ``dict``, fully

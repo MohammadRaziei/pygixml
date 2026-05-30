@@ -181,6 +181,15 @@ print(root.get('missing', 'default'))     # 'default'
 print(root.find('balance'))               # ObjectifiedElement(<balance>)
 print(root.find('balance', recursive=False))  # None  (not a direct child)
 print(root.findall('entry'))              # [ObjectifiedElement, ...]
+
+# Write support — modify in place
+root.user_profile.first_name = "Ali"      # update child element text
+root.version = 2.0                        # update attribute
+root.timeout = 30                         # create new child element
+
+# Delete
+del root.timeout                          # remove child element
+del root.version                          # remove attribute
 ```
 
 ### objectify API
@@ -196,10 +205,12 @@ print(root.findall('entry'))              # [ObjectifiedElement, ...]
 | `elem.get(name, default)` | Safe attribute read, never raises |
 | `elem.find(tag)` | First matching descendant, or `None` |
 | `elem.findall(tag)` | All matching descendants |
+| `elem.name = value` | Update child text or attribute; create child if absent |
+| `del elem.name` | Remove child element or attribute |
 | `elem.tag` | XML tag name string |
 | `elem.attrib` | `{name: typed_value}` dict of all attributes |
 | `elem.xml` | Serialised XML of the subtree |
-| Child beats attribute | When both share a name, child wins |
+| Child beats attribute | When both share a name, child wins (read and write) |
 
 ---
 
@@ -439,8 +450,6 @@ Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 
 ## Benchmarks
 
-Run the full benchmark suite on your machine:
-
 ```bash
 python benchmarks/full_benchmark.py
 python benchmarks/benchmark_parsing.py
@@ -456,11 +465,6 @@ Results are printed as tables and saved to
 
 📖 Full docs: [https://mohammadraziei.github.io/pygixml/](https://mohammadraziei.github.io/pygixml/)
 
-* Complete API reference
-* Installation guides for all platforms
-* Performance benchmarks and optimization tips
-* XPath 1.0 usage guide with examples
-* Real-world usage scenarios
 
 ---
 
