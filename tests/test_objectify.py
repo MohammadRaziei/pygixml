@@ -564,3 +564,144 @@ class TestFindAll:
 
     def test_findall_on_leaf_returns_empty(self, root):
         assert root.user_profile.first_name.findall("anything") == []
+
+
+# ---------------------------------------------------------------------------
+# 17. __setattr__ — write support
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def mutable():
+    return objectify.from_string("""
+<database version="1.0">
+    <host>localhost</host>
+    <port>5432</port>
+    <user-profile id="101" verified="true">
+        <first_name>Mohammad</first_name>
+        <balance>450.75</balance>
+    </user-profile>
+</database>
+""")
+
+
+class TestSetAttr:
+
+    def test_set_child_text_content(self, mutable):
+        mutable.host = "newhost"
+        assert str(mutable.host) == "newhost"
+
+    def test_set_child_accepts_int(self, mutable):
+        mutable.port = 9999
+        assert str(mutable.port) == "9999"
+
+    def test_set_child_accepts_float(self, mutable):
+        mutable.port = 3.14
+        assert str(mutable.port) == "3.14"
+
+    def test_set_child_accepts_bool(self, mutable):
+        mutable.host = True
+        assert str(mutable.host) == "True"
+
+    def test_set_existing_attribute(self, mutable):
+        mutable.version = "2.0"
+        # type inference converts "2.0" back to float on read — that's correct
+        assert mutable.version == 2.0
+
+    def test_set_attribute_int_stored_as_string(self, mutable):
+        mutable.version = 3
+        assert mutable.version == 3   # type-inferred back on read
+
+    def test_set_creates_new_child_when_missing(self, mutable):
+        mutable.timeout = 30
+        assert str(mutable.timeout) == "30"
+
+    def test_new_child_is_element_not_attribute(self, mutable):
+        mutable.newkey = "val"
+        assert isinstance(mutable.newkey, objectify.ObjectifiedElement)
+
+    def test_set_nested_child(self, mutable):
+        mutable.user_profile.first_name = "Ali"
+        assert str(mutable.user_profile.first_name) == "Ali"
+
+    def test_set_hyphen_tag(self, mutable):
+        # user_profile → <user-profile>, sets its text? No — sets child text.
+        # Here we test that hyphen mapping works for attribute set
+        mutable.user_profile.id = 999
+        assert mutable.user_profile.id == 999
+
+    def test_set_child_priority_over_attribute(self):
+        # When both child and attribute share a name, child wins for set too
+        xml = '<root name="attr"><name>child</name></root>'
+        r = objectify.from_string(xml)
+        r.name = "updated"
+        assert str(r.name) == "updated"       # child updated
+        assert r.attrib["name"] == "attr"     # attribute untouched
+
+    def test_set_does_not_create_duplicate_children(self, mutable):
+        mutable.host = "first"
+        mutable.host = "second"
+        assert len(mutable.findall("host", recursive=False)) == 1
+        assert str(mutable.host) == "second"
+
+    def test_set_reserved_names_do_not_touch_xml(self, mutable):
+        # _node and _doc_ref are cdef fields — setting them via __setattr__
+        # must not forward to XML. Verify by checking no XML child is created.
+        before_len = len(mutable)
+        try:
+            mutable._doc_ref = None   # should go to object, not XML
+        except (AttributeError, TypeError):
+            pass  # cdef class may reject it — that's also fine
+        assert len(mutable) == before_len   # no new child was created
+
+    def test_xml_reflects_change(self, mutable):
+        mutable.host = "changed"
+        assert "changed" in mutable.xml
+
+    def test_set_preserves_siblings(self, mutable):
+        # setting host should not affect other children
+        mutable.host = "x"
+        assert str(mutable.port) == "5432"
+
+
+# ---------------------------------------------------------------------------
+# 18. __delattr__ — delete support
+# ---------------------------------------------------------------------------
+
+class TestDelAttr:
+
+    def test_delete_child_element(self, mutable):
+        del mutable.host
+        assert mutable.find("host") is None
+
+    def test_delete_attribute(self, mutable):
+        del mutable.version
+        assert mutable.get("version") is None
+
+    def test_delete_hyphen_child(self, mutable):
+        del mutable.user_profile
+        assert mutable.find("user_profile") is None
+
+    def test_delete_hyphen_attribute(self, mutable):
+        del mutable.user_profile.verified
+        assert mutable.user_profile.get("verified") is None
+
+    def test_delete_missing_raises_attribute_error(self, mutable):
+        with pytest.raises(AttributeError):
+            del mutable.no_such_thing
+
+    def test_delete_child_priority_over_attribute(self):
+        xml = '<root name="attr"><name>child</name></root>'
+        r = objectify.from_string(xml)
+        del r.name                        # child removed
+        assert r.find("name") is None
+        assert r.attrib["name"] == "attr" # attribute still there
+
+    def test_delete_reduces_len(self, mutable):
+        before = len(mutable)
+        del mutable.host
+        assert len(mutable) == before - 1
+
+    def test_xml_reflects_delete(self, mutable):
+        del mutable.host
+        assert "<host>" not in mutable.xml
+        

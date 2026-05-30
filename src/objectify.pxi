@@ -264,6 +264,129 @@ cdef class ObjectifiedElement:
         )
 
     # ------------------------------------------------------------------
+    # Write support
+    # ------------------------------------------------------------------
+
+    def __setattr__(self, str name, object value):
+        """Set a child element's text content or an attribute value.
+
+        Assignment priority (mirrors read priority — children beat attributes):
+
+        1. **Child element exists** → replace its text content.
+        2. **Attribute exists** → update the attribute value in-place.
+        3. **Neither exists** → create a new child element with the given text.
+
+        The underscore→hyphen fallback applies to the name lookup in steps
+        1 and 2, but the new element created in step 3 always uses the Python
+        name as-is (underscores preserved).
+
+        Values are serialised to strings automatically (``str(value)``).
+
+        Args:
+            name (str): Child tag or attribute name.
+            value: New value.  Converted to ``str`` before writing.
+
+        Example::
+
+            root = objectify_from_string(
+                '<db version="1.0"><host>old</host></db>')
+
+            root.host = "new"     # updates <host> text content
+            root.version = 2      # updates version="2" attribute
+            root.port = 5432      # creates <port>5432</port>
+        """
+        if name in _OBJ_RESERVED:
+            object.__setattr__(self, name, value)
+            return
+
+        cdef bytes         cb
+        cdef xml_node      probe
+        cdef xml_node      text_node
+        cdef xml_attribute attr_c
+        cdef bytes         val_b = str(value).encode("utf-8")
+        cdef str           found_tag = None
+
+        # 1. Child element lookup (exact name, then hyphen form)
+        for candidate in _obj_candidate_names(name):
+            cb = (<str>candidate).encode("utf-8")
+            probe = self._node.child(cb)
+            if not _node_is_null(probe):
+                found_tag = candidate
+                break
+
+        if found_tag is not None:
+            # For an element node we must set the value on its first pcdata
+            # child. Create one if the element is currently empty.
+            text_node = probe.first_child()
+            if _node_is_null(text_node) or text_node.type() != node_pcdata:
+                text_node = probe.append_child(node_pcdata)
+            text_node.set_value(val_b)
+            return
+
+        # 2. Attribute lookup (exact name, then hyphen form)
+        for candidate in _obj_candidate_names(name):
+            cb = (<str>candidate).encode("utf-8")
+            attr_c = self._node.attribute(cb)
+            if not _attr_is_null(attr_c):
+                attr_c.set_value(val_b)
+                return
+
+        # 3. Neither exists — create new child element with a pcdata text node
+        cb = name.encode("utf-8")
+        cdef xml_node new_elem = self._node.append_child(cb)
+        new_elem.append_child(node_pcdata).set_value(val_b)
+
+    def __delattr__(self, str name):
+        """Remove a child element or attribute by name.
+
+        Tries child elements first, then attributes.  The underscore→hyphen
+        fallback applies.
+
+        Args:
+            name (str): Child tag or attribute name to remove.
+
+        Raises:
+            AttributeError: If no matching child element or attribute exists.
+
+        Example::
+
+            root = objectify_from_string(
+                '<db version="1.0"><host>h</host></db>')
+
+            del root.host      # removes <host> element
+            del root.version   # removes version attribute
+        """
+        cdef bytes         cb
+        cdef xml_node      probe
+        cdef xml_attribute attr_c
+        cdef str           found_tag = None
+
+        # 1. Child element (exact name, then hyphen form)
+        for candidate in _obj_candidate_names(name):
+            cb = (<str>candidate).encode("utf-8")
+            probe = self._node.child(cb)
+            if not _node_is_null(probe):
+                found_tag = candidate
+                break
+
+        if found_tag is not None:
+            self._node.remove_child(probe)
+            return
+
+        # 2. Attribute (exact name, then hyphen form)
+        for candidate in _obj_candidate_names(name):
+            cb = (<str>candidate).encode("utf-8")
+            attr_c = self._node.attribute(cb)
+            if not _attr_is_null(attr_c):
+                self._node.remove_attribute(attr_c)
+                return
+
+        raise AttributeError(
+            f"{self._node.name().decode('utf-8')!r} "
+            f"has no child element or attribute {name!r}"
+        )
+
+    # ------------------------------------------------------------------
     # Safe attribute access
     # ------------------------------------------------------------------
 
