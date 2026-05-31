@@ -1,6 +1,8 @@
-
 # dictify.pxi
 # -------------
+# Provides xmltodict-compatible parse/unparse for pygixml.
+# All C types are already in scope from pygixml_cy.pyx.
+#
 # Usage:
 #   from pygixml import dictify
 #   d = dictify.parse(xml_string)
@@ -9,6 +11,250 @@
 # ---------------------------------------------------------------------------
 # Internal: convert a single xml_node to a Python object (recursive)
 # ---------------------------------------------------------------------------
+
+
+cdef extern from *:
+    """
+    #include <string>
+    #include <stdexcept>
+
+    // ---------------------------------------------------------------------------
+    // XML attribute value escaping
+    // ---------------------------------------------------------------------------
+    static void xml_escape_attr(const char* s, std::string& out) {
+        for (; *s; ++s) {
+            switch (*s) {
+                case '"':    out += "&quot;"; break;
+                case '\\'': out += "&apos;"; break;
+                case '<':    out += "&lt;";   break;
+                case '>':    out += "&gt;";   break;
+                case '&':    out += "&amp;";  break;
+                default:     out += *s;
+            }
+        }
+    }
+
+    // XML text content escaping
+    static void xml_escape_text(const char* s, std::string& out) {
+        for (; *s; ++s) {
+            switch (*s) {
+                case '<':  out += "&lt;";   break;
+                case '>':  out += "&gt;";   break;
+                case '&':  out += "&amp;";  break;
+                default:   out += *s;
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Core recursive dict→XML serializer
+    // ---------------------------------------------------------------------------
+    // Forward declaration
+    static void dict_to_xml(
+        PyObject*          tag_obj,
+        PyObject*          value,
+        std::string&       buf,
+        const std::string& attr_prefix,
+        const std::string& cdata_key,
+        const std::string& indent,
+        int                level,
+        bool               pretty
+    );
+
+    static void append_indent(std::string& buf,
+                               const std::string& indent, int level) {
+        for (int i = 0; i < level; ++i) buf += indent;
+    }
+
+    static void emit_scalar(PyObject* tag_obj, PyObject* value,
+                             std::string& buf,
+                             const std::string& indent,
+                             int level, bool pretty) {
+        const char* tag = PyUnicode_AsUTF8(tag_obj);
+        if (pretty) append_indent(buf, indent, level);
+        buf += '<';
+        buf += tag;
+        buf += '>';
+        if (value == Py_None) {
+            // nothing
+        } else {
+            PyObject* s = PyObject_Str(value);
+            xml_escape_text(PyUnicode_AsUTF8(s), buf);
+            Py_DECREF(s);
+        }
+        buf += "</";
+        buf += tag;
+        buf += '>';
+        if (pretty) buf += '\\n';
+    }
+
+    static void dict_to_xml(
+        PyObject*          tag_obj,
+        PyObject*          value,
+        std::string&       buf,
+        const std::string& attr_prefix,
+        const std::string& cdata_key,
+        const std::string& indent,
+        int                level,
+        bool               pretty
+    ) {
+        const char* tag = PyUnicode_AsUTF8(tag_obj);
+
+        // --- None → self-closing ---
+        if (value == Py_None) {
+            if (pretty) append_indent(buf, indent, level);
+            buf += '<'; buf += tag; buf += "/>";
+            if (pretty) buf += '\\n';
+            return;
+        }
+
+        // --- list → repeated siblings ---
+        if (PyList_Check(value)) {
+            Py_ssize_t n = PyList_GET_SIZE(value);
+            for (Py_ssize_t i = 0; i < n; ++i)
+                dict_to_xml(tag_obj, PyList_GET_ITEM(value, i),
+                            buf, attr_prefix, cdata_key, indent, level, pretty);
+            return;
+        }
+
+        // --- dict → element with attrs / children ---
+        if (PyDict_Check(value)) {
+            std::string attrs_str;
+            const char* text_val = nullptr;
+            std::string text_storage;
+
+            // collect attrs and text
+            PyObject *k, *v;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(value, &pos, &k, &v)) {
+                const char* ks = PyUnicode_AsUTF8(k);
+                // attribute key
+                if (!attr_prefix.empty() &&
+                    strncmp(ks, attr_prefix.c_str(), attr_prefix.size()) == 0) {
+                    const char* attr_name = ks + attr_prefix.size();
+                    attrs_str += ' ';
+                    attrs_str += attr_name;
+                    attrs_str += "=\\"";
+                    PyObject* vs = PyObject_Str(v);
+                    xml_escape_attr(PyUnicode_AsUTF8(vs), attrs_str);
+                    Py_DECREF(vs);
+                    attrs_str += '"';
+                } else if (cdata_key == ks) {
+                    PyObject* vs = PyObject_Str(v);
+                    text_storage = PyUnicode_AsUTF8(vs);
+                    Py_DECREF(vs);
+                    text_val = text_storage.c_str();
+                }
+            }
+
+            // check if any non-attr, non-cdata children exist
+            bool has_children = false;
+            pos = 0;
+            while (PyDict_Next(value, &pos, &k, &v)) {
+                const char* ks = PyUnicode_AsUTF8(k);
+                if ((attr_prefix.empty() ||
+                     strncmp(ks, attr_prefix.c_str(), attr_prefix.size()) != 0)
+                    && cdata_key != ks) {
+                    has_children = true;
+                    break;
+                }
+            }
+
+            if (pretty) append_indent(buf, indent, level);
+            buf += '<'; buf += tag; buf += attrs_str;
+
+            if (!has_children && text_val == nullptr) {
+                buf += "/>";
+                if (pretty) buf += '\\n';
+                return;
+            }
+
+            buf += '>';
+
+            if (!has_children) {
+                // text only
+                xml_escape_text(text_val, buf);
+                buf += "</"; buf += tag; buf += '>';
+                if (pretty) buf += '\\n';
+                return;
+            }
+
+            if (pretty) buf += '\\n';
+
+            // text before children
+            if (text_val) {
+                if (pretty) append_indent(buf, indent, level + 1);
+                xml_escape_text(text_val, buf);
+                if (pretty) buf += '\\n';
+            }
+
+            // child elements
+            pos = 0;
+            while (PyDict_Next(value, &pos, &k, &v)) {
+                const char* ks = PyUnicode_AsUTF8(k);
+                if ((attr_prefix.empty() ||
+                     strncmp(ks, attr_prefix.c_str(), attr_prefix.size()) != 0)
+                    && cdata_key != ks) {
+                    dict_to_xml(k, v, buf, attr_prefix, cdata_key,
+                                indent, level + 1, pretty);
+                }
+            }
+
+            if (pretty) append_indent(buf, indent, level);
+            buf += "</"; buf += tag; buf += '>';
+            if (pretty) buf += '\\n';
+            return;
+        }
+
+        // --- scalar (str, int, float, bool) ---
+        emit_scalar(tag_obj, value, buf, indent, level, pretty);
+    }
+
+    static std::string dict_unparse_cpp(
+        PyObject*   input_dict,
+        const char* encoding,
+        bool        full_document,
+        const char* indent,
+        const char* attr_prefix,
+        const char* cdata_key,
+        bool        pretty
+    ) {
+        if (!PyDict_Check(input_dict) || PyDict_Size(input_dict) != 1)
+            throw std::invalid_argument(
+                "unparse expects a dict with exactly one root key");
+
+        std::string buf;
+        buf.reserve(4096);
+
+        if (full_document) {
+            buf += "<?xml version=\\"1.0\\" encoding=\\"";
+            buf += encoding;
+            buf += "\\"?>";
+            if (pretty) buf += '\\n';
+        }
+
+        std::string ap(attr_prefix);
+        std::string ck(cdata_key);
+        std::string ind(indent);
+
+        PyObject *root_tag, *root_val;
+        Py_ssize_t pos = 0;
+        PyDict_Next(input_dict, &pos, &root_tag, &root_val);
+
+        dict_to_xml(root_tag, root_val, buf, ap, ck, ind, 0, pretty);
+
+        return buf;
+    }
+    """
+    string dict_unparse_cpp(
+        object   input_dict,
+        const char* encoding,
+        bint        full_document,
+        const char* indent,
+        const char* attr_prefix,
+        const char* cdata_key,
+        bint        pretty
+    ) except +
 
 cdef object _node_to_obj(xml_node node,
                           str attr_prefix,
@@ -182,80 +428,32 @@ def dictify_parse_file(str path,
 # unparse
 # ---------------------------------------------------------------------------
 
-def _dict_to_xml(str tag, object value, list lines,
-                 str attr_prefix, str cdata_key,
-                 str indent, int level):
-    """Recursive helper that appends XML lines for one tag/value pair."""
-    cdef str pad = indent * level
-
-    if value is None:
-        lines.append(f"{pad}<{tag}/>")
-        return
-
-    if isinstance(value, list):
-        for item in value:
-            _dict_to_xml(tag, item, lines, attr_prefix, cdata_key,
-                         indent, level)
-        return
-
-    if isinstance(value, dict):
-        # split keys into attrs, text, children
-        attrs     = {}
-        text      = None
-        children  = {}
-        for k, v in value.items():
-            if k.startswith(attr_prefix) and attr_prefix:
-                attrs[k[len(attr_prefix):]] = v
-            elif k == cdata_key:
-                text = v
-            else:
-                children[k] = v
-
-        attr_str = "".join(f' {k}="{v}"' for k, v in attrs.items())
-        open_tag = f"{pad}<{tag}{attr_str}>"
-
-        if not children and text is None:
-            lines.append(f"{pad}<{tag}{attr_str}/>")
-            return
-
-        if not children:
-            lines.append(f"{open_tag}{text}</{tag}>")
-            return
-
-        lines.append(open_tag)
-        if text is not None:
-            lines.append(f"{indent * (level + 1)}{text}")
-        for child_tag, child_val in children.items():
-            _dict_to_xml(child_tag, child_val, lines,
-                         attr_prefix, cdata_key, indent, level + 1)
-        lines.append(f"{pad}</{tag}>")
-        return
-
-    # scalar (str, int, float, bool, …)
-    lines.append(f"{pad}<{tag}>{value}</{tag}>")
-
 
 def dictify_unparse(object input_dict,
-                      str output=None,
-                      str encoding=u"utf-8",
-                      str full_document=u"true",
-                      str indent=u"\t",
-                      str attr_prefix=u"@",
-                      str cdata_key=u"#text",
-                      bint pretty=False):
+                    str output=None,
+                    str encoding=u"utf-8",
+                    str full_document=u"true",
+                    str indent=u"\t",
+                    str attr_prefix=u"@",
+                    str cdata_key=u"#text",
+                    bint pretty=False):
     """Emit an XML string from a dict produced by :func:`dictify_parse`.
 
-    Matches the ``dictify.unparse`` signature.
+    Implemented entirely in C++ — no Python list, string concatenation, or
+    f-string formatting during serialization.  Only one Python ``str`` is
+    created at the very end.
+
+    Matches the ``xmltodict.unparse`` signature.
 
     Args:
         input_dict (dict): A ``{root_tag: value}`` dict.
         output: Ignored (accepted for API compatibility).
         encoding (str): Encoding declared in the XML header. Default ``"utf-8"``.
         full_document (str): ``"true"`` to include the XML declaration.
-        indent (str): Indentation string used when *pretty* is ``True``.
+        indent (str): Indentation string when *pretty* is ``True``.
             Default ``"\\t"``.
         attr_prefix (str): Prefix that identifies attribute keys. Default ``"@"``.
-        cdata_key (str): Key holding text content. Default ``"#text"``.
+        cdata_key (str): Key for text content in mixed nodes. Default ``"#text"``.
         pretty (bool): Whether to indent output. Default ``False``.
 
     Returns:
@@ -273,15 +471,19 @@ def dictify_unparse(object input_dict,
     if not isinstance(input_dict, dict) or len(input_dict) != 1:
         raise ValueError("unparse expects a dict with exactly one root key")
 
-    root_tag = next(iter(input_dict))
-    root_val = input_dict[root_tag]
+    cdef bytes enc_b = encoding.encode("utf-8")
+    cdef bytes ind_b = indent.encode("utf-8") if pretty else b""
+    cdef bytes ap_b  = attr_prefix.encode("utf-8")
+    cdef bytes ck_b  = cdata_key.encode("utf-8")
+    cdef bint  full  = (full_document == "true")
 
-    lines = []
-    if full_document == "true":
-        lines.append(f'<?xml version="1.0" encoding="{encoding}"?>')
-
-    _indent = indent if pretty else ""
-    _dict_to_xml(root_tag, root_val, lines, attr_prefix, cdata_key, _indent, 0)
-
-    sep = "\n" if pretty else ""
-    return sep.join(lines)
+    cdef string result = dict_unparse_cpp(
+        input_dict,
+        enc_b,
+        full,
+        ind_b,
+        ap_b,
+        ck_b,
+        pretty,
+    )
+    return result.decode("utf-8")
