@@ -6,6 +6,108 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.11.0] - 2026-05-31
+
+### Added
+
+#### `pygixml.objectify` — lxml.objectify-style interface
+- New module `objectify` (compiled into `pygixml_cy.so` via `objectify.pxi`)
+  providing an lxml.objectify-inspired API for navigating XML with plain Python
+  attribute access.
+- `objectify.from_string(xml)` and `objectify.from_file(path)` entry points
+  returning an `ObjectifiedElement` wrapping the document root.
+- `ObjectifiedElement` — `cdef class` storing the pugixml `xml_node` struct
+  directly at the C level (zero Python wrapper allocation per access).
+- `NodeSequence` — `cdef class` returned when multiple direct siblings share
+  a tag; supports indexing (including negative), iteration, and `len()`.
+- **Dotted navigation** — `root.child_tag` finds `<child_tag>` or falls back
+  to `<child-tag>` (underscore→hyphen mapping).
+- **Automatic type inference** for attribute values and leaf-node text:
+  `"true"`/`"false"` → `bool`, integer strings → `int`, decimal/scientific
+  strings → `float`, everything else → `str`.
+- **Text access** — `str(elem)` returns raw text (always `str`); calling
+  `elem()` returns type-inferred text content.
+- **Conflict resolution** — child elements take priority over same-named
+  attributes in both read and write operations.
+- `elem.get(name, default=None)` — safe attribute read that never raises;
+  mirrors `dict.get()`.
+- `elem.find(tag, recursive=True)` — returns the first matching descendant
+  element or `None`; hyphen mapping applies.
+- `elem.findall(tag, recursive=True)` — returns all matching descendants in
+  document order; hyphen mapping applies.
+- **Write support** via `__setattr__`:
+  - Assigns to an existing child element's text content (via `node_pcdata`).
+  - Updates an existing attribute value in-place.
+  - Creates a new child element when neither exists.
+- **Delete support** via `__delattr__` — removes child elements or attributes
+  by name; raises `AttributeError` when not found.
+- `elem.tag` — XML tag name property.
+- `elem.attrib` — all attributes as a `{name: typed_value}` dict; walks the
+  C-level attribute linked list directly.
+- `elem.text_content` — raw text content property, always `str`.
+- `elem.xml` — serialised XML of the node and its subtree.
+- Document lifetime safety — `_doc_ref` slot keeps the owning `XMLDocument`
+  alive for the lifetime of any `ObjectifiedElement` wrapper.
+
+#### `pygixml.dictify` — xmltodict-compatible interface
+- New module `dictify` (compiled into `pygixml_cy.so` via `dictify.pxi`)
+  providing an API compatible with the `xmltodict` library.
+- `dictify.parse(xml, attr_prefix, cdata_key, force_list)` — parses an XML
+  string into a nested dict following xmltodict conventions:
+  - Attributes prefixed with `"@"` (configurable via `attr_prefix`).
+  - Text content in mixed nodes stored under `"#text"` (configurable via
+    `cdata_key`).
+  - Repeated sibling elements automatically collapsed into a list.
+  - Empty and whitespace-only elements become `None`.
+  - `force_list` — set of tag names (or `True`) always wrapped in a list.
+- `dictify.parse_file(path, ...)` — same semantics, reads from a file.
+- `dictify.unparse(input_dict, pretty, indent, encoding, ...)` — converts a
+  dict back to an XML string; round-trip compatible with `dictify.parse`.
+
+#### Internal helpers (C-level, not public API)
+- `_node_is_null(xml_node)` — inline null check via `type() == node_null`.
+- `_attr_is_null(xml_attribute)` — inline null check via `name().empty()`
+  with correct `std::string` copy to avoid `const char*` comparison issues.
+- `_obj_candidate_names(str)` — generates exact + hyphen-form name candidates.
+- `_obj_collect_siblings(xml_node, bytes, doc_ref)` — collects same-tag
+  direct siblings using `std::string` comparison for correctness.
+- `_find_first(xml_node, list, bint)` — breadth-first then recursive search.
+- `_find_all(xml_node, list, bint, list, doc_ref)` — collects all matches in
+  document order.
+- `_node_to_obj(xml_node, ...)` — recursive dict builder for `dictify`.
+
+### Changed
+- `pygixml/__init__.py` — exports `objectify` and `dictify` modules, and
+  exposes `ObjectifiedElement`, `NodeSequence`, `objectify_from_string`,
+  `objectify_from_file`, `dictify_parse`, `dictify_parse_file`,
+  `dictify_unparse` at the package level.
+
+### Testing
+- Added `tests/test_objectify.py` — 18 test classes, ~210 tests covering:
+  entry points, dotted navigation, hyphen mapping, attribute access, type
+  inference, text access, sequence handling, conflict resolution, element
+  properties, iteration, equality, GC safety, edge cases, `get()`, `find()`,
+  `findall()`, `__setattr__`, and `__delattr__`.
+- Added `tests/test_dictify.py` — 9 test classes, ~40 tests covering:
+  basic structure, attributes, mixed content, repeated siblings, `force_list`,
+  CDATA, edge cases, `parse_file`, and `unparse` with roundtrip verification.
+- All **277 tests** passing.
+
+### Documentation
+- Added `docs/source/objectify.rst` — full Sphinx reference for the objectify
+  module including type inference table, identifier mapping rules, priority
+  rules, write support, and performance notes.
+- Added `docs/source/dictify.rst` — full Sphinx reference for the dictify
+  module including conversion rules table, `force_list` guide, round-trip
+  documentation, and comparison with objectify.
+- Updated `docs/source/index.rst` — objectify and dictify added to features
+  list, core classes table, and toctree.
+- Updated `docs/source/api.rst` — added objectify and dictify automodule
+  sections.
+- Updated `README.md` — added objectify and dictify sections with full API
+  tables and examples.
+
+
 ## [0.10.1] - 2026-04-14
 
 ### Added
