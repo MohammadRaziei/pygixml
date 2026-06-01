@@ -1,16 +1,11 @@
 # jsonify.pxi
 # -----------
-# Include after objectify.pxi and namespace.pxi in pygixml_cy.pyx:
-#     include "objectify.pxi"
-#     include "namespace.pxi"
-#     include "jsonify.pxi"
-#
 # Converts an xml_node tree directly to a JSON string via a C++ string
 # buffer — no Python dict/list/str is allocated during traversal.
 # Only one Python str object is created at the very end.
 #
 # Public API:
-#   jsonify_dumps(xml,  attr_prefix, cdata_key, force_list, pretty, indent)
+#   jsonify_dumps(xml,  attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 #   jsonify_dumps_node(ObjectifiedElement, ...)
 #
 # objectify.py and a jsonify.py shim re-export these as:
@@ -241,7 +236,7 @@ cdef extern from *:
         const char*    indent
     ) {
         std::unordered_set<std::string> force_list;
-    if (force_set && force_set != Py_None) {
+        if (force_set && force_set != Py_None) {
             PyObject* iter = PyObject_GetIter(force_set);
             if (iter) {
                 PyObject* item;
@@ -292,16 +287,48 @@ cdef extern from *:
 
 
 # ---------------------------------------------------------------------------
+# Python-level helpers
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # Public Cython entry points
 # ---------------------------------------------------------------------------
 
+cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
+                         object force_list, bint pretty, str indent,
+                         str encoding):
+    """Call the C++ serializer and return a Python str."""
+    cdef bytes ap_b      = attr_prefix.encode(encoding)
+    cdef bytes ck_b      = cdata_key.encode(encoding)
+    cdef bytes ind_b     = indent.encode(encoding)
+    cdef bint  force_all = (force_list is True)
+    cdef object fl_set   = None
+    if force_list and not force_all:
+        fl_set = set(force_list)
+    cdef string result = xml_node_to_json_set(
+        root, ap_b, ck_b, fl_set, force_all, pretty, ind_b,
+    )
+    return result.decode(encoding)
 
-# ---------------------------------------------------------------------------
-# Internal typed helpers (cdef — not callable from Python directly)
-# ---------------------------------------------------------------------------
 
-cdef object _dumps_from_str(str xml, str attr_prefix, str cdata_key,
-                              object force_list, bint pretty, str indent, str encoding):
+def jsonify_dumps_str(str xml,
+                      str    attr_prefix = u"@",
+                      str    cdata_key   = u"#text",
+                      object force_list  = None,
+                      bint   pretty      = False,
+                      str    indent      = u"\t",
+                      str    encoding    = u"utf-8"):
+    """Serialize an XML *string* directly to JSON.
+
+    Args:
+        xml (str): XML source text.
+
+    Returns:
+        str: JSON string.
+
+    Raises:
+        PygiXMLError: If the XML is malformed.
+    """
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_string(xml):
         raise PygiXMLError("Failed to parse XML string")
@@ -311,8 +338,24 @@ cdef object _dumps_from_str(str xml, str attr_prefix, str cdata_key,
     return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
-cdef object _dumps_from_file(str path, str attr_prefix, str cdata_key,
-                               object force_list, bint pretty, str indent, str encoding):
+def jsonify_dumps_file(str path,
+                       str    attr_prefix = u"@",
+                       str    cdata_key   = u"#text",
+                       object force_list  = None,
+                       bint   pretty      = False,
+                       str    indent      = u"\t",
+                      str    encoding    = u"utf-8"):
+    """Serialize an XML *file* directly to JSON.
+
+    Args:
+        path (str): Filesystem path to the XML file.
+
+    Returns:
+        str: JSON string.
+
+    Raises:
+        PygiXMLError: If the file cannot be read or XML is malformed.
+    """
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_file(path):
         raise PygiXMLError(f"Failed to parse XML file: {path}")
@@ -322,8 +365,24 @@ cdef object _dumps_from_file(str path, str attr_prefix, str cdata_key,
     return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
-cdef object _dumps_from_node(object elem, str attr_prefix, str cdata_key,
-                               object force_list, bint pretty, str indent, str encoding):
+def jsonify_dumps_obj(object elem,
+                      str    attr_prefix = u"@",
+                      str    cdata_key   = u"#text",
+                      object force_list  = None,
+                      bint   pretty      = False,
+                      str    indent      = u"\t",
+                      str    encoding    = u"utf-8"):
+    """Serialize an :class:`ObjectifiedElement` subtree directly to JSON.
+
+    Args:
+        elem (ObjectifiedElement): Element to serialise.
+
+    Returns:
+        str: JSON string.
+
+    Raises:
+        TypeError: If *elem* is not an ObjectifiedElement.
+    """
     if not isinstance(elem, ObjectifiedElement):
         raise TypeError(
             f"expected ObjectifiedElement, got {type(elem).__name__!r}"
@@ -332,38 +391,56 @@ cdef object _dumps_from_node(object elem, str attr_prefix, str cdata_key,
     return _do_jsonify(node, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
-# ---------------------------------------------------------------------------
-# Public entry point — smart dispatcher
-# ---------------------------------------------------------------------------
+def jsonify_dumps_node(object node,
+                       str    attr_prefix = u"@",
+                       str    cdata_key   = u"#text",
+                       object force_list  = None,
+                       bint   pretty      = False,
+                       str    indent      = u"\t",
+                      str    encoding    = u"utf-8"):
+    """Serialize a low-level :class:`XMLNode` directly to JSON.
+
+    Args:
+        node (XMLNode): Node to serialise.
+
+    Returns:
+        str: JSON string.
+
+    Raises:
+        TypeError: If *node* is not an XMLNode.
+    """
+    if not isinstance(node, XMLNode):
+        raise TypeError(
+            f"expected XMLNode, got {type(node).__name__!r}"
+        )
+    cdef xml_node raw = (<XMLNode>node)._node
+    return _do_jsonify(raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
+
 
 def jsonify_dumps(object source,
                   str    attr_prefix = u"@",
                   str    cdata_key   = u"#text",
                   object force_list  = None,
                   bint   pretty      = False,
-                  str    indent      = u"\t", 
+                  str    indent      = u"\t",
                   str    encoding    = u"utf-8"):
-    """Serialize XML to a JSON string — directly in C++, no intermediate dict.
+    """Serialize XML to JSON — smart dispatcher.
 
-    Accepts three input types and routes automatically:
+    Routes automatically based on *source* type:
 
-    * **str** — XML source text (parsed on the fly).
-    * **ObjectifiedElement** — already-parsed node or subtree.
-    * **os.PathLike / path string ending in** ``".xml"`` — read from file.
+    * :class:`str` starting with ``<``  →  :func:`jsonify_dumps_str`
+    * :class:`ObjectifiedElement`        →  :func:`jsonify_dumps_obj`
+    * :class:`XMLNode`                   →  :func:`jsonify_dumps_node`
 
-    Follows the same conventions as :func:`pygixml.dictify.parse`:
-
-    * Attributes prefixed with *attr_prefix* (default ``"@"``).
-    * Text content in mixed nodes stored under *cdata_key* (``"#text"``).
-    * Repeated siblings collapsed into a JSON array automatically.
-    * Empty / whitespace-only elements become JSON ``null``.
+    .. note::
+        File input is intentionally excluded from the dispatcher —
+        use :func:`jsonify_dumps_file` explicitly for files.
 
     Args:
-        source (str | ObjectifiedElement | PathLike): Input XML.
+        source (str | ObjectifiedElement | XMLNode): Input XML.
         attr_prefix (str): Prefix for attribute keys. Default ``"@"``.
         cdata_key (str): Key for text content. Default ``"#text"``.
-        force_list (set | True | None): Tags always serialised as a JSON
-            array. Pass ``True`` to force all tags.
+        force_list (set | True | None): Tags always serialised as array.
         pretty (bool): Indent output. Default ``False``.
         indent (str): Indentation string. Default ``"\\t"``.
 
@@ -371,83 +448,35 @@ def jsonify_dumps(object source,
         str: JSON string.
 
     Raises:
-        PygiXMLError: If the XML is malformed or unreadable.
-        TypeError: If *source* is not a recognised input type.
+        PygiXMLError: If the XML is malformed.
+        TypeError: If *source* type is not recognised.
+        ValueError: If *source* is a str but does not look like XML.
 
     Example::
 
-        from pygixml import jsonify
+        from pygixml import jsonify, objectify
 
-        # from XML string
         jsonify.dumps("<root id=\'1\'><item>x</item></root>")
-
-        # from file
-        jsonify.dumps("data.xml")
-
-        # from ObjectifiedElement (subtree)
-        root = objectify.from_string(xml)
-        jsonify.dumps(root.user_profile)
-        jsonify.dumps(root.user_profile, pretty=True, indent="  ")
+        jsonify.dumps(root.user_profile)   # ObjectifiedElement
+        jsonify.dumps(doc.root)            # XMLNode
+        jsonify.dumps_file("data.xml")     # file — explicit
     """
-    # --- ObjectifiedElement (or NamespacedElement) ---
     if isinstance(source, ObjectifiedElement):
-        return _dumps_from_node(source, attr_prefix, cdata_key,
-                                force_list, pretty, indent, encoding)
-
-    # --- str: could be XML content or a file path ---
+        return jsonify_dumps_obj(source, attr_prefix, cdata_key,
+                                 force_list, pretty, indent, encoding)
+    if isinstance(source, XMLNode):
+        return jsonify_dumps_node(source, attr_prefix, cdata_key,
+                                  force_list, pretty, indent, encoding)
     if isinstance(source, str):
-        s = <str>source
-        # heuristic: if it starts with '<' it's XML content
-        stripped = s.lstrip()
-        if stripped.startswith("<"):
-            return _dumps_from_str(s, attr_prefix, cdata_key,
-                                   force_list, pretty, indent, encoding)
-        # otherwise treat as file path
-        return _dumps_from_file(s, attr_prefix, cdata_key,
-                                force_list, pretty, indent, encoding)
-
-    # --- PathLike (pathlib.Path, os.fspath, etc.) ---
-    import os as _os
-    if isinstance(source, _os.PathLike):
-        return _dumps_from_file(str(source), attr_prefix, cdata_key,
-                                force_list, pretty, indent, encoding)
-
+        if (<str>source).lstrip().startswith("<"):
+            return jsonify_dumps_str(source, attr_prefix, cdata_key,
+                                     force_list, pretty, indent, encoding)
+        raise ValueError(
+            f"jsonify.dumps() received a str that does not start with '<'. "
+            f"For files use jsonify.dumps_file() explicitly."
+        )
     raise TypeError(
-        f"jsonify.dumps() expects an XML string, a file path, or an "
-        f"ObjectifiedElement — got {type(source).__name__!r}"
+        f"jsonify.dumps() expects str, ObjectifiedElement, or XMLNode "
+        f"— got {type(source).__name__!r}. "
+        f"For files use jsonify.dumps_file() explicitly."
     )
-
-
-# ---------------------------------------------------------------------------
-# Internal dispatcher
-# ---------------------------------------------------------------------------
-
-cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
-                         object force_list, bint pretty, str indent, str encoding):
-    """Call the C++ serializer and return a Python str.
-
-    force_list is handled entirely in C++ — no Python json.loads/dumps
-    fallback. The Python set is passed directly to C++ which iterates
-    it via the CPython API.
-    """
-    cdef bytes ap_b      = attr_prefix.encode(encoding)
-    cdef bytes ck_b      = cdata_key.encode(encoding)
-    cdef bytes ind_b     = indent.encode(encoding)
-    cdef bint  force_all = (force_list is True)
-
-    # Normalise force_list to a Python set of str (or None)
-    cdef object fl_set = None
-    if force_list and not force_all:
-        fl_set = set(force_list)   # ensure it's a set
-
-    cdef string result = xml_node_to_json_set(
-        root,
-        ap_b,
-        ck_b,
-        fl_set,      # Python set passed directly — C++ reads via PySet_*
-        force_all,
-        pretty,
-        ind_b,
-    )
-
-    return result.decode(encoding)
