@@ -229,6 +229,45 @@ cdef extern from *:
         buf += '}';
         return buf;
     }
+
+    // xml_node_to_json_with_set — accepts Python set directly via CPython API
+    static std::string xml_node_to_json_with_set(
+        pugi::xml_node root,
+        const char*    attr_prefix,
+        const char*    cdata_key,
+        PyObject*      force_set,
+        bool           force_all,
+        bool           pretty,
+        const char*    indent
+    ) {
+        std::unordered_set<std::string> force_list;
+    if (force_set && force_set != Py_None) {
+            PyObject* iter = PyObject_GetIter(force_set);
+            if (iter) {
+                PyObject* item;
+                while ((item = PyIter_Next(iter)) != nullptr) {
+                    const char* s = PyUnicode_AsUTF8(item);
+                    if (s) force_list.insert(s);
+                    Py_DECREF(item);
+                }
+                Py_DECREF(iter);
+            }
+        }
+        std::string nl  = pretty ? "\\n" : "";
+        std::string ind = pretty ? indent : "";
+        std::string buf;
+        buf.reserve(4096);
+        buf += '{';
+        if (pretty) buf += "\\n  ";
+        json_escape(root.name(), buf);
+        buf += ':';
+        if (pretty) buf += ' ';
+        node_to_json(root, buf, attr_prefix, cdata_key,
+                     force_list, force_all, nl, ind, 1);
+        if (pretty) buf += "\\n";
+        buf += '}';
+        return buf;
+    }
     """
     string xml_node_to_json(
         xml_node   root,
@@ -240,26 +279,16 @@ cdef extern from *:
         const char* indent
     ) except +
 
-
-# ---------------------------------------------------------------------------
-# Python-level helpers
-# ---------------------------------------------------------------------------
-
-cdef const char** _build_force_list_array(object force_list,
-                                           list keeper):
-    """Build a null-terminated const char** array from a Python set/list.
-
-    *keeper* must be kept alive for the duration of the C call — it holds
-    the encoded bytes objects that back the char pointers.
-    """
-    if not force_list:
-        return NULL
-    for tag in force_list:
-        keeper.append((<str>tag).encode("utf-8"))
-    keeper.append(None)   # sentinel placeholder
-    # Cython can't easily build a C array dynamically; use a fixed-size
-    # approach via a Python list and cast at call site — see jsonify_dumps.
-    return NULL   # actual pointer built in jsonify_dumps below
+    # direct overload with pre-built set — used by _do_jsonify
+    string xml_node_to_json_set "xml_node_to_json_with_set"(
+        xml_node    root,
+        const char* attr_prefix,
+        const char* cdata_key,
+        object      force_set,
+        bint        force_all,
+        bint        pretty,
+        const char* indent
+    ) except +
 
 
 # ---------------------------------------------------------------------------
@@ -272,35 +301,35 @@ cdef const char** _build_force_list_array(object force_list,
 # ---------------------------------------------------------------------------
 
 cdef object _dumps_from_str(str xml, str attr_prefix, str cdata_key,
-                              object force_list, bint pretty, str indent):
+                              object force_list, bint pretty, str indent, str encoding):
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_string(xml):
         raise PygiXMLError("Failed to parse XML string")
     cdef xml_node root_raw = doc._doc.first_child()
     if _node_is_null(root_raw):
         raise PygiXMLError("Parsed document has no root element")
-    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent)
+    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
 cdef object _dumps_from_file(str path, str attr_prefix, str cdata_key,
-                               object force_list, bint pretty, str indent):
+                               object force_list, bint pretty, str indent, str encoding):
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_file(path):
         raise PygiXMLError(f"Failed to parse XML file: {path}")
     cdef xml_node root_raw = doc._doc.first_child()
     if _node_is_null(root_raw):
         raise PygiXMLError(f"File {path!r} has no root element")
-    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent)
+    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
 cdef object _dumps_from_node(object elem, str attr_prefix, str cdata_key,
-                               object force_list, bint pretty, str indent):
+                               object force_list, bint pretty, str indent, str encoding):
     if not isinstance(elem, ObjectifiedElement):
         raise TypeError(
             f"expected ObjectifiedElement, got {type(elem).__name__!r}"
         )
     cdef xml_node node = (<ObjectifiedElement>elem)._node
-    return _do_jsonify(node, attr_prefix, cdata_key, force_list, pretty, indent)
+    return _do_jsonify(node, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +341,8 @@ def jsonify_dumps(object source,
                   str    cdata_key   = u"#text",
                   object force_list  = None,
                   bint   pretty      = False,
-                  str    indent      = u"\t"):
+                  str    indent      = u"\t", 
+                  str    encoding    = u"utf-8"):
     """Serialize XML to a JSON string — directly in C++, no intermediate dict.
 
     Accepts three input types and routes automatically:
@@ -362,7 +392,7 @@ def jsonify_dumps(object source,
     # --- ObjectifiedElement (or NamespacedElement) ---
     if isinstance(source, ObjectifiedElement):
         return _dumps_from_node(source, attr_prefix, cdata_key,
-                                force_list, pretty, indent)
+                                force_list, pretty, indent, encoding)
 
     # --- str: could be XML content or a file path ---
     if isinstance(source, str):
@@ -371,16 +401,16 @@ def jsonify_dumps(object source,
         stripped = s.lstrip()
         if stripped.startswith("<"):
             return _dumps_from_str(s, attr_prefix, cdata_key,
-                                   force_list, pretty, indent)
+                                   force_list, pretty, indent, encoding)
         # otherwise treat as file path
         return _dumps_from_file(s, attr_prefix, cdata_key,
-                                force_list, pretty, indent)
+                                force_list, pretty, indent, encoding)
 
     # --- PathLike (pathlib.Path, os.fspath, etc.) ---
     import os as _os
     if isinstance(source, _os.PathLike):
         return _dumps_from_file(str(source), attr_prefix, cdata_key,
-                                force_list, pretty, indent)
+                                force_list, pretty, indent, encoding)
 
     raise TypeError(
         f"jsonify.dumps() expects an XML string, a file path, or an "
@@ -393,54 +423,31 @@ def jsonify_dumps(object source,
 # ---------------------------------------------------------------------------
 
 cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
-                         object force_list, bint pretty, str indent):
-    """Call the C++ serializer and return a Python str."""
-    cdef bytes ap_b      = attr_prefix.encode("utf-8")
-    cdef bytes ck_b      = cdata_key.encode("utf-8")
-    cdef bytes ind_b     = indent.encode("utf-8")
+                         object force_list, bint pretty, str indent, str encoding):
+    """Call the C++ serializer and return a Python str.
+
+    force_list is handled entirely in C++ — no Python json.loads/dumps
+    fallback. The Python set is passed directly to C++ which iterates
+    it via the CPython API.
+    """
+    cdef bytes ap_b      = attr_prefix.encode(encoding)
+    cdef bytes ck_b      = cdata_key.encode(encoding)
+    cdef bytes ind_b     = indent.encode(encoding)
     cdef bint  force_all = (force_list is True)
-    cdef list  fl_bytes  = []
 
-    if force_list and force_list is not True:
-        for tag in force_list:
-            fl_bytes.append((<str>tag).encode("utf-8"))
+    # Normalise force_list to a Python set of str (or None)
+    cdef object fl_set = None
+    if force_list and not force_all:
+        fl_set = set(force_list)   # ensure it's a set
 
-    cdef string result = xml_node_to_json(
+    cdef string result = xml_node_to_json_set(
         root,
         ap_b,
         ck_b,
-        NULL,
+        fl_set,      # Python set passed directly — C++ reads via PySet_*
         force_all,
         pretty,
         ind_b,
     )
 
-    json_str = result.decode("utf-8")
-
-    # Post-process force_list={tags} — rare path
-    if fl_bytes:
-        import json as _json
-        d = _json.loads(json_str)
-        _apply_force_list(d, {b.decode("utf-8") for b in fl_bytes})
-        if pretty:
-            json_str = _json.dumps(d, ensure_ascii=False,
-                                   indent=indent)
-        else:
-            json_str = _json.dumps(d, ensure_ascii=False,
-                                   separators=(",", ":"))
-
-    return json_str
-
-
-def _apply_force_list(obj, tags):
-    """Recursively wrap scalar values into lists for tags in *tags*."""
-    if not isinstance(obj, dict):
-        return
-    for k, v in obj.items():
-        if k in tags and not isinstance(v, list):
-            obj[k] = [v]
-        if isinstance(v, dict):
-            _apply_force_list(v, tags)
-        elif isinstance(v, list):
-            for item in v:
-                _apply_force_list(item, tags)
+    return result.decode(encoding)
