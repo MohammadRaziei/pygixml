@@ -6,6 +6,94 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.13.0] - 2026-05-31
+
+### Added
+
+#### `pygixml.jsonify` — direct XML → JSON serialization
+- New module `jsonify` (compiled into `pygixml_cy.so` via `jsonify.pxi`).
+- C++ inline serializer (`xml_node_to_json`) that traverses the pugixml
+  node tree and writes directly into a `std::string` buffer — **no Python
+  dict, list, or intermediate str is allocated during traversal**.  Only
+  one Python `str` object is created at the very end.
+- `jsonify.dumps(xml, ...)` — parse XML string and serialize directly to
+  JSON string.
+- `jsonify.dumps_file(path, ...)` — parse XML file and serialize directly
+  to JSON string.
+- `jsonify.dumps_node(elem, ...)` — serialize an already-parsed
+  `ObjectifiedElement` subtree to JSON without re-parsing.
+- Follows the same conventions as `dictify.parse`:
+  - Attributes prefixed with `attr_prefix` (default `"@"`).
+  - Text content in mixed nodes stored under `cdata_key` (default `"#text"`).
+  - Repeated siblings collapsed into a JSON array automatically.
+  - Empty / whitespace-only elements become JSON `null`.
+- `force_list` and `force_all` support.
+- `pretty` and `indent` options for formatted output.
+- C++ `json_escape()` handles all JSON string escaping including control
+  characters, `\n`, `\r`, `\t`, `\"`, `\\`.
+- Output is consistent with `dictify.parse` + `json.dumps` — the
+  `TestConsistencyWithDictify` test class verifies this.
+
+### Changed
+- `pygixml/__init__.py` exports `jsonify` module and `jsonify_dumps`,
+  `jsonify_dumps_file`, `jsonify_dumps_node`.
+- `pygixml_cy.pyx` include order: `objectify.pxi` → `namespace.pxi` →
+  `dictify.pxi` → `jsonify.pxi`.
+
+### Testing
+- Added `tests/test_jsonify.py` — 9 test classes, ~40 tests covering:
+  basic structure, valid JSON output, options, `force_list`, pretty printing,
+  `dumps_file`, `dumps_node`, consistency with dictify, and edge cases.
+
+
+## [0.12.0] - 2026-05-31
+
+### Added
+
+#### Namespace support for `pygixml.objectify`
+- New `namespace.pxi` compiled into `pygixml_cy.so` (include after
+  `objectify.pxi`).
+- `NamespacedElement` — `cdef class` extending `ObjectifiedElement` with a
+  `_ns_map` C-level field storing `{prefix: uri}`.
+- **Auto-detection** — `objectify_from_string` and `objectify_from_file` now
+  automatically extract all `xmlns` declarations from the document (via
+  `_extract_ns_map_recursive`) and return a `NamespacedElement` when any are
+  found.  Plain XML without namespaces continues to return a plain
+  `ObjectifiedElement` — fully backward compatible.
+- **Three lookup styles** supported simultaneously:
+  - Clark notation: `root.find("{http://ns.com}item")`
+  - Prefix notation: `root.find("ns:item")`
+  - Dotted access: `root.ns_item` (underscore→colon mapping via
+    `_ns_candidate_names`)
+- `NamespacedElement.ns_map` property — exposes the active namespace map for
+  inspection and debugging.
+- `namespaces` parameter on `objectify_from_string` and `objectify_from_file`
+  — allows callers to supply or override prefix→URI mappings.
+- `auto_ns=False` parameter — opt out of automatic namespace extraction and
+  get a plain `ObjectifiedElement`.
+- `ns_map` is inherited by every child, `find()`, and `findall()` result
+  automatically — no manual propagation needed.
+- `_extract_ns_map(xml_node)` — C-level helper extracting `xmlns` attributes
+  from a single node.
+- `_extract_ns_map_recursive(xml_node)` — C-level helper walking the full
+  subtree.
+- `_ns_candidate_names(str, dict)` — C-level helper expanding a Python
+  identifier into Clark / prefix / hyphen candidates.
+- `_ns_collect_siblings` and `_ns_find_all` — namespace-aware variants of
+  the sibling collection and search helpers.
+
+### Changed
+- `objectify_from_string` and `objectify_from_file` signatures extended with
+  `namespaces=None` and `auto_ns=True` — fully backward compatible.
+- `objectify.py` shim exports `NamespacedElement`.
+- `pygixml/__init__.py` exports `NamespacedElement`.
+
+### Testing
+- Added `tests/test_namespace.py` — 7 test classes, ~40 tests covering:
+  auto-detection, dotted access, Clark notation, prefix notation, `findall`,
+  ns_map inheritance, real-world Atom feed, and backward compatibility.
+
+
 ## [0.11.0] - 2026-05-31
 
 ### Added
