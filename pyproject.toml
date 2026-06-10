@@ -8,14 +8,14 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.11.0"
+version = "0.12.0"
 description = "High-performance Cython XML parser for Python — pugixml with a Pythonic API"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["xml", "pugixml", "cython", "wrapper"]
+keywords = ["xml", "pugixml", "cython", "wrapper", "xpath", "json"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -39,6 +39,10 @@ test = [
     "pytest-timeout>=2.0.0",
     "pytest-cov",
 ]
+
+[project.scripts]
+pygixq        = "pygixml.query:main"
+pygixml       = "pygixml.__main__:main"
 
 [project.urls]
 "Homepage" = "https://github.com/mohammadraziei/pygixml"

@@ -296,8 +296,13 @@ cdef extern from *:
 
 cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
                          object force_list, bint pretty, str indent,
-                         str encoding):
-    """Call the C++ serializer and return a Python str."""
+                         str encoding, object doc_ref=None):
+    """Call the C++ serializer and return a Python str.
+
+    *doc_ref* keeps the owning XMLDocument alive for the duration of the
+    C++ serialization call — pass it whenever root comes from an
+    ObjectifiedElement or NamespacedElement.
+    """
     cdef bytes ap_b      = attr_prefix.encode(encoding)
     cdef bytes ck_b      = cdata_key.encode(encoding)
     cdef bytes ind_b     = indent.encode(encoding)
@@ -387,8 +392,10 @@ def jsonify_dumps_obj(object elem,
         raise TypeError(
             f"expected ObjectifiedElement, got {type(elem).__name__!r}"
         )
-    cdef xml_node node = (<ObjectifiedElement>elem)._node
-    return _do_jsonify(node, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
+    cdef xml_node node   = (<ObjectifiedElement>elem)._node
+    cdef object   doc_ref = (<ObjectifiedElement>elem)._doc_ref
+    return _do_jsonify(node, attr_prefix, cdata_key,
+                       force_list, pretty, indent, encoding, doc_ref)
 
 
 def jsonify_dumps_node(object node,
@@ -414,6 +421,7 @@ def jsonify_dumps_node(object node,
             f"expected XMLNode, got {type(node).__name__!r}"
         )
     cdef xml_node raw = (<XMLNode>node)._node
+    # Note: XMLNode does not hold a doc_ref — caller must keep XMLDocument alive
     return _do_jsonify(raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 

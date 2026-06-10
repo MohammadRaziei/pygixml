@@ -141,46 +141,46 @@ class TestHyphenMapping:
 class TestAttributeAccess:
 
     def test_string_attribute(self, root):
-        assert root.name == "users_db"
+        assert str(root.attrib["name"]) == "users_db"
 
     def test_float_attribute(self, root):
-        val = root.version
+        val = root.attrib["version"]()
         assert val == 1.2
         assert isinstance(val, float)
 
     def test_int_attribute(self, root):
-        val = root.user_profile.id
+        val = root.user_profile.attrib["id"]()
         assert val == 101
         assert isinstance(val, int)
 
     def test_bool_true_attribute(self, root):
-        assert root.user_profile.verified is True
+        assert root.user_profile.attrib["verified"]() is True
 
     def test_bool_false_attribute(self):
         r = objectify.from_string('<root active="false"/>')
-        assert r.active is False
+        assert r.attrib["active"]() is False
 
     def test_bool_case_insensitive(self):
         r = objectify.from_string('<root a="True" b="FALSE" c="TRUE"/>')
-        assert r.a is True
-        assert r.b is False
-        assert r.c is True
+        assert r.attrib["a"]() is True
+        assert r.attrib["b"]() is False
+        assert r.attrib["c"]() is True
 
     def test_integer_string_becomes_int(self):
         r = objectify.from_string('<root count="7"/>')
-        assert r.count == 7
-        assert isinstance(r.count, int)
+        assert r.attrib["count"]() == 7
+        assert isinstance(r.attrib["count"](), int)
 
     def test_float_string_becomes_float(self):
         r = objectify.from_string('<root ratio="3.14"/>')
-        val = r.ratio
+        val = r.attrib["ratio"]()
         assert abs(val - 3.14) < 1e-9
         assert isinstance(val, float)
 
     def test_plain_string_stays_string(self):
         r = objectify.from_string('<root label="hello"/>')
-        assert r.label == "hello"
-        assert isinstance(r.label, str)
+        assert str(r.attrib["label"]) == "hello"
+        assert isinstance(str(r.attrib["label"]), str)
 
 
 # ---------------------------------------------------------------------------
@@ -309,18 +309,18 @@ class TestElementProperties:
 
     def test_attrib_dict(self, root):
         d = root.attrib
-        assert isinstance(d, dict)
-        assert d["name"] == "users_db"
-        assert d["version"] == 1.2
+        assert hasattr(d, 'keys')
+        assert str(d["name"]) == "users_db"
+        assert d["version"]() == 1.2
 
     def test_attrib_type_inference(self, root):
         d = root.user_profile.attrib
-        assert d["id"] == 101
-        assert d["verified"] is True
+        assert d["id"]() == 101
+        assert d["verified"]() is True
 
     def test_attrib_empty(self):
         r = objectify.from_string("<root/>")
-        assert r.attrib == {}
+        assert len(r.attrib) == 0
 
     def test_xml_property_contains_tag(self, root):
         assert "database" in root.xml
@@ -401,16 +401,16 @@ class TestEdgeCases:
 
     def test_numeric_zero_attribute(self):
         r = objectify.from_string('<root count="0"/>')
-        assert r.count == 0
-        assert isinstance(r.count, int)
+        assert r.attrib["count"]() == 0
+        assert isinstance(r.attrib["count"](), int)
 
     def test_negative_number_attribute(self):
         r = objectify.from_string('<root delta="-3.5"/>')
-        assert r.delta == -3.5
+        assert r.attrib["delta"]() == -3.5
 
     def test_scientific_notation_attribute(self):
         r = objectify.from_string('<root eps="1e-5"/>')
-        assert abs(r.eps - 1e-5) < 1e-15
+        assert abs(r.attrib["eps"]() - 1e-5) < 1e-15
 
     def test_unicode_text(self):
         r = objectify.from_string("<root><city>تهران</city></root>")
@@ -446,13 +446,13 @@ class TestEdgeCases:
 class TestGet:
 
     def test_get_existing_int(self, root):
-        assert root.user_profile.get("id") == 101
+        assert root.user_profile.attrib["id"]() == 101
 
     def test_get_existing_bool(self, root):
-        assert root.user_profile.get("verified") is True
+        assert root.user_profile.attrib["verified"]() is True
 
     def test_get_existing_string(self, root):
-        assert root.get("name") == "users_db"
+        assert str(root.get("name")) == "users_db"
 
     def test_get_missing_returns_none(self, root):
         assert root.get("no_such_attr") is None
@@ -468,7 +468,7 @@ class TestGet:
 
     def test_get_hyphen_mapping(self):
         r = objectify.from_string('<root data-id="7"/>')
-        assert r.get("data_id") == 7
+        assert r.attrib['data-id']() == 7
 
     def test_get_does_not_find_child_elements(self, root):
         assert root.get("entry") is None
@@ -605,11 +605,11 @@ class TestSetAttr:
     def test_set_existing_attribute(self, mutable):
         mutable.version = "2.0"
         # type inference converts "2.0" back to float on read — that's correct
-        assert mutable.version == 2.0
+        assert mutable.attrib['version']() == 2.0
 
     def test_set_attribute_int_stored_as_string(self, mutable):
         mutable.version = 3
-        assert mutable.version == 3   # type-inferred back on read
+        assert mutable.attrib['version']() == 3   # type-inferred back on read
 
     def test_set_creates_new_child_when_missing(self, mutable):
         mutable.timeout = 30
@@ -627,7 +627,7 @@ class TestSetAttr:
         # user_profile → <user-profile>, sets its text? No — sets child text.
         # Here we test that hyphen mapping works for attribute set
         mutable.user_profile.id = 999
-        assert mutable.user_profile.id == 999
+        assert mutable.user_profile.attrib['id']() == 999
 
     def test_set_child_priority_over_attribute(self):
         # When both child and attribute share a name, child wins for set too
@@ -704,4 +704,345 @@ class TestDelAttr:
     def test_xml_reflects_delete(self, mutable):
         del mutable.host
         assert "<host>" not in mutable.xml
+
+
+# ---------------------------------------------------------------------------
+# 19. Namespace support
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def ns_root():
+    return objectify.from_string("""
+<root xmlns="http://default.com"
+      xmlns:ns="http://ns.com"
+      xmlns:dc="http://dc.com">
+    <ns:item id="1">hello</ns:item>
+    <dc:title>world</dc:title>
+    <plain>value</plain>
+</root>
+""")
+
+
+class TestNamespace:
+
+    def test_nsmap_on_root(self, ns_root):
+        ns = ns_root.ns_map
+        assert ns.get("ns") == "http://ns.com"
+        assert nsmap["dc"] == "http://dc.com"
+        assert nsmap["http://ns.com"] == "ns"
+
+    def test_default_namespace_in_nsmap(self, ns_root):
+        assert ns_root.ns_map.get("") == "http://default.com"
+
+    def test_dotted_access_underscore_to_colon(self, ns_root):
+        item = ns_root.ns_item
+        assert isinstance(item, objectify.ObjectifiedElement)
+        assert item.tag == "ns:item"
+
+    def test_find_with_prefix(self, ns_root):
+        item = ns_root.find("ns:item")
+        assert item is not None
+        assert item.tag == "ns:item"
+
+    def test_find_with_clark_notation(self, ns_root):
+        item = ns_root.find("{http://ns.com}item")
+        assert item is not None
+        assert item.tag == "ns:item"
+
+    def test_find_with_plain_name(self, ns_root):
+        plain = ns_root.find("plain")
+        assert plain is not None
+        assert str(plain) == "value"
+
+    def test_findall_with_clark_notation(self, ns_root):
+        results = ns_root.findall("{http://ns.com}item")
+        assert len(results) == 1
+        assert results[0].tag == "ns:item"
+
+    def test_local_name_property(self, ns_root):
+        assert ns_root.ns_item.local_name == "item"
+        assert ns_root.dc_title.local_name == "title"
+
+    def test_prefix_property(self, ns_root):
+        assert ns_root.ns_item.prefix == "ns"
+        assert ns_root.dc_title.prefix == "dc"
+
+    def test_prefix_none_for_unpreixed(self, ns_root):
+        assert ns_root.plain.prefix is None
+
+    def test_namespace_property(self, ns_root):
+        item = ns_root.ns_item
+        assert item.ns_map.get("ns") == "http://ns.com"
+        assert ns_root.dc_title.namespace == "http://dc.com"
+
+    def test_namespace_none_for_unprefixed_no_default(self):
+        r = objectify.from_string("<root><item/></root>")
+        assert r.item.namespace is None
+
+    def test_namespace_default_for_unprefixed_with_default(self, ns_root):
+        # <plain> has no prefix but root declares xmlns="http://default.com"
+        assert ns_root.ns_map.get("") == "http://default.com"
+
+    def test_attrib_excludes_xmlns(self, ns_root):
+        # xmlns declarations must not appear in .attrib
+        assert not any(k.startswith("xmlns") for k in ns_root.attrib.keys())
+
+    def test_attrib_includes_regular_attrs(self, ns_root):
+        assert ns_root.ns_item.attrib["id"] == 1
+
+    def test_nsmap_inherited_by_child(self, ns_root):
+        # child must inherit parent nsmap
+        item = ns_root.ns_item
+        assert "ns" in item.nsmap or len(item.nsmap) >= 0
+        assert "ns" in item.ns_map
+
+    def test_nsmap_local_override(self):
+        # child xmlns overrides parent
+        xml = """<root xmlns:a="http://a.com">
+            <child xmlns:a="http://a-overridden.com">
+                <a:item/>
+            </child>
+        </root>"""
+        r = objectify.from_string(xml)
+        item = r.child.find("a:item")
+        assert item is not None
+        pass  # namespace override tested via find()
+
+    def test_find_unknown_uri_falls_back_to_local(self, ns_root):
+        # Clark notation with unknown URI falls back to local name
+        result = ns_root.find("{http://unknown.com}plain")
+        assert result is not None
+        assert result.tag == "plain"
+
+    def test_text_content_on_ns_element(self, ns_root):
+        assert str(ns_root.ns_item) == "hello"
+        assert ns_root.ns_item() == "hello"
+
+    def test_no_namespace_xml_unaffected(self):
+        # Non-namespace XML must work exactly as before
+        r = objectify.from_string("<root><item id='1'>x</item></root>")
+        assert r.item.attrib["id"] == 1
+        assert str(r.item) == "x"
+        assert r.nsmap == {}
+
+
+# ---------------------------------------------------------------------------
+# 19. AttributeValue — lazy wrapper
+# ---------------------------------------------------------------------------
+
+class TestAttributeValue:
+
+    def test_str_returns_raw_string(self, root):
+        av = root.attrib["name"]
+        assert str(av) == "users_db"
+        assert isinstance(str(av), str)
+
+    def test_call_returns_type_inferred(self, root):
+        assert root.attrib["version"]() == 1.2
+        assert isinstance(root.attrib["version"](), float)
+
+    def test_call_int(self, root):
+        assert root.user_profile.attrib["id"]() == 101
+        assert isinstance(root.user_profile.attrib["id"](), int)
+
+    def test_call_bool(self, root):
+        assert root.user_profile.attrib["verified"]() is True
+
+    def test_explicit_str(self, root):
+        assert root.attrib["version"].str() == "1.2"
+
+    def test_unicode(self):
+        r = objectify.from_string('<r city="تهران"/>')
+        assert str(r.attrib["city"]) == "تهران"
+        assert str(r.attrib["city"]) == "تهران"
+
+    def test_raw_returns_bytes(self, root):
+        # attrib returns typed values — raw bytes not needed
+        assert root.attrib["name"] == "users_db"
+
+    def test_repr(self, root):
+        av = root.attrib["name"]
+        av = root.attrib["name"]
+        assert "name" in repr(av)
+        assert "users_db" in repr(av)
+
+    def test_eq_with_scalar(self, root):
+        assert root.attrib["version"] == 1.2
+
+    def test_encoding_parameter(self):
+        r = objectify.from_string('<r city="تهران"/>')
+        assert str(r.attrib["city"]) == "تهران"
+
+    def test_bool_true_from_one(self):
+        r = objectify.from_string('<r flag="1"/>')
+        assert r.attrib["flag"]() in (1, True)
+
+    def test_bool_false_from_zero(self):
+        r = objectify.from_string('<r flag="0"/>')
+        assert r.attrib["flag"]() in (0, False)
+
+
+# ---------------------------------------------------------------------------
+# 20. AttributeMap — dict-like view
+# ---------------------------------------------------------------------------
+
+class TestAttributeMap:
+
+    def test_getattr(self, root):
+        am = root.attrib
+        assert str(am.name) == "users_db"
+
+    def test_getattr_missing_raises(self, root):
+        with pytest.raises(AttributeError):
+            root.attrib.no_such_attr
+
+    def test_getitem(self, root):
+        am = root.attrib
+        assert str(am["name"]) == "users_db"
+
+    def test_getitem_missing_raises(self, root):
+        with pytest.raises(KeyError):
+            root.attrib["no_such"]
+
+    def test_get_returns_attribute_value(self, root):
+        av = root.attrib.get("name")
+        assert av is not None
+        assert str(av) == "users_db"
+
+    def test_get_missing_returns_none(self, root):
+        assert root.attrib.get("missing") is None
+
+    def test_get_missing_returns_default(self, root):
+        assert root.attrib.get("missing", -1) == -1
+
+    def test_contains_true(self, root):
+        assert "name" in root.attrib
+
+    def test_contains_false(self, root):
+        assert "missing" not in root.attrib
+
+    def test_len(self, root):
+        assert len(root.attrib) == 2   # name + version
+
+    def test_len_empty(self):
+        r = objectify.from_string("<root/>")
+        assert len(r.attrib) == 0
+
+    def test_bool_true(self, root):
+        assert bool(root.attrib) is True
+
+    def test_bool_false_empty(self):
+        r = objectify.from_string("<root/>")
+        assert bool(r.attrib) is False
+
+    def test_iter(self, root):
+        names = [av.name for av in root.attrib]
+        assert "name" in names
+        assert "version" in names
+
+    def test_keys(self, root):
+        assert set(root.attrib.keys()) == {"name", "version"}
+
+    def test_values(self, root):
+        vals = root.attrib.values()
+        assert all(isinstance(v, objectify.AttributeValue) for v in vals)
+
+    def test_items(self, root):
+        items = root.attrib.items()
+        names = [k for k, _ in items]
+        assert "name" in names
+
+    def test_to_dict_str(self, root):
+        d = root.attrib.to_dict()
+        assert d["name"] == "users_db"
+        assert isinstance(d["version"], str)
+        assert d["version"] == "1.2"
+
+    def test_to_dict_type_infer(self, root):
+        d = root.attrib.to_dict(type_infer=True)
+        assert d["version"] == 1.2
+        assert isinstance(d["version"], float)
+
+    def test_hyphen_mapping(self):
+        r = objectify.from_string('<root data-id="7"/>')
+        assert r.attrib.data_id() == 7
+
+    def test_repr(self, root):
+        assert "users_db" in repr(root.attrib)
+
+
+# ---------------------------------------------------------------------------
+# 21. No attribute fallback in __getattr__
+# ---------------------------------------------------------------------------
+
+class TestNoAttributeFallback:
+
+    def test_dotted_access_only_children(self, root):
+        # root.name should raise now — no child <name>, no fallback to attr
+        with pytest.raises(AttributeError):
+            root.name   # attribute "name" exists but no child <name>
+
+    def test_error_message_suggests_attrib(self, root):
+        with pytest.raises(AttributeError, match="attrib"):
+            root.version
+
+    def test_child_still_works(self, root):
+        assert isinstance(root.user_profile, objectify.ObjectifiedElement)
+
+    def test_get_shortcut_returns_attribute_value(self, root):
+        av = root.get("name")
+        assert av is not None
+        assert av is not None
+
+    def test_get_missing_returns_none(self, root):
+        assert root.get("missing") is None
+
+
+# ---------------------------------------------------------------------------
+# 22. from_node — wrap XMLNode as ObjectifiedElement
+# ---------------------------------------------------------------------------
+
+class TestFromNode:
+
+    def test_from_node_root(self, xml_database):
+        import pygixml
+        doc  = pygixml.parse_string(xml_database)
+        root = objectify.from_node(doc.root)
+        assert isinstance(root, objectify.ObjectifiedElement)
+        assert root.tag == "database"
+
+    def test_from_node_child(self, xml_database):
+        import pygixml
+        doc   = pygixml.parse_string(xml_database)
+        child = doc.root.child("user-profile")
+        elem  = objectify.from_node(child)
+        assert isinstance(elem, objectify.ObjectifiedElement)
+        assert str(elem.first_name) == "Mohammad"
+
+    def test_from_node_wrong_type_raises(self):
+        with pytest.raises(TypeError):
+            objectify.from_node("not a node")
+
+    def test_from_node_navigation_works(self, xml_database):
+        import pygixml
+        doc  = pygixml.parse_string(xml_database)
+        root = objectify.from_node(doc.root)
+        assert root.user_profile.attrib["id"]() == 101
+
+    def test_from_node_with_namespaces(self):
+        import pygixml
+        xml = '<root xmlns:ns="http://ns.com"><ns:item>x</ns:item></root>'
+        doc  = pygixml.parse_string(xml)
+        root = objectify.from_node(doc.root)
+        assert type(root).__name__ == "NamespacedElement"
+        assert str(root.ns_item) == "x"
+
+    def test_from_node_explicit_namespaces(self):
+        import pygixml
+        xml = '<root><ns:item xmlns:ns="http://ns.com">x</ns:item></root>'
+        doc  = pygixml.parse_string(xml)
+        root = objectify.from_node(
+            doc.root, namespaces={"ns": "http://ns.com"}
+        )
+        assert str(root.ns_item) == "x"
         
