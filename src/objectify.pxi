@@ -689,14 +689,9 @@ cdef class ObjectifiedElement:
                 break
 
         if found_tag is not None:
-            # Find existing pcdata child — skip whitespace/non-pcdata nodes
-            text_node = probe.first_child()
-            while not _node_is_null(text_node) and text_node.type() != node_pcdata:
-                text_node = text_node.next_sibling()
-            if _node_is_null(text_node):
-                # No pcdata child — prepend one (matches pygixml_cy.pyx pattern)
-                text_node = probe.prepend_child(node_pcdata)
-            text_node.set_value(val_b)
+            # Use set_value on the element node directly — pugixml handles
+            # finding/replacing the pcdata child internally (same as XMLNode.value setter)
+            probe.set_value(val_b)
             return
 
         for candidate in _obj_candidate_names(name, self._nsmap):
