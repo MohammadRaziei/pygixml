@@ -100,6 +100,11 @@ cdef inline bint _attr_is_null(xml_attribute a):
     cdef string name = a.name()   # const char* → std::string first
     return name.empty()
 
+cdef inline bint _is_xmlns_attr(xml_attribute a):
+    """True for ``xmlns`` / ``xmlns:*`` namespace declaration attributes."""
+    cdef string name = a.name()
+    return name == <string>b"xmlns" or name.substr(0, 6) == <string>b"xmlns:"
+
 # ---------------------------------------------------------------------------
 # Namespace map builder
 # ---------------------------------------------------------------------------
@@ -476,23 +481,33 @@ cdef class AttributeMap:
     # ------------------------------------------------------------------
 
     def __iter__(self):
-        """Iterate all attributes as :class:`AttributeValue` objects."""
+        """Iterate all attributes as :class:`AttributeValue` objects.
+
+        ``xmlns`` / ``xmlns:*`` namespace declarations are excluded —
+        use :attr:`ObjectifiedElement.nsmap` for those.
+        """
         cdef xml_attribute a = self._node.first_attribute()
         while not _attr_is_null(a):
-            yield AttributeValue._from_raw(a, self._doc_ref)
+            if not _is_xmlns_attr(a):
+                yield AttributeValue._from_raw(a, self._doc_ref)
             a = a.next_attribute()
 
     def __len__(self):
         cdef xml_attribute a = self._node.first_attribute()
         cdef int count = 0
         while not _attr_is_null(a):
-            count += 1
+            if not _is_xmlns_attr(a):
+                count += 1
             a = a.next_attribute()
         return count
 
     def __bool__(self):
         cdef xml_attribute a = self._node.first_attribute()
-        return not _attr_is_null(a)
+        while not _attr_is_null(a):
+            if not _is_xmlns_attr(a):
+                return True
+            a = a.next_attribute()
+        return False
 
     def __repr__(self):
         items = {av.name: av.str() for av in self}
@@ -689,9 +704,15 @@ cdef class ObjectifiedElement:
                 break
 
         if found_tag is not None:
-            # Use set_value on the element node directly — pugixml handles
-            # finding/replacing the pcdata child internally (same as XMLNode.value setter)
-            probe.set_value(val_b)
+            # pugixml's xml_node.set_value() only works on pcdata/cdata/
+            # comment/pi/doctype nodes — it is a no-op on node_element.
+            # Replicate XMLNode.value's setter behaviour here: replace the
+            # existing text child if there is one, otherwise create one.
+            text_node = probe.first_child()
+            if text_node.type() == node_pcdata or text_node.type() == node_cdata:
+                text_node.set_value(val_b)
+            else:
+                probe.prepend_child(node_pcdata).set_value(val_b)
             return
 
         for candidate in _obj_candidate_names(name, self._nsmap):
@@ -1099,6 +1120,10 @@ cdef class NamespacedElement(ObjectifiedElement):
         obj._node    = node
         obj._doc_ref = doc_ref
         obj._ns_map  = ns_map
+        # Keep the inherited ObjectifiedElement._nsmap in sync so that
+        # inherited properties (namespace, nsmap) — which read _nsmap —
+        # resolve prefixes/URIs correctly for namespaced elements too.
+        obj._nsmap   = ns_map
         return obj
 
     # ------------------------------------------------------------------
@@ -1320,7 +1345,7 @@ def objectify_from_string(str xml,
     cdef xml_encoding  enc   = _str_to_encoding(encoding)
     if not pygixml_load_buffer(doc._doc,
                                 <const void*>(<char*>xml_b),
-                                len(xml_b), 0xFFFFFFFF, enc):
+                                len(xml_b), parse_full, enc):
         raise PygiXMLError("Failed to parse XML string")
     cdef xml_node root_raw = doc._doc.first_child()
     if _node_is_null(root_raw):
@@ -1369,7 +1394,7 @@ def objectify_from_file(str path,
     cdef xml_encoding enc    = _str_to_encoding(encoding)
     if not pygixml_load_file(doc._doc,
                               <const char*>path_b,
-                              0xFFFFFFFF, enc):
+                              parse_full, enc):
         raise PygiXMLError(f"Failed to parse XML file: {path}")
     cdef xml_node root_raw = doc._doc.first_child()
     if _node_is_null(root_raw):

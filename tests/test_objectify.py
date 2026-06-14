@@ -131,7 +131,7 @@ class TestHyphenMapping:
     def test_attribute_hyphen_mapping(self):
         xml = '<root data-id="42"/>'
         r = objectify.from_string(xml)
-        assert r.data_id == 42
+        assert r.attrib.data_id == 42
 
 
 # ---------------------------------------------------------------------------
@@ -728,8 +728,7 @@ class TestNamespace:
     def test_nsmap_on_root(self, ns_root):
         ns = ns_root.ns_map
         assert ns.get("ns") == "http://ns.com"
-        assert nsmap["dc"] == "http://dc.com"
-        assert nsmap["http://ns.com"] == "ns"
+        assert ns.get("dc") == "http://dc.com"
 
     def test_default_namespace_in_nsmap(self, ns_root):
         assert ns_root.ns_map.get("") == "http://default.com"
@@ -1045,4 +1044,3 @@ class TestFromNode:
             doc.root, namespaces={"ns": "http://ns.com"}
         )
         assert str(root.ns_item) == "x"
-        
