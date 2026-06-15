@@ -1,3 +1,5 @@
+from libc.stdint cimport uint32_t, uint64_t
+
 cdef extern from *:
     """
     /* The source files can be found through the homepage: https://dev.yorhel.nl/yxml */
@@ -1176,3 +1178,530 @@ cdef extern from *:
     """
 
     
+
+    # ------------------------------------------------------------------
+    # Cython-visible declarations for the embedded yxml API (above).
+    # Only the fields/functions actually used by the wrapper below are
+    # declared; the real (full) definitions come from the verbatim C
+    # source embedded in this same translation unit.
+    # ------------------------------------------------------------------
+    ctypedef struct yxml_t:
+        char *elem
+        char data[8]
+        char *attr
+        char *pi
+        uint64_t byte
+        uint64_t total
+        uint32_t line
+
+    void yxml_init(yxml_t *x, void *stack, size_t stacksize)
+    int yxml_parse(yxml_t *x, int ch)
+    int yxml_eof(yxml_t *x)
+    size_t yxml_symlen(yxml_t *x, const char *s)
+
+
+# ==========================================================================
+# pygixml.stream -- fast, generator-based streaming ("pull") XML parsing
+# ==========================================================================
+#
+# This is built on top of the embedded yxml library above: a tiny,
+# dependency-free, incremental tokenizer that is fed one byte at a time and
+# emits element/attribute/text/processing-instruction events as they
+# complete. Unlike the pugixml-backed DOM (XMLDocument/XMLNode) and the
+# objectify module, this never loads the whole document into a pugixml
+# tree -- it is meant for XML that is too large (or arrives incrementally,
+# e.g. from a socket) to parse as a whole.
+#
+# The public API mirrors the well-known xml.etree.ElementTree / lxml.etree
+# "iterparse + clear()" idiom so it feels familiar:
+#
+#     for event, elem in pygixml.iterparse("big.xml", events=("end",)):
+#         if elem.tag == "record":
+#             handle(elem)
+#             elem.clear()          # drop the subtree once processed
+#
+# or, for the very common "give me every <record>" pattern::
+#
+#     for elem in pygixml.iterfind("big.xml", "record"):
+#         handle(elem)
+#
+# Notes / current limitations:
+#   * Namespace prefixes are *not* resolved -- "<ns:tag>" is reported as
+#     the literal tag "ns:tag", and xmlns/xmlns:* show up as ordinary
+#     attributes (matching yxml's own behaviour).
+#   * Comments and DOCTYPE declarations are recognised (so they don't
+#     cause errors) but produce no events.
+#   * StreamElement.find/findall implement a small, fast subset of
+#     ElementTree's path syntax: "tag", "a/b/c", "*" and ".//tag".
+#     Attribute predicates ("tag[@id='x']") are not supported.
+
+from libc.stdlib cimport malloc, free
+from libc.string cimport strlen
+from collections import deque
+import io
+import os
+
+
+cdef enum:
+    YXML_EEOF      = -5
+    YXML_EREF      = -4
+    YXML_ECLOSE    = -3
+    YXML_ESTACK    = -2
+    YXML_ESYN      = -1
+    YXML_OK        = 0
+    YXML_ELEMSTART = 1
+    YXML_CONTENT   = 2
+    YXML_ELEMEND   = 3
+    YXML_ATTRSTART = 4
+    YXML_ATTRVAL   = 5
+    YXML_ATTREND   = 6
+    YXML_PISTART   = 7
+    YXML_PICONTENT = 8
+    YXML_PIEND     = 9
+
+
+cdef dict _YXML_ERRORS = {
+    YXML_EEOF:   "unexpected end of input",
+    YXML_EREF:   "invalid character or entity reference",
+    YXML_ECLOSE: "closing tag does not match the currently open element",
+    YXML_ESTACK: "parser stack exhausted (element/attribute names too long, "
+                  "or the document is nested too deeply for this stack_size)",
+    YXML_ESYN:   "syntax error",
+}
+
+
+cdef _raise_yxml_error(yxml_t *x, int ret):
+    msg = _YXML_ERRORS.get(ret, f"XML parse error ({ret})")
+    raise PygiXMLError(f"{msg} (line {x.line}, byte {x.total})")
+
+
+cdef class StreamElement:
+    """A small, ElementTree-like XML element produced while streaming.
+
+    ``StreamElement`` is a standalone, lightweight node -- it is *not*
+    connected to a pugixml document. Each instance has a ``tag``,
+    ``attrib`` dict, optional ``text``/``tail`` strings, and a list of
+    child :class:`StreamElement` nodes (accessible via iteration,
+    indexing, ``len()``, or :attr:`children`).
+
+    Call :meth:`clear` once you're done with an element (and its
+    subtree) to free the memory it holds -- the classic ``iterparse``
+    idiom for keeping peak memory low on huge documents.
+    """
+
+    cdef public str tag
+    cdef public dict attrib
+    cdef public object text
+    cdef public object tail
+    cdef list _children
+
+    def __cinit__(self, str tag, dict attrib=None):
+        self.tag = tag
+        self.attrib = attrib if attrib is not None else {}
+        self.text = None
+        self.tail = None
+        self._children = []
+
+    def __repr__(self):
+        return f"<StreamElement {self.tag!r} ({len(self._children)} children) at 0x{id(self):x}>"
+
+    def __len__(self):
+        return len(self._children)
+
+    def __bool__(self):
+        return len(self._children) > 0
+
+    def __iter__(self):
+        return iter(self._children)
+
+    def __getitem__(self, index):
+        return self._children[index]
+
+    @property
+    def children(self):
+        """The list of direct child :class:`StreamElement` nodes."""
+        return self._children
+
+    def get(self, str key, default=None):
+        """Return ``attrib.get(key, default)``."""
+        return self.attrib.get(key, default)
+
+    def keys(self):
+        """Return the attribute names (a view over :attr:`attrib`)."""
+        return self.attrib.keys()
+
+    def items(self):
+        """Return the ``(name, value)`` attribute pairs."""
+        return self.attrib.items()
+
+    def iter(self, str tag=None):
+        """Depth-first iterate this element and all its descendants,
+        optionally restricted to a given ``tag`` (``"*"`` or ``None``
+        matches everything)."""
+        if tag is None or tag == "*" or self.tag == tag:
+            yield self
+        for child in self._children:
+            yield from (<StreamElement>child).iter(tag)
+
+    def findall(self, str path):
+        """Find descendants matching ``path``.
+
+        Supports ``"tag"`` / ``"a/b/c"`` (direct-child traversal),
+        ``"*"`` (any child) and ``".//tag"`` (any descendant). Returns a
+        list, possibly empty.
+        """
+        cdef list current
+        cdef list nxt
+        if path in (".", ""):
+            return [self]
+        if path.startswith(".//"):
+            wanted = path[3:]
+            return [el for el in self.iter()
+                    if el is not self and (wanted == "*" or (<StreamElement>el).tag == wanted)]
+        current = [self]
+        for part in path.split("/"):
+            nxt = []
+            for el in current:
+                for child in (<StreamElement>el)._children:
+                    if part == "*" or (<StreamElement>child).tag == part:
+                        nxt.append(child)
+            current = nxt
+        return current
+
+    def find(self, str path):
+        """Return the first descendant matching ``path``, or ``None``.
+        See :meth:`findall` for the supported path syntax."""
+        results = self.findall(path)
+        return results[0] if results else None
+
+    def findtext(self, str path, default=None):
+        """Return ``.text`` of the first match of ``path``, or *default*."""
+        elem = self.find(path)
+        if elem is None:
+            return default
+        text = (<StreamElement>elem).text
+        return text if text is not None else default
+
+    def clear(self):
+        """Drop this element's attributes, text, tail and children,
+        freeing the memory they hold (the element itself, e.g. as an
+        already-appended child of its parent, is left in place)."""
+        self.attrib = {}
+        self.text = None
+        self.tail = None
+        self._children = []
+
+
+cdef class PullParser:
+    """An incremental ("push") XML parser.
+
+    Feed it bytes as they become available via :meth:`feed`, then drain
+    completed ``("start" | "end" | "pi", value)`` events with
+    :meth:`read_events`. Call :meth:`close` once there is no more input.
+
+    This is the low-level engine behind :func:`iterparse`; use it
+    directly when XML data arrives incrementally (e.g. from a socket or
+    an async stream) rather than from a file you can simply read in
+    chunks.
+
+    :param events: subset of ``("start", "end", "pi")`` -- which events
+        :meth:`read_events` produces. The element tree is always built
+        regardless of *events*; this only controls what is yielded.
+    :param tag: if given, only elements whose tag equals *tag* produce
+        ``"start"``/``"end"`` events (their subtrees are still built and
+        linked into the document as usual).
+    :param stack_size: size in bytes of yxml's internal name stack. Must
+        be large enough to hold the names of all simultaneously-open
+        elements/attributes/PIs plus their nesting depth (each name is
+        stored with a trailing NUL). Increase this for documents with
+        very deep nesting or very long tag/attribute names.
+
+    Example::
+
+        parser = pygixml.PullParser(events=("start", "end"))
+        for chunk in network_stream:
+            parser.feed(chunk)
+            for event, elem in parser.read_events():
+                ...
+        parser.close()
+        for event, elem in parser.read_events():
+            ...
+    """
+
+    cdef yxml_t _x
+    cdef unsigned char *_stack_buf
+    cdef object _queue
+    cdef object _pending
+    cdef list _elem_stack
+    cdef bytearray _text_buf
+    cdef bytearray _attrval_buf
+    cdef bytearray _pi_buf
+    cdef str _cur_attr
+    cdef str _cur_pi
+    cdef bint _closed
+    cdef bint _want_start
+    cdef bint _want_end
+    cdef bint _want_pi
+    cdef str _tag_filter
+
+    def __cinit__(self, events=("end",), tag=None, size_t stack_size=4096):
+        if stack_size < 64:
+            raise ValueError("stack_size must be at least 64 bytes")
+
+        self._stack_buf = <unsigned char*>malloc(stack_size)
+        if self._stack_buf is NULL:
+            raise MemoryError("could not allocate yxml parser stack")
+        yxml_init(&self._x, <void*>self._stack_buf, stack_size)
+
+        self._queue = deque()
+        self._pending = None
+        self._elem_stack = []
+        self._text_buf = bytearray()
+        self._attrval_buf = bytearray()
+        self._pi_buf = bytearray()
+        self._cur_attr = None
+        self._cur_pi = None
+        self._closed = False
+
+        cdef tuple ev = tuple(events)
+        for e in ev:
+            if e not in ("start", "end", "pi"):
+                raise ValueError(f"unknown event type: {e!r}")
+        self._want_start = "start" in ev
+        self._want_end = "end" in ev
+        self._want_pi = "pi" in ev
+        self._tag_filter = tag
+
+    def __dealloc__(self):
+        if self._stack_buf is not NULL:
+            free(self._stack_buf)
+            self._stack_buf = NULL
+
+    @property
+    def line(self):
+        """Current 1-based line number -- useful in error messages."""
+        return self._x.line
+
+    @property
+    def position(self):
+        """Total number of bytes consumed so far."""
+        return self._x.total
+
+    @property
+    def closed(self):
+        return self._closed
+
+    cdef inline void _flush_text(self):
+        if not self._text_buf:
+            return
+        text = self._text_buf.decode("utf-8")
+        self._text_buf = bytearray()
+        if self._elem_stack:
+            cur = <StreamElement>self._elem_stack[len(self._elem_stack) - 1]
+            if cur._children:
+                (<StreamElement>cur._children[len(cur._children) - 1]).tail = text
+            else:
+                cur.text = text
+
+    cdef inline void _finalize_pending(self):
+        cdef StreamElement elem
+        if self._pending is not None:
+            elem = <StreamElement>self._pending
+            self._pending = None
+            if self._elem_stack:
+                (<StreamElement>self._elem_stack[len(self._elem_stack) - 1])._children.append(elem)
+            if self._want_start and (self._tag_filter is None or elem.tag == self._tag_filter):
+                self._queue.append(("start", elem))
+            self._elem_stack.append(elem)
+
+    def feed(self, bytes data):
+        """Feed a chunk of well-formed, UTF-8 encoded XML bytes.
+
+        Completed events become available through :meth:`read_events`.
+        Raises :class:`PygiXMLError` on malformed XML.
+        """
+        if self._closed:
+            raise PygiXMLError("PullParser is already closed")
+
+        cdef Py_ssize_t i, n = len(data)
+        cdef unsigned char c
+        cdef int ret
+        cdef Py_ssize_t symlen
+        cdef bytes name
+        cdef char *cdata
+        cdef StreamElement elem
+
+        for i in range(n):
+            c = data[i]
+            ret = yxml_parse(&self._x, c)
+
+            if ret == YXML_OK:
+                continue
+
+            elif ret == YXML_ELEMSTART:
+                self._finalize_pending()
+                self._flush_text()
+                symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.elem)
+                name = self._x.elem[:symlen]
+                self._pending = StreamElement(name.decode("utf-8"))
+
+            elif ret == YXML_CONTENT:
+                self._finalize_pending()
+                cdata = self._x.data
+                self._text_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+
+            elif ret == YXML_ELEMEND:
+                self._finalize_pending()
+                self._flush_text()
+                elem = <StreamElement>self._elem_stack.pop()
+                if self._want_end and (self._tag_filter is None or elem.tag == self._tag_filter):
+                    self._queue.append(("end", elem))
+
+            elif ret == YXML_ATTRSTART:
+                symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.attr)
+                name = self._x.attr[:symlen]
+                self._cur_attr = name.decode("utf-8")
+                self._attrval_buf = bytearray()
+
+            elif ret == YXML_ATTRVAL:
+                cdata = self._x.data
+                self._attrval_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+
+            elif ret == YXML_ATTREND:
+                (<StreamElement>self._pending).attrib[self._cur_attr] = \
+                    self._attrval_buf.decode("utf-8")
+                self._cur_attr = None
+
+            elif ret == YXML_PISTART:
+                self._finalize_pending()
+                self._flush_text()
+                symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.pi)
+                name = self._x.pi[:symlen]
+                self._cur_pi = name.decode("utf-8")
+                self._pi_buf = bytearray()
+
+            elif ret == YXML_PICONTENT:
+                cdata = self._x.data
+                self._pi_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+
+            elif ret == YXML_PIEND:
+                if self._want_pi:
+                    self._queue.append(("pi", (self._cur_pi, self._pi_buf.decode("utf-8"))))
+                self._cur_pi = None
+
+            else:
+                _raise_yxml_error(&self._x, ret)
+
+    def close(self):
+        """Signal end-of-input.
+
+        Validates that the document ended in a valid state (e.g. not
+        mid-comment or with unclosed elements) and flushes any
+        remaining buffered text. Safe to call multiple times.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        cdef int ret = yxml_eof(&self._x)
+        if ret < 0:
+            _raise_yxml_error(&self._x, ret)
+        self._finalize_pending()
+        self._flush_text()
+        if self._elem_stack:
+            raise PygiXMLError("unexpected end of input: unclosed element(s)")
+
+    def read_events(self):
+        """Iterate over ``(event, value)`` pairs accumulated so far.
+
+        ``event`` is ``"start"``, ``"end"`` or ``"pi"``. For
+        ``"start"``/``"end"``, *value* is a :class:`StreamElement`
+        (the same instance for both events of a given element). For
+        ``"pi"``, *value* is a ``(target, content)`` tuple.
+
+        Draining this generator removes the events from the internal
+        queue -- each event is only produced once.
+        """
+        while self._queue:
+            yield self._queue.popleft()
+
+
+def iterparse(source, events=("end",), tag=None,
+               size_t stack_size=4096, Py_ssize_t chunk_size=65536):
+    """Incrementally parse a (possibly huge) XML document.
+
+    Yields ``(event, element)`` pairs as each element completes, where
+    ``element`` is a :class:`StreamElement`. This never loads the whole
+    document into a pugixml tree; only the :class:`PullParser`'s
+    lightweight element objects are kept.
+
+    :param source: a file path (``str``/``os.PathLike``), a binary
+        file-like object (anything with ``.read(n)``), or raw XML
+        ``bytes``/``bytearray``.
+    :param events: subset of ``("start", "end", "pi")``. Default
+        ``("end",)``, matching :mod:`xml.etree.ElementTree`.
+    :param tag: if given, only elements with this tag produce events
+        (their subtrees are still built normally).
+    :param stack_size: see :class:`PullParser`.
+    :param chunk_size: how many bytes to read from *source* at a time.
+
+    Example -- process every ``<record>`` while keeping memory bounded::
+
+        for event, elem in pygixml.iterparse("big.xml", events=("end",)):
+            if elem.tag == "record":
+                handle(elem)
+                elem.clear()
+    """
+    cdef bint should_close = False
+    cdef bint first_chunk = True
+    cdef object fh
+    cdef bytes chunk
+
+    if isinstance(source, (bytes, bytearray)):
+        fh = io.BytesIO(bytes(source))
+        should_close = True
+    elif hasattr(source, "read"):
+        fh = source
+    elif isinstance(source, (str, os.PathLike)):
+        fh = open(source, "rb")
+        should_close = True
+    else:
+        raise TypeError(
+            f"unsupported source type: {type(source)!r} "
+            "(expected a path, bytes/bytearray, or a file-like object with .read())"
+        )
+
+    parser = PullParser(events=events, tag=tag, stack_size=stack_size)
+    try:
+        while True:
+            chunk = fh.read(chunk_size)
+            if not chunk:
+                break
+            if isinstance(chunk, str):
+                chunk = chunk.encode("utf-8")
+            if first_chunk:
+                first_chunk = False
+                if chunk[:3] == b"\xef\xbb\xbf":   # strip a leading UTF-8 BOM
+                    chunk = chunk[3:]
+            parser.feed(chunk)
+            yield from parser.read_events()
+        parser.close()
+        yield from parser.read_events()
+    finally:
+        if should_close:
+            fh.close()
+
+
+def iterfind(source, str tag, size_t stack_size=4096, Py_ssize_t chunk_size=65536):
+    """Shortcut for ``iterparse(source, events=("end",), tag=tag)`` that
+    yields :class:`StreamElement` objects directly (no ``(event, elem)``
+    tuples).
+
+    Example::
+
+        for record in pygixml.iterfind("big.xml", "record"):
+            handle(record)
+            record.clear()
+    """
+    for _event, elem in iterparse(source, events=("end",), tag=tag,
+                                   stack_size=stack_size, chunk_size=chunk_size):
+        yield elem

@@ -17,6 +17,10 @@ from .pygixml_cy import (
     ParseFlags,
     parse_string,
     parse_file,
+    StreamElement,
+    PullParser,
+    iterparse,
+    iterfind,
 )
 
 from . import objectify
@@ -35,6 +39,10 @@ __all__ = [
     "ParseFlags",
     "parse_string",
     "parse_file",
+    "StreamElement",
+    "PullParser",
+    "iterparse",
+    "iterfind",
     "objectify",
     "dictify",
     "jsonify",

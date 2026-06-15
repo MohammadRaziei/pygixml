@@ -1769,4 +1769,4 @@ include "objectify.pxi"
 include "dictify.pxi"
 include "jsonify.pxi"
 
-# include "stream.pxi"
+include "stream.pxi"
