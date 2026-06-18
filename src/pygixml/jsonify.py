@@ -35,7 +35,8 @@ Usage::
     # -> a single standard, valid JSON document (same shape as dumps()),
     #    using an in-place seek-and-patch trick to avoid buffering whole
     #    subtrees just to know where array brackets go
-    jsonify.stream_dump("huge.xml", "huge.json", pretty=True)
+    jsonify.stream_dump("huge.xml", "huge.json")            # compact (default)
+    jsonify.stream_dump("huge.xml", "huge.json", indent=2)  # pretty, 2 spaces
 """
 
 from .pygixml_cy import (

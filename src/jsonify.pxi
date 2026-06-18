@@ -1047,8 +1047,7 @@ cdef extern from *:
         const char*  cdata_key_c,
         PyObject*    force_set,
         bool         force_all,
-        bool         pretty,
-        const char*  indent_c,
+        int          indent_width,
         size_t       stack_size,
         size_t       io_buf_size,
         char*        errbuf,
@@ -1056,8 +1055,9 @@ cdef extern from *:
     ) {
         std::string attr_prefix(attr_prefix_c);
         std::string cdata_key(cdata_key_c);
+        bool pretty = indent_width > 0;
         std::string nl  = pretty ? "\\n" : "";
-        std::string ind = pretty ? std::string(indent_c) : "";
+        std::string ind = pretty ? std::string((size_t)indent_width, ' ') : "";
 
         std::vector<std::string> force_list;
         if (force_set && force_set != Py_None) {
@@ -1518,8 +1518,7 @@ cdef extern from *:
         const char* cdata_key,
         object      force_set,
         bint        force_all,
-        bint        pretty,
-        const char* indent,
+        int         indent_width,
         size_t      stack_size,
         size_t      io_buf_size,
         char*       errbuf,
@@ -1864,8 +1863,7 @@ def jsonify_stream_dump(
     str attr_prefix="@",
     str cdata_key="#text",
     object force_list=None,
-    bint pretty=False,
-    str indent="  ",
+    int indent=0,
     size_t stack_size=4096,
     size_t io_buf_size=65536,
 ):
@@ -1927,10 +1925,12 @@ def jsonify_stream_dump(
         (a tag becomes an array only when more than one sibling with
         that name actually appears under the same parent) — matching
         :func:`dumps`'s default behaviour.
-    pretty : bool
-        Indent the JSON output. Default ``False``.
-    indent : str
-        Indentation string when *pretty* is ``True``. Default ``"  "``.
+    indent : int
+        Number of spaces to indent nested structures with, following
+        the same convention as Python's ``json.dump(..., indent=N)``.
+        ``0`` (the default) produces compact output with no extra
+        whitespace. Any positive value enables multi-line, indented
+        output using that many spaces per nesting level.
     stack_size : int
         Size in bytes of yxml's internal name stack.
     io_buf_size : int
@@ -1951,7 +1951,8 @@ def jsonify_stream_dump(
     ::
 
         from pygixml import jsonify
-        jsonify.jsonify_stream_dump("huge.xml", "huge.json", pretty=True)
+        jsonify.jsonify_stream_dump("huge.xml", "huge.json")            # compact
+        jsonify.jsonify_stream_dump("huge.xml", "huge.json", indent=2)  # pretty
 
         import json
         with open("huge.json") as f:
@@ -1961,7 +1962,9 @@ def jsonify_stream_dump(
     cdef bytes json_b = json_path.encode("utf-8")
     cdef bytes ap_b   = attr_prefix.encode("utf-8")
     cdef bytes ck_b   = cdata_key.encode("utf-8")
-    cdef bytes ind_b  = indent.encode("utf-8")
+
+    if indent < 0:
+        raise ValueError(f"indent must be >= 0, got {indent}")
 
     cdef bint force_all = False
     cdef object force_set = None
@@ -1980,8 +1983,7 @@ def jsonify_stream_dump(
         <const char*>ck_b,
         force_set,
         force_all,
-        pretty,
-        <const char*>ind_b,
+        <int>indent,
         stack_size,
         io_buf_size,
         errbuf,
