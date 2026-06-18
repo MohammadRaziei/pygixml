@@ -28,7 +28,14 @@ Usage::
     # streaming, constant-memory conversion for gigantic files:
     # pure C++ (yxml + hand-written JSON writer) — no pugixml DOM, no
     # Python dict/list, no `json` module, anywhere in the call chain.
+
+    # -> JSON Lines (one record per line; fastest, truly O(depth) memory)
     jsonify.stream_xml_to_json("huge.xml", "huge.jsonl", record_tag="record")
+
+    # -> a single standard, valid JSON document (same shape as dumps()),
+    #    using an in-place seek-and-patch trick to avoid buffering whole
+    #    subtrees just to know where array brackets go
+    jsonify.stream_dump("huge.xml", "huge.json", pretty=True)
 """
 
 from .pygixml_cy import (
@@ -38,9 +45,10 @@ from .pygixml_cy import (
     jsonify_dumps_obj  as dumps_obj,
     jsonify_dumps_node as dumps_node,
     stream_xml_to_json,
+    jsonify_stream_dump as stream_dump,
 )
 
 __all__ = [
     "dumps", "dumps_str", "dumps_file", "dumps_obj", "dumps_node",
-    "stream_xml_to_json",
+    "stream_xml_to_json", "stream_dump",
 ]

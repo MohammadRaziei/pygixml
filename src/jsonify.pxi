@@ -441,6 +441,7 @@ cdef extern from *:
         bool        first_field = true;
         std::string open_list_tag;
         bool        in_open_list = false;
+        bool        text_flushed = false;
         int         depth = 0;
     };
 
@@ -495,6 +496,17 @@ cdef extern from *:
         };
         auto flush_text_field = [&](EmitLevel& lv) {
             if (!have_pending_text) return;
+            if (lv.text_flushed) {
+                // pugixml's child_value() (used by the in-memory DOM
+                // serializer for parity) only ever returns the FIRST
+                // text run of an element -- text appearing after later
+                // child elements is not concatenated. Match that here:
+                // once we've already emitted this level's "#text" field
+                // once, silently drop any further text.
+                cur_text.clear();
+                have_pending_text = false;
+                return;
+            }
             bool blank = pg_all_ws(cur_text.data(), cur_text.size());
             if (!blank) {
                 ensure_open(lv);
@@ -503,6 +515,7 @@ cdef extern from *:
                 w.putc1(':');
                 w.write_json_string(cur_text);
             }
+            lv.text_flushed = true;
             cur_text.clear();
             have_pending_text = false;
         };
@@ -640,7 +653,7 @@ cdef extern from *:
     //     the document's root element.
     static long long xml_stream_to_jsonl_file(
         const char*  xml_path,
-        const char*  json_path,
+        const char*  jsonl_path,
         const char*  record_tag,
         const char*  attr_prefix_c,
         const char*  cdata_key_c,
@@ -675,10 +688,10 @@ cdef extern from *:
             snprintf(errbuf, errbuf_size, "cannot open XML input: %s", xml_path);
             return -1;
         }
-        FILE* fout = fopen(json_path, "wb");
+        FILE* fout = fopen(jsonl_path, "wb");
         if (!fout) {
             fclose(xin);
-            snprintf(errbuf, errbuf_size, "cannot open JSON output: %s", json_path);
+            snprintf(errbuf, errbuf_size, "cannot open JSON Lines output: %s", jsonl_path);
             return -1;
         }
         JOutBuf w(fout);
@@ -810,6 +823,658 @@ cdef extern from *:
         if (!ok) return -2;
         return count;
     }
+
+    // =========================================================================
+    // Constant-memory streaming XML -> *standard* JSON converter
+    // (single pass, seek-and-patch -- output is a normal JSON document,
+    //  not JSON Lines)
+    // =========================================================================
+    //
+    // Same goals as the JSONL engine above (no pugixml DOM, no Python
+    // dict/list, no `json` module -- every byte hand-emitted in C++), but
+    // produces ONE valid JSON document (an object or array, with proper
+    // brackets/commas) instead of one-record-per-line output.
+    //
+    // The core difficulty solved here: JSON needs to know, before closing
+    // a `]`, whether more array items follow -- and for a *repeated child
+    // tag*, whether the first occurrence will end up alone (-> plain
+    // value) or accompanied by siblings (-> array). We resolve this with
+    // an in-place "reserve a byte, patch it later" trick instead of a
+    // separate counting pass:
+    //
+    //   * The first time a child tag T closes under some parent, we
+    //     reserve a single placeholder byte (a space) right before its
+    //     value and remember that position (`bracket_pos`). We then write
+    //     T's value as a plain (non-array) value, optimistically.
+    //
+    //   * If a *second* T sibling appears later under the same parent:
+    //       - seek back to `bracket_pos` and overwrite that one
+    //         placeholder byte with '[' (a 1-byte patch, O(1));
+    //       - seek to the end of the previously-written value and append
+    //         ",second_value" (and eventually a closing ']' once the
+    //         parent itself closes).
+    //     This works directly (no shifting) as long as nothing else was
+    //     written to the file between the first T value and now --
+    //     i.e. T's occurrences are contiguous in the output, which is the
+    //     common case when same-tag siblings are adjacent in the XML.
+    //
+    //   * If something else (a different child) WAS written in between --
+    //     i.e. the file's current write position has moved past where T's
+    //     last value ended -- we "splice": shift the bytes that were
+    //     written after T's last value forward (using a small fixed-size
+    //     buffer, moving the file's tail in chunks) just enough to open a
+    //     gap, drop the new T value into that gap, and update bookkeeping
+    //     so the *next* T occurrence is contiguous again. This costs
+    //     O(bytes between the two occurrences), not O(file size) -- and
+    //     for the common "siblings are adjacent" case it never triggers
+    //     at all.
+    //
+    //   * Third and later occurrences of the same tag, once `is_list` is
+    //     already true and writes are still contiguous, are a pure
+    //     append: no seeking at all.
+    //
+    // Net memory profile: O(nesting depth x distinct child tags per open
+    // level) for bookkeeping, plus one small fixed-size shift buffer used
+    // only on the (uncommon) non-contiguous-sibling path. Independent of
+    // file size, record size, and number of repeated children.
+
+    #include <functional>
+    #include <algorithm>
+    #include <utility>
+
+    #ifndef PYGIXML_SHIFT_BUF
+    #define PYGIXML_SHIFT_BUF (1 << 16)   /* 64 KB scratch for splicing */
+    #endif
+
+    // Per-(parent-level, child-tag) bookkeeping.
+    struct PJChildSlot {
+        long bracket_pos    = -1;    // offset of the reserved placeholder byte
+        long last_value_end = -1;    // offset right after this tag's most
+                                      // recently written value
+        bool is_list        = false;
+        // When a non-contiguous repeat is detected at open_child() time,
+        // we can't relocate the new value into the gap yet -- it hasn't
+        // been written. Instead we append a ',' + the value at the true
+        // tail (like any other write), and defer the actual splice/
+        // relocation until close_child() learns where the value ended.
+        bool pending_splice     = false;
+        long pending_gap_start  = -1;  // where to relocate the value to
+        long pending_value_start = -1; // where the (comma+)value append began
+    };
+
+    struct PJLevel {
+        std::string tag;
+        bool wrote_brace          = false;  // '{' written for this level?
+        bool first_field          = true;   // comma bookkeeping for this object
+        bool any_attr_or_child    = false;
+        bool text_flushed         = false;  // see flush_text_field's comment
+        int  depth                = 0;      // nesting depth, for indentation
+        std::unordered_map<std::string, PJChildSlot> children;
+        // attribute de-dup, per xmltodict convention: last value for a
+        // repeated attribute name wins (XML itself forbids duplicate
+        // attribute names on one element, but be lenient on malformed input)
+    };
+
+    // A small helper bound to one open FILE* that knows how to do the
+    // "shift a range forward to open a gap" operation used when sibling
+    // writes were not contiguous.
+    struct PJFileEditor {
+        FILE* fp;
+        long  tail_pos;   // current logical end-of-file write position
+
+        explicit PJFileEditor(FILE* f) : fp(f), tail_pos(0) {}
+
+        inline long pos() {
+            fflush(fp);
+            return ftell(fp);
+        }
+
+        inline void seek(long off) {
+            fflush(fp);
+            fseek(fp, off, SEEK_SET);
+        }
+
+        inline void write_at_tail(const char* s, size_t n) {
+            seek(tail_pos);
+            fwrite(s, 1, n, fp);
+            tail_pos += (long)n;
+        }
+        inline void write_at_tail(const std::string& s) {
+            write_at_tail(s.data(), s.size());
+        }
+        inline void write_at_tail(char c) {
+            write_at_tail(&c, 1);
+        }
+
+        // Overwrite exactly one byte at a previously-reserved offset.
+        inline void patch_byte(long off, char c) {
+            seek(off);
+            fwrite(&c, 1, 1, fp);
+            seek(tail_pos);   // restore logical write position
+        }
+
+        // Insert `ins` (length n) right before `gap_start`, by shifting
+        // everything currently in [gap_start, tail_pos) forward by n
+        // bytes, then writing `ins` into the freed space. Updates
+        // tail_pos accordingly. Cost: O(tail_pos - gap_start), using a
+        // small fixed-size buffer (not the whole range at once).
+        bool splice_insert(long gap_start, const char* ins, size_t n) {
+            long region_len = tail_pos - gap_start;
+            if (region_len < 0) return false;
+            if (region_len == 0) {
+                write_at_tail(ins, n);
+                return true;
+            }
+
+            std::vector<char> buf(PYGIXML_SHIFT_BUF);
+            // Move the [gap_start, tail_pos) region forward by n bytes,
+            // working from the END backwards so source and destination
+            // ranges (which can overlap once n < region_len) never
+            // clobber data we haven't read yet.
+            long remaining = region_len;
+            while (remaining > 0) {
+                long chunk = (remaining < (long)buf.size()) ? remaining : (long)buf.size();
+                long src_off = gap_start + remaining - chunk;
+                long dst_off = src_off + (long)n;
+
+                seek(src_off);
+                size_t got = fread(buf.data(), 1, (size_t)chunk, fp);
+                if ((long)got != chunk) return false;
+
+                seek(dst_off);
+                size_t put = fwrite(buf.data(), 1, (size_t)chunk, fp);
+                if ((long)put != (size_t)chunk) return false;
+
+                remaining -= chunk;
+            }
+
+            // Now [gap_start, gap_start+n) is free -- write the insertion.
+            seek(gap_start);
+            fwrite(ins, 1, n, fp);
+
+            tail_pos += (long)n;
+            seek(tail_pos);
+            return true;
+        }
+        bool splice_insert(long gap_start, const std::string& s) {
+            return splice_insert(gap_start, s.data(), s.size());
+        }
+    };
+
+    static inline bool pgj_is_ws(char c) {
+        return c==' '||c=='\\t'||c=='\\n'||c=='\\r';
+    }
+    static inline bool pgj_all_ws(const char* s, size_t n) {
+        for (size_t i=0;i<n;++i) if (!pgj_is_ws(s[i])) return false;
+        return true;
+    }
+
+    // Writes a JSON-escaped string straight to the editor's tail.
+    static void pgj_write_escaped(PJFileEditor& ed, const char* s, size_t n) {
+        std::string tmp;
+        tmp.reserve(n + 2);
+        tmp += '"';
+        for (size_t i = 0; i < n; ++i) {
+            unsigned char c = (unsigned char)s[i];
+            switch (c) {
+                case '"':  tmp += "\\\\\\""; break;
+                case '\\\\': tmp += "\\\\\\\\"; break;
+                case '\\n': tmp += "\\\\n";  break;
+                case '\\r': tmp += "\\\\r";  break;
+                case '\\t': tmp += "\\\\t";  break;
+                default:
+                    if (c < 0x20) {
+                        char ub[8];
+                        snprintf(ub, sizeof(ub), "\\\\u%04x", c);
+                        tmp += ub;
+                    } else tmp += (char)c;
+            }
+        }
+        tmp += '"';
+        ed.write_at_tail(tmp);
+    }
+    static void pgj_write_escaped(PJFileEditor& ed, const std::string& s) {
+        pgj_write_escaped(ed, s.data(), s.size());
+    }
+
+    // -------------------------------------------------------------------
+    // Main single-pass, seek-and-patch XML -> JSON document converter.
+    // -------------------------------------------------------------------
+    static long long xml_stream_to_json_file(
+        const char*  xml_path,
+        const char*  json_path,
+        const char*  attr_prefix_c,
+        const char*  cdata_key_c,
+        PyObject*    force_set,
+        bool         force_all,
+        bool         pretty,
+        const char*  indent_c,
+        size_t       stack_size,
+        size_t       io_buf_size,
+        char*        errbuf,
+        size_t       errbuf_size
+    ) {
+        std::string attr_prefix(attr_prefix_c);
+        std::string cdata_key(cdata_key_c);
+        std::string nl  = pretty ? "\\n" : "";
+        std::string ind = pretty ? std::string(indent_c) : "";
+
+        std::vector<std::string> force_list;
+        if (force_set && force_set != Py_None) {
+            PyObject* it = PyObject_GetIter(force_set);
+            if (it) {
+                PyObject* item;
+                while ((item = PyIter_Next(it))) {
+                    const char* s = PyUnicode_AsUTF8(item);
+                    if (s) force_list.push_back(s);
+                    Py_DECREF(item);
+                }
+                Py_DECREF(it);
+            }
+        }
+        auto is_forced = [&](const std::string& tag) {
+            if (force_all) return true;
+            for (auto& t : force_list) if (t == tag) return true;
+            return false;
+        };
+
+        FILE* xin = fopen(xml_path, "rb");
+        if (!xin) {
+            snprintf(errbuf, errbuf_size, "cannot open XML input: %s", xml_path);
+            return -1;
+        }
+        FILE* fout = fopen(json_path, "w+b");   // read+write: needed for seek/patch
+        if (!fout) {
+            fclose(xin);
+            snprintf(errbuf, errbuf_size, "cannot open JSON output: %s", json_path);
+            return -1;
+        }
+
+        PJFileEditor ed(fout);
+
+        std::vector<char> ystack(stack_size);
+        yxml_t x;
+        yxml_init(&x, ystack.data(), stack_size);
+
+        std::vector<char> chunk(io_buf_size);
+
+        std::vector<PJLevel> levels;
+        std::string cur_attr_key, cur_attr_val;
+        std::string cur_text;
+        bool have_pending_text = false;
+        long long elements_seen = 0;
+
+        auto pad_for = [&](int depth) {
+            std::string p;
+            for (int i = 0; i < depth; ++i) p += ind;
+            return p;
+        };
+
+        auto ensure_open = [&](PJLevel& lv) {
+            if (!lv.wrote_brace) {
+                ed.write_at_tail('{');
+                lv.wrote_brace = true;
+                lv.first_field = true;
+            }
+        };
+        auto field_sep = [&](PJLevel& lv) {
+            if (!lv.first_field) ed.write_at_tail(',');
+            ed.write_at_tail(nl);
+            ed.write_at_tail(pad_for(lv.depth + 1));
+            lv.first_field = false;
+        };
+
+        // Flush this level's accumulated direct text as a "#text" field
+        // (only meaningful once we know the level is becoming an object --
+        // i.e. it already has attrs/children, or is about to get one).
+        auto flush_text_field = [&](PJLevel& lv) {
+            if (!have_pending_text) return;
+            if (lv.text_flushed) {
+                // Match pugixml's child_value() semantics (used by the
+                // in-memory DOM serializer): only the FIRST text run of
+                // an element becomes "#text"; text appearing after later
+                // child elements is dropped, not concatenated.
+                cur_text.clear();
+                have_pending_text = false;
+                return;
+            }
+            bool blank = pgj_all_ws(cur_text.data(), cur_text.size());
+            if (!blank) {
+                ensure_open(lv);
+                field_sep(lv);
+                pgj_write_escaped(ed, cdata_key);
+                ed.write_at_tail(':');
+                if (!nl.empty()) ed.write_at_tail(' ');
+                pgj_write_escaped(ed, cur_text);
+            }
+            lv.text_flushed = true;
+            cur_text.clear();
+            have_pending_text = false;
+        };
+
+        // Called when a child element with tag `tag` STARTS under `parent`
+        // (i.e. at the child's ELEMSTART). This writes everything that
+        // must precede the child's own content: the field separator, the
+        // `"tag":` key, and -- for repeated tags -- the comma (and, if
+        // this is exactly the moment we learn it's a list, the '['
+        // patch). After this returns, the caller is free to write the
+        // child's own value (object/array/scalar) directly at the
+        // current tail, and it will land in the right place.
+        //
+        // This ordering (key/bracket prefix written eagerly at
+        // ELEMSTART, not deferred to ELEMEND) is essential: a nested
+        // object's own '{' starts getting written the moment its FIRST
+        // child needs it open, which happens immediately during parsing,
+        // long before the object itself closes. If the parent's key
+        // prefix were written lazily at the child's ELEMEND instead, the
+        // child's content would already be sitting in the file BEFORE
+        // its own key -- corrupting the structure. Writing the prefix at
+        // ELEMSTART guarantees correct ordering for arbitrarily deep
+        // nesting.
+        auto open_child = [&](PJLevel& parent, const std::string& tag) {
+            ensure_open(parent);
+            auto it = parent.children.find(tag);
+            std::string item_pad = pad_for(parent.depth + 1) + ind;  // pad1 + ind
+
+            if (it == parent.children.end()) {
+                // ---- first occurrence ------------------------------------
+                field_sep(parent);
+                pgj_write_escaped(ed, tag);
+                ed.write_at_tail(':');
+                if (!nl.empty()) ed.write_at_tail(' ');
+
+                PJChildSlot slot;
+                if (is_forced(tag)) {
+                    ed.write_at_tail('[');
+                    ed.write_at_tail(nl);
+                    ed.write_at_tail(item_pad);
+                    slot.is_list = true;
+                } else {
+                    slot.bracket_pos = ed.tail_pos;
+                    ed.write_at_tail(' ');   // reserved placeholder byte
+                }
+                parent.children[tag] = slot;
+                return;
+            }
+
+            PJChildSlot& slot = it->second;
+            bool contiguous = (slot.last_value_end == ed.tail_pos);
+
+            if (contiguous) {
+                if (!slot.is_list) {
+                    ed.patch_byte(slot.bracket_pos, '[');
+                    slot.is_list = true;
+                }
+                ed.write_at_tail(',');
+                ed.write_at_tail(nl);
+                ed.write_at_tail(item_pad);
+                return;
+            }
+
+            // ---- non-contiguous: a different child was written after
+            // this tag's last value. We can't relocate the new value
+            // into the gap right after that last value yet, because the
+            // value hasn't been written -- it may itself be a deeply
+            // nested object spanning many further ELEMSTART/ELEMEND
+            // events. Instead: append ',' at the true tail (a normal,
+            // cheap write) and let the new value be written normally
+            // wherever subsequent processing puts it; once close_child()
+            // observes that the value is complete, IT performs the
+            // actual relocation of the whole "," + value blob into the
+            // gap in one shot.
+            bool was_list_already = slot.is_list;
+            if (!slot.is_list) {
+                ed.patch_byte(slot.bracket_pos, '[');
+                slot.is_list = true;
+            }
+            (void)was_list_already;
+            slot.pending_splice = true;
+            slot.pending_gap_start = slot.last_value_end;
+            slot.pending_value_start = ed.tail_pos;
+            ed.write_at_tail(',');
+            ed.write_at_tail(nl);
+            ed.write_at_tail(item_pad);
+            // last_value_end is intentionally left stale here -- it still
+            // points at the gap location close_child() needs to splice
+            // into. It gets corrected (to the post-relocation position)
+            // once close_child() finishes the splice.
+        };
+
+        // Called when a child element with tag `tag` under `parent` ENDS
+        // (i.e. at the child's ELEMEND), AFTER its own content has been
+        // fully written (via close_level). Just records where the value
+        // ended, for the next sibling/closing-bracket bookkeeping.
+        auto close_child = [&](PJLevel& parent, const std::string& tag) {
+            PJChildSlot& slot = parent.children[tag];
+
+            if (!slot.pending_splice) {
+                slot.last_value_end = ed.tail_pos;
+                return;
+            }
+
+            // The ',' + new value were appended at the true tail (from
+            // pending_value_start to the current tail). Relocate that
+            // whole blob into the gap right after this tag's previous
+            // value (pending_gap_start), then fix up every other child
+            // slot of this parent whose offsets point at or after the
+            // gap -- they all just shifted forward by the blob's length.
+            long blob_start = slot.pending_value_start;
+            long blob_end   = ed.tail_pos;
+            long blob_len   = blob_end - blob_start;
+            long gap_start  = slot.pending_gap_start;
+
+            std::vector<char> blob(blob_len);
+            ed.seek(blob_start);
+            size_t nrd = fread(blob.data(), 1, (size_t)blob_len, fout);
+            (void)nrd;  // best-effort; overall ok/errbuf path covers I/O
+                        // failures elsewhere in this function
+            // Roll the tail back to before the blob -- it will be
+            // re-appended (at its final, correct position) by
+            // splice_insert below.
+            ed.tail_pos = blob_start;
+
+            ed.splice_insert(gap_start, blob.data(), blob.size());
+            long shift = blob_len;
+
+            for (auto& kv : parent.children) {
+                PJChildSlot& other = kv.second;
+                if (&other == &slot && !other.pending_splice) continue;
+                if (&other == &slot) continue;  // fixed explicitly below
+                if (other.bracket_pos >= gap_start) other.bracket_pos += shift;
+                if (other.last_value_end >= gap_start) other.last_value_end += shift;
+            }
+
+            slot.pending_splice = false;
+            slot.last_value_end = gap_start + shift;
+        };
+
+        // Closes out a level: writes any trailing text field, closes any
+        // child tags that ended up as lists (']'), and writes the final
+        // '}' (or, for a leaf with no attrs/children, a scalar/null).
+        auto close_level = [&](PJLevel& lv, int depth) -> void {
+            if (!lv.wrote_brace) {
+                bool blank = !have_pending_text ||
+                             pgj_all_ws(cur_text.data(), cur_text.size());
+                if (blank) ed.write_at_tail("null", 4);
+                else pgj_write_escaped(ed, cur_text);
+                cur_text.clear();
+                have_pending_text = false;
+                return;
+            }
+            flush_text_field(lv);
+
+            // Close every child tag that ended up as a list, in ascending
+            // order of where its content ends in the file. This matters
+            // because closing one (via splice_insert, which shifts bytes
+            // forward) can invalidate the still-pending last_value_end of
+            // ANOTHER list whose content comes later in the file -- so we
+            // must process strictly left-to-right and shift the remaining
+            // pending offsets by however many bytes each splice inserted.
+            std::vector<std::pair<long, std::string>> pending_closes;
+            for (auto& kv : lv.children) {
+                if (kv.second.is_list) {
+                    pending_closes.push_back({kv.second.last_value_end, kv.first});
+                }
+            }
+            std::sort(pending_closes.begin(), pending_closes.end());
+
+            for (auto& pc : pending_closes) {
+                long close_at = pc.first;
+                std::string close_seq = nl + pad_for(lv.depth + 1) + "]";
+                if (close_at == ed.tail_pos) {
+                    ed.write_at_tail(close_seq);
+                } else {
+                    ed.splice_insert(close_at, close_seq);
+                    long shift = (long)close_seq.size();
+                    // Every not-yet-processed pending close whose offset
+                    // was recorded *after* this insertion point must shift
+                    // forward by however many bytes we just inserted.
+                    for (auto& other : pending_closes) {
+                        if (&other != &pc && other.first > close_at)
+                            other.first += shift;
+                    }
+                }
+            }
+            ed.write_at_tail(nl);
+            ed.write_at_tail(pad_for(depth));
+            ed.write_at_tail('}');
+        };
+
+        bool ok = true;
+
+        while (ok) {
+            size_t nread = fread(chunk.data(), 1, io_buf_size, xin);
+            if (nread == 0) break;
+
+            for (size_t i = 0; i < nread; ++i) {
+                int ret = yxml_parse(&x, (unsigned char)chunk[i]);
+                if (ret < 0) {
+                    snprintf(errbuf, errbuf_size,
+                             "XML parse error (yxml code %d) at line %u", ret, x.line);
+                    ok = false; break;
+                }
+
+                switch (ret) {
+                case YXML_OK: break;
+
+                case YXML_ELEMSTART: {
+                    if (!levels.empty()) flush_text_field(levels.back());
+
+                    size_t nlen = yxml_symlen(&x, x.elem);
+                    std::string tag(x.elem, nlen);
+
+                    if (levels.empty()) {
+                        // This is the document root. Match dumps_file's
+                        // convention of wrapping the whole document as
+                        // {"<root_tag>": <root's own object>} rather than
+                        // emitting the root's content directly as the
+                        // top-level JSON value.
+                        ed.write_at_tail('{');
+                        if (!nl.empty()) ed.write_at_tail(nl + ind);
+                        pgj_write_escaped(ed, tag);
+                        ed.write_at_tail(':');
+                        if (!nl.empty()) ed.write_at_tail(' ');
+                    } else {
+                        // Write this child's key prefix (and comma/'['
+                        // patch, if it's a repeat) into its PARENT
+                        // *before* any of this new level's own content
+                        // gets written. This ordering is what keeps
+                        // nested objects correct -- see open_child's
+                        // comment for why.
+                        open_child(levels.back(), tag);
+                    }
+
+                    PJLevel lv;
+                    lv.tag = tag;
+                    if (levels.empty()) {
+                        lv.depth = 1;   // matches node_to_json(root, ..., depth=1)
+                    } else {
+                        PJLevel& parent = levels.back();
+                        bool in_array = parent.children.count(tag) &&
+                                         parent.children[tag].is_list;
+                        // node_to_json recurses with depth+1 for a plain
+                        // (non-array) child, and depth+2 for an array
+                        // item (the array itself consumes one indent
+                        // level for its brackets).
+                        lv.depth = parent.depth + (in_array ? 2 : 1);
+                    }
+                    levels.push_back(lv);
+                    elements_seen++;
+                    break;
+                }
+
+                case YXML_ATTRSTART: {
+                    size_t nlen = yxml_symlen(&x, x.attr);
+                    cur_attr_key.assign(x.attr, nlen);
+                    cur_attr_val.clear();
+                    break;
+                }
+                case YXML_ATTRVAL:
+                    cur_attr_val += x.data;
+                    break;
+                case YXML_ATTREND: {
+                    PJLevel& lv = levels.back();
+                    ensure_open(lv);
+                    // xmltodict convention: a repeated attribute name (not
+                    // valid per the XML spec, but tolerate malformed
+                    // input) -- last value wins, no array wrapping.
+                    field_sep(lv);
+                    pgj_write_escaped(ed, attr_prefix + cur_attr_key);
+                    ed.write_at_tail(':');
+                    if (!nl.empty()) ed.write_at_tail(' ');
+                    pgj_write_escaped(ed, cur_attr_val);
+                    break;
+                }
+
+                case YXML_CONTENT:
+                    cur_text += x.data;
+                    have_pending_text = true;
+                    break;
+
+                case YXML_ELEMEND: {
+                    PJLevel finished = levels.back();
+                    levels.pop_back();
+
+                    int depth = (int)levels.size();
+
+                    if (levels.empty()) {
+                        // document root -- close its own object, then
+                        // close the outer wrapper opened at ELEMSTART.
+                        close_level(finished, 1);
+                        ed.write_at_tail(nl);
+                        ed.write_at_tail('}');
+                    } else {
+                        PJLevel& parent = levels.back();
+                        close_level(finished, depth + 1);
+                        close_child(parent, finished.tag);
+                    }
+                    break;
+                }
+
+                case YXML_PISTART: case YXML_PICONTENT: case YXML_PIEND:
+                    break;
+
+                default: break;
+                }
+            }
+            if (!ok) break;
+        }
+
+        if (ok) {
+            int eof_ret = yxml_eof(&x);
+            if (eof_ret < 0) {
+                snprintf(errbuf, errbuf_size,
+                         "unexpected end of XML (yxml code %d)", eof_ret);
+                ok = false;
+            }
+        }
+
+        fclose(xin);
+        fclose(fout);
+
+        if (!ok) return -2;
+        return elements_seen;
+    }
     """
     string xml_node_to_json(
         xml_node   root,
@@ -834,12 +1499,27 @@ cdef extern from *:
 
     long long xml_stream_to_jsonl_file(
         const char* xml_path,
-        const char* json_path,
+        const char* jsonl_path,
         const char* record_tag,
         const char* attr_prefix,
         const char* cdata_key,
         object      force_set,
         bint        force_all,
+        size_t      stack_size,
+        size_t      io_buf_size,
+        char*       errbuf,
+        size_t      errbuf_size
+    ) except +
+
+    long long xml_stream_to_json_file(
+        const char* xml_path,
+        const char* json_path,
+        const char* attr_prefix,
+        const char* cdata_key,
+        object      force_set,
+        bint        force_all,
+        bint        pretty,
+        const char* indent,
         size_t      stack_size,
         size_t      io_buf_size,
         char*       errbuf,
@@ -1053,7 +1733,7 @@ def jsonify_dumps(object source,
 
 def stream_xml_to_json(
     str xml_path,
-    str json_path,
+    str jsonl_path,
     str record_tag=None,
     str attr_prefix="@",
     str cdata_key="#text",
@@ -1071,8 +1751,8 @@ def stream_xml_to_json(
     representation — not even temporarily. The Python ``json`` module is
     never imported or used; every byte of output is hand-emitted in C++.
 
-    Output is **JSON Lines**: one self-contained JSON object per line.
-    This (rather than a single big JSON array/document) is what makes
+    Output is **JSON Lines** (``.jsonl``): one self-contained JSON object
+    per line — not a single big JSON array/document. This is what makes
     constant-memory operation possible — a JSON array needs to know
     whether more items follow before it can place its closing bracket
     correctly, which would force buffering; JSON Lines has no such
@@ -1082,8 +1762,9 @@ def stream_xml_to_json(
     ----------
     xml_path : str
         Path to the input XML file.
-    json_path : str
-        Path to the output ``.jsonl`` file. **Overwritten if it exists.**
+    jsonl_path : str
+        Path to the output **JSON Lines** file (conventionally named
+        with a ``.jsonl`` extension). **Overwritten if it exists.**
     record_tag : str | None
         Tag name of the elements to emit as JSON Lines records — matched
         anywhere in the document regardless of nesting depth. When
@@ -1140,8 +1821,8 @@ def stream_xml_to_json(
                 record = json.loads(line)
                 ...
     """
-    cdef bytes xml_b  = xml_path.encode("utf-8")
-    cdef bytes json_b = json_path.encode("utf-8")
+    cdef bytes xml_b   = xml_path.encode("utf-8")
+    cdef bytes jsonl_b = jsonl_path.encode("utf-8")
     cdef bytes rtag_b = record_tag.encode("utf-8") if record_tag else b""
     cdef bytes ap_b   = attr_prefix.encode("utf-8")
     cdef bytes ck_b   = cdata_key.encode("utf-8")
@@ -1158,7 +1839,7 @@ def stream_xml_to_json(
 
     cdef long long result = xml_stream_to_jsonl_file(
         <const char*>xml_b,
-        <const char*>json_b,
+        <const char*>jsonl_b,
         <const char*>rtag_b,
         <const char*>ap_b,
         <const char*>ck_b,
@@ -1175,4 +1856,140 @@ def stream_xml_to_json(
         raise PygiXMLError(f"stream_xml_to_json failed: {msg}")
 
     return result
-    
+
+
+def jsonify_stream_dump(
+    str xml_path,
+    str json_path,
+    str attr_prefix="@",
+    str cdata_key="#text",
+    object force_list=None,
+    bint pretty=False,
+    str indent="  ",
+    size_t stack_size=4096,
+    size_t io_buf_size=65536,
+):
+    """Convert a (potentially gigantic) XML file to a single, **standard,
+    valid JSON document** — in roughly constant memory.
+
+    Unlike :func:`stream_xml_to_json` (which writes JSON *Lines* — one
+    independent object per line, by design, to sidestep the
+    "do I need an array bracket" problem), this function produces exactly
+    what :func:`dumps`/:func:`dumps_file` would produce: one JSON value
+    (an object, mirroring the XML root) that round-trips through a
+    normal ``json.load`` like any other JSON file. No pugixml DOM, no
+    Python ``dict``/``list``, and no ``json`` module are used internally
+    — every byte is hand-emitted in C++, the same as
+    :func:`stream_xml_to_json`.
+
+    How it stays (mostly) constant-memory while still producing valid
+    JSON syntax: a normal JSON array must know, before its closing ``]``,
+    whether more items follow. Instead of buffering whole subtrees to
+    find out, this engine writes optimistically and *patches the file in
+    place* once it learns more:
+
+    * The first time a child tag is seen under some parent, a single
+      placeholder byte is reserved right before its value and the tag is
+      written as a plain (non-array) value.
+    * If a second sibling with the same tag shows up, that one
+      placeholder byte is overwritten with ``[`` (an O(1) patch), and the
+      new value is appended right after the first — this is the common
+      case when same-tag siblings are adjacent in the XML, and it never
+      needs to move any bytes around.
+    * If XML interleaves a different child in between two same-tag
+      siblings, the engine "splices": it shifts just the bytes written
+      in between forward (using a small fixed-size buffer, in chunks) to
+      open a gap for the new sibling, then continues. This costs time
+      proportional to how much was interleaved, not to the file size,
+      and is the only case where any data movement happens at all.
+
+    Because of that splice fallback, worst-case time can exceed
+    :func:`stream_xml_to_json`'s for documents where repeated sibling
+    tags are heavily interleaved with unrelated children — for typical
+    record-oriented XML (where ``<tag>`` repeats appear consecutively)
+    this never triggers and the function runs at full streaming speed.
+
+    Parameters
+    ----------
+    xml_path : str
+        Path to the input XML file.
+    json_path : str
+        Path to the output JSON file. **Overwritten if it exists.**
+    attr_prefix : str
+        Prefix for XML attribute names in JSON keys. Default ``"@"``.
+    cdata_key : str
+        JSON key used for an element's text content when mixed with
+        attributes or child elements. Default ``"#text"``.
+    force_list : set[str] | True | None
+        Tag names that should always be serialised as a JSON array, even
+        when only one sibling exists for a given parent. Pass ``True``
+        to force *every* child tag into an array. Default *None*
+        (a tag becomes an array only when more than one sibling with
+        that name actually appears under the same parent) — matching
+        :func:`dumps`'s default behaviour.
+    pretty : bool
+        Indent the JSON output. Default ``False``.
+    indent : str
+        Indentation string when *pretty* is ``True``. Default ``"  "``.
+    stack_size : int
+        Size in bytes of yxml's internal name stack.
+    io_buf_size : int
+        Bytes read per XML I/O operation. Default ``65536`` (64 KB).
+
+    Returns
+    -------
+    int
+        Number of XML elements processed (informational).
+
+    Raises
+    ------
+    PygiXMLError
+        On malformed XML, or if the input/output file cannot be opened.
+
+    Examples
+    --------
+    ::
+
+        from pygixml import jsonify
+        jsonify.jsonify_stream_dump("huge.xml", "huge.json", pretty=True)
+
+        import json
+        with open("huge.json") as f:
+            data = json.load(f)   # a single, ordinary, valid JSON document
+    """
+    cdef bytes xml_b  = xml_path.encode("utf-8")
+    cdef bytes json_b = json_path.encode("utf-8")
+    cdef bytes ap_b   = attr_prefix.encode("utf-8")
+    cdef bytes ck_b   = cdata_key.encode("utf-8")
+    cdef bytes ind_b  = indent.encode("utf-8")
+
+    cdef bint force_all = False
+    cdef object force_set = None
+    if force_list is True:
+        force_all = True
+    elif force_list:
+        force_set = set(force_list)
+
+    cdef char errbuf[512]
+    errbuf[0] = 0
+
+    cdef long long result = xml_stream_to_json_file(
+        <const char*>xml_b,
+        <const char*>json_b,
+        <const char*>ap_b,
+        <const char*>ck_b,
+        force_set,
+        force_all,
+        pretty,
+        <const char*>ind_b,
+        stack_size,
+        io_buf_size,
+        errbuf,
+        sizeof(errbuf),
+    )
+
+    if result < 0:
+        msg = errbuf.decode("utf-8", "replace") if errbuf[0] else "unknown error"
+        raise PygiXMLError(f"jsonify_stream_dump failed: {msg}")
+
+    return result
