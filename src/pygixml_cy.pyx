@@ -1765,8 +1765,8 @@ def parse_file(str file_path, options=0xFFFFFFFF):
         raise PygiXMLError(f"Failed to parse XML file: {file_path}")
 
 
+include "stream.pxi"
+
 include "objectify.pxi"
 include "dictify.pxi"
 include "jsonify.pxi"
-
-include "stream.pxi"
