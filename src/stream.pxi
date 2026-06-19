@@ -1275,6 +1275,50 @@ cdef _raise_yxml_error(yxml_t *x, int ret):
     raise PygiXMLError(f"{msg} (line {x.line}, byte {x.total})")
 
 
+# A small set of characters that need escaping in a JSON string. Anything
+# not in this set (and not a control character) is copied through as-is.
+# This mirrors jsonify.pxi's C++ json_escape() byte-for-byte, just operating
+# on a Python str instead of a null-terminated C string -- used by
+# StreamElement.to_json() so converting a streamed element straight to JSON
+# text never needs the `json` module or an intermediate dict/list.
+cdef str _json_escape_str(str s):
+    cdef list out = ['"']
+    cdef Py_ssize_t i, n = len(s)
+    cdef Py_ssize_t start = 0
+    cdef str c
+    for i in range(n):
+        c = s[i]
+        if c == '"' or c == '\\':
+            if i > start:
+                out.append(s[start:i])
+            out.append('\\' + c)
+            start = i + 1
+        elif c == '\n':
+            if i > start:
+                out.append(s[start:i])
+            out.append('\\n')
+            start = i + 1
+        elif c == '\r':
+            if i > start:
+                out.append(s[start:i])
+            out.append('\\r')
+            start = i + 1
+        elif c == '\t':
+            if i > start:
+                out.append(s[start:i])
+            out.append('\\t')
+            start = i + 1
+        elif ord(c) < 0x20:
+            if i > start:
+                out.append(s[start:i])
+            out.append(f"\\u{ord(c):04x}")
+            start = i + 1
+    if start < n:
+        out.append(s[start:n])
+    out.append('"')
+    return "".join(out)
+
+
 cdef class StreamElement:
     """A small, ElementTree-like XML element produced while streaming.
 
@@ -1390,6 +1434,172 @@ cdef class StreamElement:
         self.text = None
         self.tail = None
         self._children = []
+
+    def to_dict(self, str attr_prefix="@", str cdata_key="#text",
+                object force_list=None):
+        """Convert this element (and its subtree) to a plain ``dict``,
+        using the same convention as :func:`pygixml.jsonify.dumps`:
+
+        * Attributes become ``{attr_prefix + name: value}`` entries.
+        * A child tag that appears more than once (or is listed in
+          *force_list*, or *force_list* is ``True``) becomes a ``list``;
+          otherwise its value is used directly (no list wrapping).
+        * Text content is folded in as *cdata_key* when the element also
+          has attributes or children; otherwise the element's value
+          *is* its text (a plain string), matching the scalar shortcut
+          used elsewhere in pygixml's JSON conversion.
+        * An element with no attributes, no children, and no text
+          becomes ``None``.
+
+        This only ever builds ``dict``/``list``/``str`` — no JSON text
+        is produced. See :meth:`to_json` for a direct-to-string version
+        that skips building this dict entirely.
+        """
+        cdef bint force_all = (force_list is True)
+        cdef object force_set = None
+        if not force_all and force_list:
+            force_set = set(force_list)
+        return self._to_dict(attr_prefix, cdata_key, force_all, force_set)
+
+    cdef object _to_dict(self, str attr_prefix, str cdata_key,
+                          bint force_all, object force_set):
+        cdef dict result
+        cdef StreamElement child
+        cdef str tag
+        cdef list group
+        cdef dict counts = {}
+        cdef bint has_attrs = (len(self.attrib) > 0)
+        cdef bint has_children = (len(self._children) > 0)
+        cdef bint has_text = (self.text is not None and not self.text.isspace())
+
+        if not has_attrs and not has_children:
+            return self.text if has_text else None
+
+        result = {}
+        for k, v in self.attrib.items():
+            result[attr_prefix + k] = v
+
+        if has_text and (has_attrs or has_children):
+            result[cdata_key] = self.text
+
+        for child in self._children:
+            tag = child.tag
+            counts[tag] = counts.get(tag, 0) + 1
+
+        cdef dict seen_as_list = {}
+        for child in self._children:
+            tag = child.tag
+            value = child._to_dict(attr_prefix, cdata_key, force_all, force_set)
+            as_list = (counts[tag] > 1) or force_all or \
+                (force_set is not None and tag in force_set)
+            if tag in seen_as_list:
+                result[tag].append(value)
+            elif as_list:
+                result[tag] = [value]
+                seen_as_list[tag] = True
+            else:
+                result[tag] = value
+
+        return result
+
+    def to_json(self, str attr_prefix="@", str cdata_key="#text",
+                object force_list=None):
+        """Serialize this element (and its subtree) directly to a JSON
+        ``str`` — **without** ever constructing an intermediate ``dict``
+        or ``list``, and without using the ``json`` module. Uses the
+        same conventions as :meth:`to_dict`/:func:`jsonify.dumps`.
+
+        This is the fast path for converting many elements one at a
+        time (e.g. from :func:`pygixml.iterfind`) straight to JSON text,
+        skipping the dict-building step entirely::
+
+            for elem in pygixml.iterfind("big.xml", "record"):
+                line = elem.to_json()   # str, ready to write/yield
+                ...
+                elem.clear()
+        """
+        cdef bint force_all = (force_list is True)
+        cdef object force_set = None
+        if not force_all and force_list:
+            force_set = set(force_list)
+        cdef list parts = []
+        self._to_json(parts, attr_prefix, cdata_key, force_all, force_set)
+        return "".join(parts)
+
+    cdef void _to_json(self, list parts, str attr_prefix, str cdata_key,
+                        bint force_all, object force_set):
+        cdef StreamElement child
+        cdef str tag
+        cdef dict counts = {}
+        cdef bint has_attrs = (len(self.attrib) > 0)
+        cdef bint has_children = (len(self._children) > 0)
+        cdef bint has_text = (self.text is not None and not self.text.isspace())
+        cdef bint first
+        cdef bint as_list
+        cdef bint first_item
+
+        if not has_attrs and not has_children:
+            if has_text:
+                parts.append(_json_escape_str(self.text))
+            else:
+                parts.append("null")
+            return
+
+        parts.append("{")
+        first = True
+
+        for k, v in self.attrib.items():
+            if not first:
+                parts.append(",")
+            first = False
+            parts.append(_json_escape_str(attr_prefix + k))
+            parts.append(":")
+            parts.append(_json_escape_str(v))
+
+        if has_text and (has_attrs or has_children):
+            if not first:
+                parts.append(",")
+            first = False
+            parts.append(_json_escape_str(cdata_key))
+            parts.append(":")
+            parts.append(_json_escape_str(self.text))
+
+        for child in self._children:
+            tag = child.tag
+            counts[tag] = counts.get(tag, 0) + 1
+
+        cdef set emitted = set()
+        for child in self._children:
+            tag = child.tag
+            if tag in emitted:
+                continue
+            emitted.add(tag)
+
+            as_list = (counts[tag] > 1) or force_all or \
+                (force_set is not None and tag in force_set)
+
+            if not first:
+                parts.append(",")
+            first = False
+            parts.append(_json_escape_str(tag))
+            parts.append(":")
+
+            if as_list:
+                parts.append("[")
+                first_item = True
+                for sib in self._children:
+                    if (<StreamElement>sib).tag != tag:
+                        continue
+                    if not first_item:
+                        parts.append(",")
+                    first_item = False
+                    (<StreamElement>sib)._to_json(parts, attr_prefix, cdata_key,
+                                                    force_all, force_set)
+                parts.append("]")
+            else:
+                child._to_json(parts, attr_prefix, cdata_key, force_all, force_set)
+
+        parts.append("}")
 
 
 cdef class PullParser:
@@ -1705,3 +1915,77 @@ def iterfind(source, str tag, size_t stack_size=4096, Py_ssize_t chunk_size=6553
     for _event, elem in iterparse(source, events=("end",), tag=tag,
                                    stack_size=stack_size, chunk_size=chunk_size):
         yield elem
+
+
+def iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text",
+             object force_list=None, size_t stack_size=4096,
+             Py_ssize_t chunk_size=65536):
+    """Stream-parse XML and yield each matching element as a **JSON
+    string**, one at a time -- a generator, not a file.
+
+    Built directly on :func:`iterfind` (the same tested, yxml-backed
+    streaming parser used throughout this module) plus
+    :meth:`StreamElement.to_json`, which serializes one element straight
+    to a ``str`` without ever constructing an intermediate ``dict`` and
+    without using the ``json`` module. Each yielded string is exactly
+    what ``json.dumps()`` would produce for that element's
+    :meth:`StreamElement.to_dict` -- but skips building the dict at all.
+
+    Memory use is bounded by one element's subtree at a time (the same
+    model as :func:`iterfind`/ElementTree's ``iterparse`` -- not the
+    whole document), since each :class:`StreamElement` is discarded once
+    its JSON string has been produced and the generator moves on.
+
+    This is the right tool when you want JSON text *in Python* (to
+    forward over a socket, push into a queue, write your own framing,
+    etc.) without round-tripping through a file. If you actually want a
+    ``.jsonl`` file on disk, see :func:`pygixml.jsonify.stream_dump_jsonl`
+    instead -- that one streams from C++ all the way to the file, with
+    no per-element Python object ever created.
+
+    Parameters
+    ----------
+    source : str | os.PathLike | bytes | bytearray | file-like
+        Same as :func:`iterparse`.
+    tag : str
+        Tag name of the elements to convert and yield.
+    attr_prefix, cdata_key, force_list :
+        Same meaning as :meth:`StreamElement.to_json`.
+    stack_size, chunk_size :
+        Same meaning as :func:`iterparse`.
+
+    Example::
+
+        for line in pygixml.iterjson("big.xml", "record"):
+            send_to_queue(line)     # already a JSON string
+
+        # writing a .jsonl file yourself, if you want one:
+        with open("out.jsonl", "w") as f:
+            for line in pygixml.iterjson("big.xml", "record"):
+                f.write(line)
+                f.write("\\n")
+    """
+    for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
+        yield (<StreamElement>elem).to_json(attr_prefix, cdata_key, force_list)
+        elem.clear()
+
+
+def iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text",
+             object force_list=None, size_t stack_size=4096,
+             Py_ssize_t chunk_size=65536):
+    """Stream-parse XML and yield each matching element as a plain
+    ``dict``, one at a time.
+
+    Identical to :func:`iterjson` except it yields
+    :meth:`StreamElement.to_dict` results instead of JSON strings --
+    useful when you want to keep working with the data in Python rather
+    than as text.
+
+    Example::
+
+        for record in pygixml.iterdict("big.xml", "record"):
+            print(record["name"], record["@id"])
+    """
+    for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
+        yield (<StreamElement>elem).to_dict(attr_prefix, cdata_key, force_list)
+        elem.clear()

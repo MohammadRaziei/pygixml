@@ -1730,7 +1730,7 @@ def jsonify_dumps(object source,
     )
 
 
-def stream_xml_to_json(
+def jsonify_stream_dump_jsonl(
     str xml_path,
     str jsonl_path,
     str record_tag=None,
@@ -1802,13 +1802,13 @@ def stream_xml_to_json(
     Convert every ``<record>`` element anywhere in a multi-gigabyte file::
 
         from pygixml import jsonify
-        n = jsonify.stream_xml_to_json("huge.xml", "huge.jsonl",
-                                        record_tag="record")
+        n = jsonify.stream_dump_jsonl("huge.xml", "huge.jsonl",
+                                       record_tag="record")
         print(f"wrote {n} lines")
 
     No ``record_tag`` — each direct child of the root becomes one line::
 
-        jsonify.stream_xml_to_json("huge.xml", "huge.jsonl")
+        jsonify.stream_dump_jsonl("huge.xml", "huge.jsonl")
 
     Read the result back, one record at a time, still in constant memory
     (``json`` is fine to use on the *read* side — only this function's
@@ -1852,7 +1852,7 @@ def stream_xml_to_json(
 
     if result < 0:
         msg = errbuf.decode("utf-8", "replace") if errbuf[0] else "unknown error"
-        raise PygiXMLError(f"stream_xml_to_json failed: {msg}")
+        raise PygiXMLError(f"jsonify_stream_dump_jsonl failed: {msg}")
 
     return result
 
@@ -1870,7 +1870,7 @@ def jsonify_stream_dump(
     """Convert a (potentially gigantic) XML file to a single, **standard,
     valid JSON document** — in roughly constant memory.
 
-    Unlike :func:`stream_xml_to_json` (which writes JSON *Lines* — one
+    Unlike :func:`stream_dump_jsonl` (which writes JSON *Lines* — one
     independent object per line, by design, to sidestep the
     "do I need an array bracket" problem), this function produces exactly
     what :func:`dumps`/:func:`dumps_file` would produce: one JSON value
@@ -1878,7 +1878,7 @@ def jsonify_stream_dump(
     normal ``json.load`` like any other JSON file. No pugixml DOM, no
     Python ``dict``/``list``, and no ``json`` module are used internally
     — every byte is hand-emitted in C++, the same as
-    :func:`stream_xml_to_json`.
+    :func:`stream_dump_jsonl`.
 
     How it stays (mostly) constant-memory while still producing valid
     JSON syntax: a normal JSON array must know, before its closing ``]``,
@@ -1902,7 +1902,7 @@ def jsonify_stream_dump(
       and is the only case where any data movement happens at all.
 
     Because of that splice fallback, worst-case time can exceed
-    :func:`stream_xml_to_json`'s for documents where repeated sibling
+    :func:`stream_dump_jsonl`'s for documents where repeated sibling
     tags are heavily interleaved with unrelated children — for typical
     record-oriented XML (where ``<tag>`` repeats appear consecutively)
     this never triggers and the function runs at full streaming speed.
