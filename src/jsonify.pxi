@@ -1299,7 +1299,7 @@ def jsonify_stream_dump(
 
 
 
-def iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text",
+def jsonify_iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
              Py_ssize_t chunk_size=65536):
     """Stream-parse XML and yield each matching element as a **JSON
@@ -1338,12 +1338,12 @@ def iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text",
 
     Example::
 
-        for line in pygixml.iterjson("big.xml", "record"):
+        for line in jsonify.iterjson("big.xml", "record"):
             send_to_queue(line)     # already a JSON string
 
         # writing a .jsonl file yourself, if you want one:
         with open("out.jsonl", "w") as f:
-            for line in pygixml.iterjson("big.xml", "record"):
+            for line in jsonify.iterjson("big.xml", "record"):
                 f.write(line)
                 f.write("\\n")
     """

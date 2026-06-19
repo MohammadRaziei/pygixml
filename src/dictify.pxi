@@ -489,7 +489,7 @@ def dictify_unparse(object input_dict,
     return result.decode("utf-8")
 
 
-def iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text",
+def dictify_iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
              Py_ssize_t chunk_size=65536):
     """Stream-parse XML and yield each matching element as a plain
@@ -502,7 +502,7 @@ def iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text",
 
     Example::
 
-        for record in pygixml.iterdict("big.xml", "record"):
+        for record in dictify.iterdict("big.xml", "record"):
             print(record["name"], record["@id"])
     """
     for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):

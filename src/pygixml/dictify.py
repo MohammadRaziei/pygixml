@@ -20,7 +20,7 @@ from .pygixml_cy import (
     dictify_parse      as parse,
     dictify_parse_file as parse_file,
     dictify_unparse    as unparse,
-    iterdict,
+    dictify_iterdict as iterdict,
 )
 
 __all__ = ["parse", "parse_file", "unparse", "iterdict"]

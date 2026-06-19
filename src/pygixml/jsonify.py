@@ -49,7 +49,7 @@ from .pygixml_cy import (
     jsonify_dumps_obj  as dumps_obj,
     jsonify_dumps_node as dumps_node,
     jsonify_stream_dump as stream_dump,
-    iterjson,
+    jsonify_iterjson as iterjson,
 )
 
 __all__ = [
