@@ -265,566 +265,6 @@ cdef extern from *:
     }
 
     // =========================================================================
-    // Constant-memory streaming XML -> JSON Lines converter
-    // =========================================================================
-    //
-    // Output is JSON Lines: one self-contained JSON object per line, not a
-    // single big JSON array/document. A JSON array needs to know, before
-    // closing a bracket, whether more items follow -- which would force
-    // buffering. JSONL sidesteps this: every line stands alone, so a record
-    // can be written the instant it's fully parsed.
-    //
-    // Within ONE record, repeated child tags (e.g. many <tag> under one
-    // <item>) still need an array-vs-scalar decision. We resolve this with a
-    // two-pass scan scoped to that single record's byte range in the file
-    // (not the whole document):
-    //   Pass 1 (count): re-read just those bytes, counting how many times
-    //                   each direct-child tag appears at each depth. Only
-    //                   small integer counters are kept (bounded by the
-    //                   record's distinct tag count, not its data volume).
-    //   Pass 2 (emit):  re-read the same bytes again and stream JSON
-    //                   directly to the output file, using Pass 1's counts
-    //                   to make every comma/bracket decision in O(1) with no
-    //                   buffering of any subtree.
-    //
-    // Net memory profile, independent of file size or record count: one
-    // yxml stack, one read-chunk buffer, one write-chunk buffer, and a few
-    // small tag-count maps scoped to whichever single record is currently
-    // being processed. Total stays in the hundreds of KB whether the input
-    // is 1 MB or 100 GB.
-
-    #include <cstdio>
-    #include <cstring>
-    #include <vector>
-    #include <string>
-    #include <unordered_map>
-
-    #ifndef PYGIXML_IO_CHUNK
-    #define PYGIXML_IO_CHUNK (1 << 16)   /* 64 KB */
-    #endif
-    #ifndef PYGIXML_OUT_CHUNK
-    #define PYGIXML_OUT_CHUNK (1 << 16)  /* 64 KB */
-    #endif
-
-    // ---- small buffered writer over a FILE* --------------------------------
-    struct JOutBuf {
-        FILE*  fp;
-        char   buf[PYGIXML_OUT_CHUNK];
-        size_t len = 0;
-        bool   io_error = false;
-
-        explicit JOutBuf(FILE* f) : fp(f) {}
-        inline void flush() {
-            if (len == 0) return;
-            if (fwrite(buf, 1, len, fp) != len) io_error = true;
-            len = 0;
-        }
-        inline void putc1(char c) {
-            if (len >= PYGIXML_OUT_CHUNK) flush();
-            buf[len++] = c;
-        }
-        inline void write(const char* s, size_t n) {
-            if (n > PYGIXML_OUT_CHUNK) {
-                flush();
-                if (fwrite(s, 1, n, fp) != n) io_error = true;
-                return;
-            }
-            if (len + n > PYGIXML_OUT_CHUNK) flush();
-            memcpy(buf + len, s, n);
-            len += n;
-        }
-        inline void write(const char* s) { write(s, strlen(s)); }
-        inline void write(const std::string& s) { write(s.data(), s.size()); }
-
-        inline void write_json_string(const char* s, size_t n) {
-            putc1('"');
-            size_t start = 0;
-            char ubuf[8];
-            for (size_t i = 0; i < n; ++i) {
-                unsigned char c = (unsigned char)s[i];
-                const char* esc = nullptr;
-                switch (c) {
-                    case '"':  esc = "\\\\\\""; break;
-                    case '\\\\': esc = "\\\\\\\\"; break;
-                    case '\\n': esc = "\\\\n";  break;
-                    case '\\r': esc = "\\\\r";  break;
-                    case '\\t': esc = "\\\\t";  break;
-                    default:
-                        if (c < 0x20) {
-                            snprintf(ubuf, sizeof(ubuf), "\\\\u%04x", c);
-                            esc = ubuf;
-                        }
-                }
-                if (esc) {
-                    if (i > start) write(s + start, i - start);
-                    write(esc);
-                    start = i + 1;
-                }
-            }
-            if (start < n) write(s + start, n - start);
-            putc1('"');
-        }
-        inline void write_json_string(const std::string& s) {
-            write_json_string(s.data(), s.size());
-        }
-    };
-
-    static inline bool pg_is_ws(char c) {
-        return c==' '||c=='\\t'||c=='\\n'||c=='\\r';
-    }
-    static inline bool pg_all_ws(const char* s, size_t n) {
-        for (size_t i=0;i<n;++i) if (!pg_is_ws(s[i])) return false;
-        return true;
-    }
-
-    // Pass 1: count direct-child tag occurrences at every depth, for one
-    // record's byte range [start, end) of the input file.
-    struct TagCounts {
-        std::vector<std::unordered_map<std::string,int>> counts;
-        void ensure_depth(size_t d) {
-            if (counts.size() <= d) counts.resize(d + 1);
-        }
-    };
-
-    static bool pg_count_pass(
-        FILE* fin, long start_off, long end_off,
-        size_t stack_size, size_t io_chunk,
-        TagCounts& out, char* errbuf, size_t errbuf_size
-    ) {
-        if (fseek(fin, start_off, SEEK_SET) != 0) {
-            snprintf(errbuf, errbuf_size, "seek failed for count pass");
-            return false;
-        }
-        std::vector<char> ystack(stack_size);
-        yxml_t x;
-        yxml_init(&x, ystack.data(), stack_size);
-
-        std::vector<char> chunk(io_chunk);
-        long remaining = end_off - start_off;
-        int depth = -1;
-
-        while (remaining > 0) {
-            size_t want = (size_t)((remaining < (long)io_chunk) ? remaining : (long)io_chunk);
-            size_t nread = fread(chunk.data(), 1, want, fin);
-            if (nread == 0) break;
-            remaining -= (long)nread;
-
-            for (size_t i = 0; i < nread; ++i) {
-                int ret = yxml_parse(&x, (unsigned char)chunk[i]);
-                if (ret < 0) {
-                    snprintf(errbuf, errbuf_size,
-                             "XML parse error during count pass (code %d)", ret);
-                    return false;
-                }
-                if (ret == YXML_ELEMSTART) {
-                    depth++;
-                    if (depth >= 1) {
-                        size_t nlen = yxml_symlen(&x, x.elem);
-                        out.ensure_depth((size_t)depth);
-                        out.counts[depth][std::string(x.elem, nlen)]++;
-                    }
-                } else if (ret == YXML_ELEMEND) {
-                    if (depth == 0) { depth--; goto done; }
-                    depth--;
-                }
-            }
-        }
-        done:
-        return true;
-    }
-
-    // Pass 2: re-read the same byte range, emit JSON directly using the
-    // counts gathered in Pass 1 -- no buffering of any subtree.
-    struct EmitLevel {
-        std::string tag;
-        bool        wrote_brace = false;
-        bool        first_field = true;
-        std::string open_list_tag;
-        bool        in_open_list = false;
-        bool        text_flushed = false;
-        int         depth = 0;
-    };
-
-    static bool pg_emit_pass(
-        FILE* fin, long start_off, long end_off,
-        size_t stack_size, size_t io_chunk,
-        JOutBuf& w,
-        const TagCounts& counts,
-        const std::string& attr_prefix,
-        const std::string& cdata_key,
-        const std::vector<std::string>& force_list,
-        bool force_all,
-        char* errbuf, size_t errbuf_size
-    ) {
-        auto is_forced = [&](const std::string& tag) {
-            if (force_all) return true;
-            for (auto& t : force_list) if (t == tag) return true;
-            return false;
-        };
-        auto count_of = [&](int depth, const std::string& tag) -> int {
-            if (depth < 0 || depth >= (int)counts.counts.size()) return 1;
-            auto it = counts.counts[depth].find(tag);
-            return it == counts.counts[depth].end() ? 1 : it->second;
-        };
-
-        if (fseek(fin, start_off, SEEK_SET) != 0) {
-            snprintf(errbuf, errbuf_size, "seek failed for emit pass");
-            return false;
-        }
-        std::vector<char> ystack(stack_size);
-        yxml_t x;
-        yxml_init(&x, ystack.data(), stack_size);
-
-        std::vector<char> chunk(io_chunk);
-        long remaining = end_off - start_off;
-
-        std::vector<EmitLevel> levels;
-        std::string cur_attr_key, cur_attr_val;
-        std::string cur_text;
-        bool have_pending_text = false;
-
-        auto ensure_open = [&](EmitLevel& lv) {
-            if (!lv.wrote_brace) {
-                w.putc1('{');
-                lv.wrote_brace = true;
-                lv.first_field = true;
-            }
-        };
-        auto field_sep = [&](EmitLevel& lv) {
-            if (!lv.first_field) w.putc1(',');
-            lv.first_field = false;
-        };
-        auto flush_text_field = [&](EmitLevel& lv) {
-            if (!have_pending_text) return;
-            if (lv.text_flushed) {
-                // pugixml's child_value() (used by the in-memory DOM
-                // serializer for parity) only ever returns the FIRST
-                // text run of an element -- text appearing after later
-                // child elements is not concatenated. Match that here:
-                // once we've already emitted this level's "#text" field
-                // once, silently drop any further text.
-                cur_text.clear();
-                have_pending_text = false;
-                return;
-            }
-            bool blank = pg_all_ws(cur_text.data(), cur_text.size());
-            if (!blank) {
-                ensure_open(lv);
-                field_sep(lv);
-                w.write_json_string(cdata_key);
-                w.putc1(':');
-                w.write_json_string(cur_text);
-            }
-            lv.text_flushed = true;
-            cur_text.clear();
-            have_pending_text = false;
-        };
-
-        while (remaining > 0) {
-            size_t want = (size_t)((remaining < (long)io_chunk) ? remaining : (long)io_chunk);
-            size_t nread = fread(chunk.data(), 1, want, fin);
-            if (nread == 0) break;
-            remaining -= (long)nread;
-
-            for (size_t i = 0; i < nread; ++i) {
-                int ret = yxml_parse(&x, (unsigned char)chunk[i]);
-                if (ret < 0) {
-                    snprintf(errbuf, errbuf_size,
-                             "XML parse error during emit pass (code %d)", ret);
-                    return false;
-                }
-
-                switch (ret) {
-                case YXML_OK: break;
-
-                case YXML_ELEMSTART: {
-                    if (!levels.empty()) flush_text_field(levels.back());
-
-                    size_t nlen = yxml_symlen(&x, x.elem);
-                    std::string tag(x.elem, nlen);
-                    int depth = (int)levels.size();
-
-                    if (!levels.empty()) {
-                        EmitLevel& parent = levels.back();
-                        ensure_open(parent);
-                        int cnt = count_of(depth, tag);
-                        bool as_list = (cnt > 1) || is_forced(tag);
-
-                        if (as_list) {
-                            if (parent.in_open_list && parent.open_list_tag == tag) {
-                                w.putc1(',');
-                            } else {
-                                if (parent.in_open_list) {
-                                    w.putc1(']');
-                                    parent.in_open_list = false;
-                                }
-                                field_sep(parent);
-                                w.write_json_string(tag);
-                                w.putc1(':');
-                                w.putc1('[');
-                                parent.in_open_list = true;
-                                parent.open_list_tag = tag;
-                            }
-                        } else {
-                            if (parent.in_open_list) {
-                                w.putc1(']');
-                                parent.in_open_list = false;
-                            }
-                            field_sep(parent);
-                            w.write_json_string(tag);
-                            w.putc1(':');
-                        }
-                    }
-
-                    EmitLevel lv;
-                    lv.tag = tag;
-                    lv.depth = depth;
-                    levels.push_back(lv);
-                    break;
-                }
-
-                case YXML_ATTRSTART: {
-                    size_t nlen = yxml_symlen(&x, x.attr);
-                    cur_attr_key.assign(x.attr, nlen);
-                    cur_attr_val.clear();
-                    break;
-                }
-                case YXML_ATTRVAL:
-                    cur_attr_val += x.data;
-                    break;
-                case YXML_ATTREND: {
-                    EmitLevel& lv = levels.back();
-                    ensure_open(lv);
-                    field_sep(lv);
-                    w.write_json_string(attr_prefix + cur_attr_key);
-                    w.putc1(':');
-                    w.write_json_string(cur_attr_val);
-                    break;
-                }
-
-                case YXML_CONTENT:
-                    cur_text += x.data;
-                    have_pending_text = true;
-                    break;
-
-                case YXML_ELEMEND: {
-                    EmitLevel lv = levels.back();
-                    levels.pop_back();
-
-                    if (lv.in_open_list) {
-                        w.putc1(']');
-                        lv.in_open_list = false;
-                    }
-
-                    if (!lv.wrote_brace) {
-                        bool blank = !have_pending_text ||
-                                     pg_all_ws(cur_text.data(), cur_text.size());
-                        if (blank) w.write("null", 4);
-                        else w.write_json_string(cur_text);
-                        cur_text.clear();
-                        have_pending_text = false;
-                    } else {
-                        flush_text_field(lv);
-                        w.putc1('}');
-                    }
-
-                    if (levels.empty()) {
-                        w.putc1('\\n');
-                        return true;   // one record fully emitted
-                    }
-                    break;
-                }
-
-                case YXML_PISTART: case YXML_PICONTENT: case YXML_PIEND:
-                    break;
-
-                default: break;
-                }
-            }
-        }
-        return true;
-    }
-
-    // Top-level driver: scans the whole file once (O(depth) memory) to find
-    // each record's byte range, then runs Pass1+Pass2 on just that slice.
-    //   mode A (record_tag given): a "record" is any element with that tag
-    //     name, regardless of nesting depth.
-    //   mode B (record_tag NULL/empty): a "record" is each direct child of
-    //     the document's root element.
-    static long long xml_stream_to_jsonl_file(
-        const char*  xml_path,
-        const char*  jsonl_path,
-        const char*  record_tag,
-        const char*  attr_prefix_c,
-        const char*  cdata_key_c,
-        PyObject*    force_set,
-        bool         force_all,
-        size_t       stack_size,
-        size_t       io_buf_size,
-        char*        errbuf,
-        size_t       errbuf_size
-    ) {
-        std::string attr_prefix(attr_prefix_c);
-        std::string cdata_key(cdata_key_c);
-        bool mode_a = record_tag && record_tag[0] != '\\0';
-        std::string rtag = mode_a ? std::string(record_tag) : std::string();
-
-        std::vector<std::string> force_list;
-        if (force_set && force_set != Py_None) {
-            PyObject* it = PyObject_GetIter(force_set);
-            if (it) {
-                PyObject* item;
-                while ((item = PyIter_Next(it))) {
-                    const char* s = PyUnicode_AsUTF8(item);
-                    if (s) force_list.push_back(s);
-                    Py_DECREF(item);
-                }
-                Py_DECREF(it);
-            }
-        }
-
-        FILE* xin = fopen(xml_path, "rb");
-        if (!xin) {
-            snprintf(errbuf, errbuf_size, "cannot open XML input: %s", xml_path);
-            return -1;
-        }
-        FILE* fout = fopen(jsonl_path, "wb");
-        if (!fout) {
-            fclose(xin);
-            snprintf(errbuf, errbuf_size, "cannot open JSON Lines output: %s", jsonl_path);
-            return -1;
-        }
-        JOutBuf w(fout);
-
-        yxml_t x;
-        std::vector<char> ystack(stack_size);
-        yxml_init(&x, ystack.data(), stack_size);
-
-        std::vector<char> chunk(io_buf_size);
-        long long count = 0;
-        bool ok = true;
-
-        int  depth = 0;
-        std::vector<long> elem_start_off(64, -1);
-        std::vector<std::string> elem_tag_at(64);
-        long pos = 0;
-
-        // depth-by-depth tag-name tracking (elem_tag_at) is used directly
-        // to detect matching ancestors -- see ELEMEND handling below.
-
-        while (ok) {
-            size_t nread = fread(chunk.data(), 1, io_buf_size, xin);
-            if (nread == 0) break;
-
-            bool buffer_stale = false;   // set true after a record consumes
-                                          // bytes via fseek -- the rest of
-                                          // this chunk no longer reflects
-                                          // the file's current read position
-
-            for (size_t i = 0; i < nread && !buffer_stale; ++i) {
-                long byte_pos = pos;
-                pos++;
-
-                int ret = yxml_parse(&x, (unsigned char)chunk[i]);
-                if (ret < 0) {
-                    snprintf(errbuf, errbuf_size,
-                             "XML parse error (yxml code %d) at line %u byte %ld",
-                             ret, x.line, byte_pos);
-                    ok = false; break;
-                }
-
-                if (ret == YXML_ELEMSTART) {
-                    if ((size_t)depth >= elem_start_off.size()) {
-                        elem_start_off.resize(elem_start_off.size() * 2, -1);
-                        elem_tag_at.resize(elem_tag_at.size() * 2);
-                    }
-                    size_t nlen = yxml_symlen(&x, x.elem);
-                    // yxml's ELEMSTART fires when it consumes the
-                    // terminator character *after* the tag name (the
-                    // space, '>' or '/' following it) -- byte_pos at that
-                    // point is the terminator's position. The leading '<'
-                    // is therefore nlen+1 bytes earlier.
-                    elem_start_off[depth] = byte_pos - (long)nlen - 1;
-                    elem_tag_at[depth].assign(x.elem, nlen);
-                    depth++;
-                }
-                else if (ret == YXML_ELEMEND) {
-                    depth--;
-
-                    bool is_target;
-                    if (mode_a) {
-                        // Only the OUTERMOST element named record_tag is a
-                        // record; if any still-open ancestor (depth' <
-                        // depth) also has this tag name, this is a nested
-                        // occurrence and must NOT be emitted separately --
-                        // it's already part of the ancestor's content.
-                        bool has_matching_ancestor = false;
-                        for (int d = 0; d < depth; ++d) {
-                            if (d < (int)elem_tag_at.size() && elem_tag_at[d] == rtag) {
-                                has_matching_ancestor = true;
-                                break;
-                            }
-                        }
-                        is_target = !has_matching_ancestor
-                                    && depth < (int)elem_tag_at.size()
-                                    && elem_tag_at[depth] == rtag;
-                    } else {
-                        is_target = (depth == 1);
-                    }
-
-                    if (is_target && depth >= 0 && (size_t)depth < elem_start_off.size()) {
-                        long start_off = elem_start_off[depth];
-                        long end_off   = byte_pos + 1;
-
-                        TagCounts tc;
-                        if (!pg_count_pass(xin, start_off, end_off,
-                                            stack_size, io_buf_size,
-                                            tc, errbuf, errbuf_size)) {
-                            ok = false; break;
-                        }
-                        if (!pg_emit_pass(xin, start_off, end_off,
-                                           stack_size, io_buf_size, w,
-                                           tc, attr_prefix, cdata_key,
-                                           force_list, force_all,
-                                           errbuf, errbuf_size)) {
-                            ok = false; break;
-                        }
-                        // The count/emit passes seeked `xin` around for
-                        // their own purposes. Restore the file position to
-                        // where the outer scan should resume (`pos`), and
-                        // mark the currently-loaded `chunk` buffer stale --
-                        // whatever bytes after index i it still holds were
-                        // read *before* this seek and no longer correspond
-                        // to what's at `pos` onward, so we must stop using
-                        // them and re-fread from the new position.
-                        fseek(xin, pos, SEEK_SET);
-                        count++;
-                        buffer_stale = true;
-                    }
-                }
-            }
-            if (!ok) break;
-        }
-
-        if (ok) {
-            int eof_ret = yxml_eof(&x);
-            if (eof_ret < 0) {
-                snprintf(errbuf, errbuf_size,
-                         "unexpected end of XML (yxml code %d)", eof_ret);
-                ok = false;
-            }
-        }
-
-        w.flush();
-        if (w.io_error) ok = false;
-        fclose(xin);
-        fclose(fout);
-
-        if (!ok) return -2;
-        return count;
-    }
-
-    // =========================================================================
     // Constant-memory streaming XML -> *standard* JSON converter
     // (single pass, seek-and-patch -- output is a normal JSON document,
     //  not JSON Lines)
@@ -1497,19 +937,6 @@ cdef extern from *:
         const char* indent
     ) except +
 
-    long long xml_stream_to_jsonl_file(
-        const char* xml_path,
-        const char* jsonl_path,
-        const char* record_tag,
-        const char* attr_prefix,
-        const char* cdata_key,
-        object      force_set,
-        bint        force_all,
-        size_t      stack_size,
-        size_t      io_buf_size,
-        char*       errbuf,
-        size_t      errbuf_size
-    ) except +
 
     long long xml_stream_to_json_file(
         const char* xml_path,
@@ -1730,132 +1157,6 @@ def jsonify_dumps(object source,
     )
 
 
-def jsonify_stream_dump_jsonl(
-    str xml_path,
-    str jsonl_path,
-    str record_tag=None,
-    str attr_prefix="@",
-    str cdata_key="#text",
-    object force_list=None,
-    size_t stack_size=4096,
-    size_t io_buf_size=65536,
-):
-    """Convert a (potentially gigantic) XML file directly to JSON Lines.
-
-    Constant memory, regardless of input file size or how many children
-    any single element has. This calls straight into a C++ engine
-    (:func:`xml_stream_to_jsonl_file`) that reads the XML file with
-    :func:`fread`, writes JSON with :func:`fwrite`, and never builds a
-    pugixml DOM, a Python ``dict``/``list``, or any in-memory subtree
-    representation — not even temporarily. The Python ``json`` module is
-    never imported or used; every byte of output is hand-emitted in C++.
-
-    Output is **JSON Lines** (``.jsonl``): one self-contained JSON object
-    per line — not a single big JSON array/document. This is what makes
-    constant-memory operation possible — a JSON array needs to know
-    whether more items follow before it can place its closing bracket
-    correctly, which would force buffering; JSON Lines has no such
-    requirement, since every line is independent.
-
-    Parameters
-    ----------
-    xml_path : str
-        Path to the input XML file.
-    jsonl_path : str
-        Path to the output **JSON Lines** file (conventionally named
-        with a ``.jsonl`` extension). **Overwritten if it exists.**
-    record_tag : str | None
-        Tag name of the elements to emit as JSON Lines records — matched
-        anywhere in the document regardless of nesting depth. When
-        *None* (default), each **direct child of the document's root
-        element** becomes one JSONL record instead.
-    attr_prefix : str
-        Prefix for XML attribute names in JSON keys. Default ``"@"``.
-    cdata_key : str
-        JSON key used for an element's text content when it is mixed
-        with attributes or child elements. Default ``"#text"``.
-    force_list : set[str] | True | None
-        Tag names that should always be serialised as a JSON array, even
-        when only one sibling exists for a given parent. Pass ``True``
-        to force *every* repeated-or-not child tag into an array. When
-        *None* (default), a tag becomes an array only when more than one
-        sibling with that name actually appears under the same parent.
-    stack_size : int
-        Size in bytes of yxml's internal name stack — increase for very
-        deeply nested XML or very long tag/attribute names.
-        Default ``4096``.
-    io_buf_size : int
-        Bytes read/written per I/O operation. Default ``65536`` (64 KB).
-
-    Returns
-    -------
-    int
-        Number of JSON Lines records written.
-
-    Raises
-    ------
-    PygiXMLError
-        On malformed XML, or if the input/output file cannot be opened.
-
-    Examples
-    --------
-    Convert every ``<record>`` element anywhere in a multi-gigabyte file::
-
-        from pygixml import jsonify
-        n = jsonify.stream_dump_jsonl("huge.xml", "huge.jsonl",
-                                       record_tag="record")
-        print(f"wrote {n} lines")
-
-    No ``record_tag`` — each direct child of the root becomes one line::
-
-        jsonify.stream_dump_jsonl("huge.xml", "huge.jsonl")
-
-    Read the result back, one record at a time, still in constant memory
-    (``json`` is fine to use on the *read* side — only this function's
-    own internals avoid it)::
-
-        import json
-        with open("huge.jsonl") as f:
-            for line in f:
-                record = json.loads(line)
-                ...
-    """
-    cdef bytes xml_b   = xml_path.encode("utf-8")
-    cdef bytes jsonl_b = jsonl_path.encode("utf-8")
-    cdef bytes rtag_b = record_tag.encode("utf-8") if record_tag else b""
-    cdef bytes ap_b   = attr_prefix.encode("utf-8")
-    cdef bytes ck_b   = cdata_key.encode("utf-8")
-
-    cdef bint force_all = False
-    cdef object force_set = None
-    if force_list is True:
-        force_all = True
-    elif force_list:
-        force_set = set(force_list)
-
-    cdef char errbuf[512]
-    errbuf[0] = 0
-
-    cdef long long result = xml_stream_to_jsonl_file(
-        <const char*>xml_b,
-        <const char*>jsonl_b,
-        <const char*>rtag_b,
-        <const char*>ap_b,
-        <const char*>ck_b,
-        force_set,
-        force_all,
-        stack_size,
-        io_buf_size,
-        errbuf,
-        sizeof(errbuf),
-    )
-
-    if result < 0:
-        msg = errbuf.decode("utf-8", "replace") if errbuf[0] else "unknown error"
-        raise PygiXMLError(f"jsonify_stream_dump_jsonl failed: {msg}")
-
-    return result
-
 
 def jsonify_stream_dump(
     str xml_path,
@@ -1995,3 +1296,57 @@ def jsonify_stream_dump(
         raise PygiXMLError(f"jsonify_stream_dump failed: {msg}")
 
     return result
+
+
+
+def iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text",
+             object force_list=None, size_t stack_size=4096,
+             Py_ssize_t chunk_size=65536):
+    """Stream-parse XML and yield each matching element as a **JSON
+    string**, one at a time -- a generator, not a file.
+
+    Built directly on :func:`iterfind` (the same tested, yxml-backed
+    streaming parser used throughout this module) plus
+    :meth:`StreamElement.to_json`, which serializes one element straight
+    to a ``str`` without ever constructing an intermediate ``dict`` and
+    without using the ``json`` module. Each yielded string is exactly
+    what ``json.dumps()`` would produce for that element's
+    :meth:`StreamElement.to_dict` -- but skips building the dict at all.
+
+    Memory use is bounded by one element's subtree at a time (the same
+    model as :func:`iterfind`/ElementTree's ``iterparse`` -- not the
+    whole document), since each :class:`StreamElement` is discarded once
+    its JSON string has been produced and the generator moves on.
+
+    This is the right tool when you want JSON text *in Python* (to
+    forward over a socket, push into a queue, write your own framing,
+    etc.) without round-tripping through a file. If you actually want a
+    ``.jsonl`` file on disk, see :func:`pygixml.jsonify.stream_dump_jsonl`
+    instead -- that one streams from C++ all the way to the file, with
+    no per-element Python object ever created.
+
+    Parameters
+    ----------
+    source : str | os.PathLike | bytes | bytearray | file-like
+        Same as :func:`iterparse`.
+    tag : str
+        Tag name of the elements to convert and yield.
+    attr_prefix, cdata_key, force_list :
+        Same meaning as :meth:`StreamElement.to_json`.
+    stack_size, chunk_size :
+        Same meaning as :func:`iterparse`.
+
+    Example::
+
+        for line in pygixml.iterjson("big.xml", "record"):
+            send_to_queue(line)     # already a JSON string
+
+        # writing a .jsonl file yourself, if you want one:
+        with open("out.jsonl", "w") as f:
+            for line in pygixml.iterjson("big.xml", "record"):
+                f.write(line)
+                f.write("\\n")
+    """
+    for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
+        yield (<StreamElement>elem).to_json(attr_prefix, cdata_key, force_list)
+        elem.clear()

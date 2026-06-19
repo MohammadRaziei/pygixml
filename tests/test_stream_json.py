@@ -15,7 +15,7 @@ import json
 import pytest
 
 import pygixml
-from pygixml import jsonify
+from pygixml import jsonify, dictify
 
 
 SAMPLE = b"""<database>
@@ -173,17 +173,17 @@ class TestToJson:
 
 class TestIterjson:
     def test_is_generator(self):
-        gen = pygixml.iterjson(SAMPLE, "record")
+        gen = jsonify.iterjson(SAMPLE, "record")
         assert hasattr(gen, "__next__")
         assert hasattr(gen, "__iter__")
 
     def test_yields_strings(self):
-        for line in pygixml.iterjson(SAMPLE, "record"):
+        for line in jsonify.iterjson(SAMPLE, "record"):
             assert isinstance(line, str)
 
     def test_yields_valid_json_per_record(self):
         count = 0
-        for line in pygixml.iterjson(SAMPLE, "record"):
+        for line in jsonify.iterjson(SAMPLE, "record"):
             json.loads(line)
             count += 1
         assert count == 3
@@ -192,35 +192,35 @@ class TestIterjson:
         # sanity: consuming the generator must not touch the filesystem
         # for output -- only reads the input file/bytes.
         before = set(tmp_path.iterdir())
-        list(pygixml.iterjson(SAMPLE, "record"))
+        list(jsonify.iterjson(SAMPLE, "record"))
         after = set(tmp_path.iterdir())
         assert before == after
 
     def test_content_matches_to_json(self):
-        lines = list(pygixml.iterjson(SAMPLE, "record"))
+        lines = list(jsonify.iterjson(SAMPLE, "record"))
         direct = [rec.to_json() for rec in pygixml.iterfind(SAMPLE, "record")]
         assert lines == direct
 
     def test_force_list(self):
-        lines = list(pygixml.iterjson(SAMPLE, "record", force_list={"tag"}))
+        lines = list(jsonify.iterjson(SAMPLE, "record", force_list={"tag"}))
         parsed = [json.loads(l) for l in lines]
         # record 2 has only one <tag> -- force_list keeps it a list
         assert parsed[1]["tags"]["tag"] == ["json"]
 
     def test_custom_attr_prefix_and_cdata_key(self):
         xml = b"<root><a id='1'>hi</a><a id='2'>bye</a></root>"
-        lines = list(pygixml.iterjson(xml, "a", attr_prefix="_", cdata_key="_v"))
+        lines = list(jsonify.iterjson(xml, "a", attr_prefix="_", cdata_key="_v"))
         parsed = [json.loads(l) for l in lines]
         assert parsed[0] == {"_id": "1", "_v": "hi"}
         assert parsed[1] == {"_id": "2", "_v": "bye"}
 
     def test_empty_when_no_match(self):
-        assert list(pygixml.iterjson(SAMPLE, "nonexistent")) == []
+        assert list(jsonify.iterjson(SAMPLE, "nonexistent")) == []
 
     def test_file_path_source(self, tmp_path):
         p = tmp_path / "data.xml"
         p.write_bytes(SAMPLE)
-        lines = list(pygixml.iterjson(str(p), "record"))
+        lines = list(jsonify.iterjson(str(p), "record"))
         assert len(lines) == 3
         for line in lines:
             json.loads(line)
@@ -232,28 +232,28 @@ class TestIterjson:
 
 class TestIterdict:
     def test_yields_dicts(self):
-        for d in pygixml.iterdict(SAMPLE, "record"):
+        for d in dictify.iterdict(SAMPLE, "record"):
             assert isinstance(d, dict)
 
     def test_count_and_content(self):
-        records = list(pygixml.iterdict(SAMPLE, "record"))
+        records = list(dictify.iterdict(SAMPLE, "record"))
         assert len(records) == 3
         assert records[0]["@id"] == "1"
         assert records[0]["name"] == "Ali Karimi"
         assert records[2]["tags"]["tag"] == ["c++", "rust"]
 
     def test_matches_to_dict(self):
-        dicts = list(pygixml.iterdict(SAMPLE, "record"))
+        dicts = list(dictify.iterdict(SAMPLE, "record"))
         direct = [rec.to_dict() for rec in pygixml.iterfind(SAMPLE, "record")]
         assert dicts == direct
 
     def test_force_list(self):
-        records = list(pygixml.iterdict(SAMPLE, "record", force_list={"tag"}))
+        records = list(dictify.iterdict(SAMPLE, "record", force_list={"tag"}))
         assert records[1]["tags"]["tag"] == ["json"]
 
     def test_iterjson_and_iterdict_agree(self):
-        jsons = [json.loads(s) for s in pygixml.iterjson(SAMPLE, "record")]
-        dicts = list(pygixml.iterdict(SAMPLE, "record"))
+        jsons = [json.loads(s) for s in jsonify.iterjson(SAMPLE, "record")]
+        dicts = list(dictify.iterdict(SAMPLE, "record"))
         assert jsons == dicts
 
 
@@ -272,7 +272,7 @@ class TestLargeDocument:
 
         count = 0
         total = 0
-        for line in pygixml.iterjson(data, "item"):
+        for line in jsonify.iterjson(data, "item"):
             d = json.loads(line)
             count += 1
             total += int(d["@id"])
@@ -288,5 +288,5 @@ class TestLargeDocument:
         parts.append(b"</root>")
         data = b"".join(parts)
 
-        ids = [int(d["@id"]) for d in pygixml.iterdict(data, "item")]
+        ids = [int(d["@id"]) for d in dictify.iterdict(data, "item")]
         assert ids == list(range(n))

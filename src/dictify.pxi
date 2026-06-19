@@ -487,3 +487,24 @@ def dictify_unparse(object input_dict,
         pretty,
     )
     return result.decode("utf-8")
+
+
+def iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text",
+             object force_list=None, size_t stack_size=4096,
+             Py_ssize_t chunk_size=65536):
+    """Stream-parse XML and yield each matching element as a plain
+    ``dict``, one at a time.
+
+    Identical to :func:`iterjson` except it yields
+    :meth:`StreamElement.to_dict` results instead of JSON strings --
+    useful when you want to keep working with the data in Python rather
+    than as text.
+
+    Example::
+
+        for record in pygixml.iterdict("big.xml", "record"):
+            print(record["name"], record["@id"])
+    """
+    for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
+        yield (<StreamElement>elem).to_dict(attr_prefix, cdata_key, force_list)
+        elem.clear()

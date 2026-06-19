@@ -21,8 +21,6 @@ from .pygixml_cy import (
     PullParser,
     iterparse,
     iterfind,
-    iterjson,
-    iterdict,
 )
 
 from . import objectify
@@ -45,8 +43,6 @@ __all__ = [
     "PullParser",
     "iterparse",
     "iterfind",
-    "iterjson",
-    "iterdict",
     "objectify",
     "dictify",
     "jsonify",

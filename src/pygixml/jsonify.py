@@ -29,8 +29,11 @@ Usage::
     # pure C++ (yxml + hand-written JSON writer) — no pugixml DOM, no
     # Python dict/list, no `json` module, anywhere in the call chain.
 
-    # -> JSON Lines (one record per line; fastest, truly O(depth) memory)
-    jsonify.stream_dump_jsonl("huge.xml", "huge.jsonl", record_tag="record")
+    # -> JSON Lines / streaming: use jsonify.iterjson() (a generator) instead
+    #    of a file-based function — write the file yourself if you need one:
+    #        with open("out.jsonl", "w") as f:
+    #            for line in jsonify.iterjson("huge.xml", "record"):
+    #                f.write(line + "\n")
 
     # -> a single standard, valid JSON document (same shape as dumps()),
     #    using an in-place seek-and-patch trick to avoid buffering whole
@@ -45,11 +48,11 @@ from .pygixml_cy import (
     jsonify_dumps_file as dumps_file,
     jsonify_dumps_obj  as dumps_obj,
     jsonify_dumps_node as dumps_node,
-    jsonify_stream_dump_jsonl as stream_dump_jsonl,
     jsonify_stream_dump as stream_dump,
+    iterjson,
 )
 
 __all__ = [
     "dumps", "dumps_str", "dumps_file", "dumps_obj", "dumps_node",
-    "stream_dump_jsonl", "stream_dump",
+    "stream_dump", "iterjson",
 ]
