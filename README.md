@@ -1,4 +1,4 @@
-# pygixml
+# pygixml — Python Giant XML
 
 <img src="https://github.com/MohammadRaziei/pygixml/raw/master/docs/images/pygixml.svg" width="450" />
 
@@ -10,9 +10,16 @@
 [![Documentation Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/cmake.yml/badge.svg)](https://mohammadraziei.github.io/pygixml/)
 [![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
 
-A high-performance XML parser for Python based on Cython and
-[pugixml](https://pugixml.org/).  Fast parsing, full XPath 1.0 support, and a
-clean Pythonic API for reading, writing, and transforming XML.
+**pygixml** — *Python Giant XML* — is a Cython framework built on two
+specialized C++ engines: [pugixml](https://pugixml.org/) for its
+in-memory DOM parser (XPath, `objectify`, `dictify`), and an inlined
+[yxml](https://dev.yorhel.nl/yxml) push parser for true constant-memory
+streaming. Between the two, pygixml covers everything
+[lxml](https://lxml.de/) and [xmltodict](https://github.com/martinblech/xmltodict)
+do — dotted `objectify` navigation, XPath 1.0, and an
+xmltodict-compatible `dictify` — plus a streaming layer neither of them
+has, which is what makes pygixml the package of choice for **big XML**
+and big-data pipelines.
 
 📚 **[View Full Documentation](https://mohammadraziei.github.io/pygixml/)**
 
@@ -50,6 +57,43 @@ parser directly to Python — with numbers that speak for themselves.
 [Performance](https://mohammadraziei.github.io/pygixml/performance) page for
 the full comparison across 6 XML sizes.*
 
+### Built for big XML
+
+Those benchmark numbers are for documents that fit comfortably in
+memory. For the documents that don't — multi-gigabyte exports, logs,
+data dumps — pygixml's streaming layer is the part lxml and xmltodict
+simply don't have:
+
+* **`pygixml.iterfind` / `dictify.iterdict` / `jsonify.iterjsonl`** —
+  yxml-based incremental parsing in **constant memory**: one element
+  (or one dict, or one JSON line) in flight at a time, regardless of
+  whether the source document is 10 KB or 10 GB.
+* **`jsonify.stream_dump(xml_path, json_path)`** — the headline
+  feature: converts a giant XML file into a single, valid, giant JSON
+  file, **entirely in C++, in constant memory, with an
+  xmltodict-compatible output shape** (same `@attr` / `#text` /
+  repeated-siblings-as-array conventions as `dictify.parse`). No DOM
+  tree is ever built, no intermediate Python dict/list/str is ever
+  allocated, and the file never has to fit in RAM — only an in-place
+  seek-and-patch trick on the *output* file is used to close JSON
+  arrays correctly as repeated siblings are discovered. As far as we
+  know, this is the only Python package that can do this without
+  buffering the document, the output, or both, and without crashing
+  the process once the file gets genuinely large.
+* **`jsonify.stream_to_jsonl(xml_path, jsonl_path, tag)`** — the
+  per-record sibling: streams straight to a `.jsonl` file, one matched
+  element per line, same constant-memory, all-C++ guarantee.
+
+```python
+from pygixml import jsonify
+
+# A multi-GB XML file in, a multi-GB JSON file out -- peak memory stays flat.
+jsonify.stream_dump("huge_export.xml", "huge_export.json")
+
+# Or, one record per line:
+jsonify.stream_to_jsonl("huge_export.xml", "huge_export.jsonl", "record")
+```
+
 ### Features
 
 * **Blazing-fast parsing** — up to 14× faster than ElementTree
@@ -59,6 +103,10 @@ the full comparison across 6 XML sizes.*
 * **Pythonic API** — intuitive properties and methods, not a direct C++ mirror
 * **`objectify`** — lxml.objectify-style dotted navigation
 * **`dictify`** — xmltodict-compatible XML → dict conversion
+* **`jsonify`** — direct XML → JSON, in memory or streamed straight to
+  disk in constant memory (`stream_dump`, `stream_to_jsonl`)
+* **Streaming (`iterfind`, `iterdict`, `iterjsonl`)** — constant-memory,
+  yxml-based incremental parsing for documents too big to load whole
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -443,6 +491,8 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `XPathNodeSet`   | Collection of XPath results                                |
 | `objectify`      | lxml.objectify-style dotted navigation                     |
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
+| `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_to_jsonl` |
+| `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 
@@ -480,5 +530,6 @@ Enjoy pygixml?  Star the repository ⭐
 ## Acknowledgments
 
 * [pugixml](https://pugixml.org/) — Fast and lightweight C++ XML library
+* [yxml](https://dev.yorhel.nl/yxml) — Tiny, dependency-free streaming XML parser, powering pygixml's constant-memory streaming layer
 * [Cython](https://cython.org/) — C extensions for Python
 * [scikit-build](https://scikit-build.readthedocs.io/) — Modern Python build system
