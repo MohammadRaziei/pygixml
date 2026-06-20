@@ -42,6 +42,10 @@ Features
 * **Pythonic API** — intuitive methods and properties, not a direct C++ mirror
 * **objectify** — lxml.objectify-style dotted navigation (``root.user.name``)
 * **dictify** — xmltodict-compatible XML → dict conversion
+* **jsonify** — direct XML → JSON, in memory or streamed straight to disk
+  in constant memory (see :doc:`jsonify`)
+* **Streaming** — constant-memory, ``ElementTree``-style incremental
+  parsing for documents too big to load whole (see :doc:`streaming`)
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -92,6 +96,15 @@ Quick Example
    d = dictify.parse(xml)
    print(d['library']['book']['@id']) 
 
+   # jsonify — direct XML to JSON
+   from pygixml import jsonify
+   print(jsonify.dumps(xml))
+
+   # streaming — constant memory, for files too big to load whole
+   for book in pygixml.iterfind("library.xml", "book"):
+       print(book.get("id"), book.findtext("title"))
+       book.clear()
+
 Core Classes
 ------------
 
@@ -119,6 +132,10 @@ See the :doc:`api` for the complete reference.
      - lxml.objectify-style dotted navigation
    * - :doc:`dictify <dictify>`
      - xmltodict-compatible XML → dict conversion
+   * - :doc:`jsonify <jsonify>`
+     - Direct XML → JSON, in memory or streamed to disk in constant memory
+   * - :doc:`streaming <streaming>`
+     - ``iterparse``/``iterfind`` — constant-memory parsing for big XML
 
 Pythonic Extensions
 -------------------
@@ -130,9 +147,9 @@ beyond what the C++ library provides:
   joins. One call to gather all text content from an element
   and its descendants.
 * :meth:`~pygixml.XMLNode.children` — iterate direct child elements only (or
-  all descendants with ``recursive=True``), no manual sibling walking.s
+  all descendants with ``recursive=True``), no manual sibling walking.
 * :attr:`~pygixml.XMLNode.xpath` — generate an absolute XPath to any node
- using a custom O(depth) algorithm.  Not available in pugixml natively.
+  using a custom O(depth) algorithm.  Not available in pugixml natively.
 * :attr:`~pygixml.XMLNode.xml` — serialize a node to formatted XML in one
   property.
 * :attr:`~pygixml.XMLNode.mem_id` — a unique numeric identifier for each
@@ -141,6 +158,10 @@ beyond what the C++ library provides:
   string or integer indentation.
 * :doc:`objectify <objectify>` — navigate XML like a Python object tree.
 * :doc:`dictify <dictify>` — convert XML to dict / JSON with one call.
+* :doc:`jsonify <jsonify>` — convert XML straight to JSON, in memory or
+  streamed file-to-file in constant memory.
+* :doc:`streaming <streaming>` — ``iterparse``/``iterfind`` for documents
+  too large to ever load as a full DOM tree.
 
 .. note::
    **Properties vs Methods** — pygixml uses properties for simple accessors
@@ -201,6 +222,8 @@ Documentation Contents
    quickstart
    objectify
    dictify
+   jsonify
+   streaming
    xpath
    advanced
    examples

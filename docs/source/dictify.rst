@@ -50,6 +50,7 @@ Entry Points
 ------------
 
 .. function:: pygixml.dictify.parse(xml, attr_prefix='@', cdata_key='#text', force_list=None, encoding=None)
+   :no-index:
 
    Parse an XML string into a nested dict.
 
@@ -85,6 +86,7 @@ Entry Points
       # {'root': {'x': ['only']}}
 
 .. function:: pygixml.dictify.parse_file(path, attr_prefix='@', cdata_key='#text', force_list=None)
+   :no-index:
 
    Parse an XML file into a nested dict.  Accepts the same keyword arguments
    as :func:`~pygixml.dictify.parse`.
@@ -94,6 +96,7 @@ Entry Points
    :raises PygiXMLError: If the file cannot be read or the XML is malformed.
 
 .. function:: pygixml.dictify.unparse(input_dict, output=None, encoding='utf-8', full_document='true', indent='\\t', attr_prefix='@', cdata_key='#text', pretty=False)
+   :no-index:
 
    Emit an XML string from a dict produced by :func:`~pygixml.dictify.parse`.
 

@@ -40,6 +40,7 @@ Entry Points
 ------------
 
 .. function:: pygixml.objectify.from_string(xml)
+   :no-index:
 
    Parse an XML string and return the root element as an
    :class:`~pygixml.ObjectifiedElement`.
@@ -47,7 +48,7 @@ Entry Points
    :param xml: XML source text.
    :type xml: str
    :returns: Document root element.
-   :rtype: ObjectifiedElement
+   :rtype: pygixml.ObjectifiedElement
    :raises PygiXMLError: If the XML is malformed.
 
    .. code-block:: python
@@ -57,6 +58,7 @@ Entry Points
       print(str(root.item))  # 'x'
 
 .. function:: pygixml.objectify.from_file(path)
+   :no-index:
 
    Parse an XML file and return the root element as an
    :class:`~pygixml.ObjectifiedElement`.
@@ -64,7 +66,7 @@ Entry Points
    :param path: Filesystem path to the XML file.
    :type path: str
    :returns: Document root element.
-   :rtype: ObjectifiedElement
+   :rtype: pygixml.ObjectifiedElement
    :raises PygiXMLError: If the file cannot be read or the XML is malformed.
 
    .. code-block:: python
@@ -134,7 +136,7 @@ ObjectifiedElement
          direct children (``False``).
       :type recursive: bool
       :returns: First matching element, or ``None``.
-      :rtype: ObjectifiedElement or None
+      :rtype: pygixml.ObjectifiedElement or None
 
       .. code-block:: python
 
@@ -155,7 +157,7 @@ ObjectifiedElement
          direct children (``False``).
       :type recursive: bool
       :returns: All matching elements (may be empty).
-      :rtype: list[ObjectifiedElement]
+      :rtype: list[pygixml.ObjectifiedElement]
 
       .. code-block:: python
 
