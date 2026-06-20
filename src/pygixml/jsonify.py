@@ -33,7 +33,7 @@ Usage::
     #    of a file-based function — write the file yourself if you need one:
     #        with open("out.jsonl", "w") as f:
     #            for line in jsonify.iterjsonl("huge.xml", "record"):
-    #                f.write(line + "\n")
+    #                f.write(line + "\\n")
 
     # -> a single standard, valid JSON document (same shape as dumps()),
     #    using an in-place seek-and-patch trick to avoid buffering whole

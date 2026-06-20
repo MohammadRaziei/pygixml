@@ -1477,10 +1477,10 @@ def jsonify_dumps_obj(object elem,
                       bint   pretty      = False,
                       str    indent      = u"\t",
                       str    encoding    = u"utf-8"):
-    """Serialize an :class:`ObjectifiedElement` subtree directly to JSON.
+    """Serialize an :class:`pygixml.ObjectifiedElement` subtree directly to JSON.
 
     Args:
-        elem (ObjectifiedElement): Element to serialise.
+        elem (pygixml.ObjectifiedElement): Element to serialise.
 
     Returns:
         str: JSON string.
@@ -1505,10 +1505,10 @@ def jsonify_dumps_node(object node,
                        bint   pretty      = False,
                        str    indent      = u"\t",
                       str    encoding    = u"utf-8"):
-    """Serialize a low-level :class:`XMLNode` directly to JSON.
+    """Serialize a low-level :class:`pygixml.XMLNode` directly to JSON.
 
     Args:
-        node (XMLNode): Node to serialise.
+        node (pygixml.XMLNode): Node to serialise.
 
     Returns:
         str: JSON string.
@@ -1537,15 +1537,15 @@ def jsonify_dumps(object source,
     Routes automatically based on *source* type:
 
     * :class:`str` starting with ``<``  →  :func:`jsonify_dumps_str`
-    * :class:`ObjectifiedElement`        →  :func:`jsonify_dumps_obj`
-    * :class:`XMLNode`                   →  :func:`jsonify_dumps_node`
+    * :class:`pygixml.ObjectifiedElement`        →  :func:`jsonify_dumps_obj`
+    * :class:`pygixml.XMLNode`                   →  :func:`jsonify_dumps_node`
 
     .. note::
         File input is intentionally excluded from the dispatcher —
         use :func:`jsonify_dumps_file` explicitly for files.
 
     Args:
-        source (str | ObjectifiedElement | XMLNode): Input XML.
+        source (str | pygixml.ObjectifiedElement | pygixml.XMLNode): Input XML.
         attr_prefix (str): Prefix for attribute keys. Default ``"@"``.
         cdata_key (str): Key for text content. Default ``"#text"``.
         force_list (set | True | None): Tags always serialised as array.
@@ -1604,7 +1604,7 @@ def jsonify_stream_dump(
     """Convert a (potentially gigantic) XML file to a single, **standard,
     valid JSON document** — in roughly constant memory.
 
-    Unlike :func:`stream_dump_jsonl` (which writes JSON *Lines* — one
+    Unlike :func:`stream_to_jsonl` (which writes JSON *Lines* — one
     independent object per line, by design, to sidestep the
     "do I need an array bracket" problem), this function produces exactly
     what :func:`dumps`/:func:`dumps_file` would produce: one JSON value
@@ -1612,7 +1612,7 @@ def jsonify_stream_dump(
     normal ``json.load`` like any other JSON file. No pugixml DOM, no
     Python ``dict``/``list``, and no ``json`` module are used internally
     — every byte is hand-emitted in C++, the same as
-    :func:`stream_dump_jsonl`.
+    :func:`stream_to_jsonl`.
 
     How it stays (mostly) constant-memory while still producing valid
     JSON syntax: a normal JSON array must know, before its closing ``]``,
@@ -1636,7 +1636,7 @@ def jsonify_stream_dump(
       and is the only case where any data movement happens at all.
 
     Because of that splice fallback, worst-case time can exceed
-    :func:`stream_dump_jsonl`'s for documents where repeated sibling
+    :func:`stream_to_jsonl`'s for documents where repeated sibling
     tags are heavily interleaved with unrelated children — for typical
     record-oriented XML (where ``<tag>`` repeats appear consecutively)
     this never triggers and the function runs at full streaming speed.
@@ -1685,8 +1685,8 @@ def jsonify_stream_dump(
     ::
 
         from pygixml import jsonify
-        jsonify.jsonify_stream_dump("huge.xml", "huge.json")            # compact
-        jsonify.jsonify_stream_dump("huge.xml", "huge.json", indent=2)  # pretty
+        jsonify.stream_dump("huge.xml", "huge.json")            # compact
+        jsonify.stream_dump("huge.xml", "huge.json", indent=2)  # pretty
 
         import json
         with open("huge.json") as f:
@@ -1770,7 +1770,14 @@ def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text
     stack_size, chunk_size :
         Same meaning as :func:`iterparse`.
 
-    Example::
+    Yields
+    ------
+    str
+        One JSON object string per matched element.
+
+    Examples
+    --------
+    ::
 
         for line in jsonify.iterjsonl("big.xml", "record"):
             send_to_queue(line)     # already a JSON string
@@ -1839,7 +1846,9 @@ def jsonify_stream_to_jsonl(str xml_path, str jsonl_path, str tag,
     for genuinely self-nested tags; a flat list of repeated sibling
     records (the common case) is unaffected.
 
-    Example::
+    Examples
+    --------
+    ::
 
         from pygixml import jsonify
         n = jsonify.stream_to_jsonl("big.xml", "big.jsonl", "record")
