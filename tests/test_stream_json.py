@@ -1,5 +1,5 @@
 """
-Tests for StreamElement.to_dict()/to_json() and the pygixml.iterjson /
+Tests for StreamElement.to_dict()/to_json() and the pygixml.iterjsonl /
 pygixml.iterdict generators built on top of them.
 
 These all sit on top of the already-tested iterfind/iterparse (yxml-backed
@@ -168,22 +168,22 @@ class TestToJson:
 
 
 # ---------------------------------------------------------------------------
-# pygixml.iterjson
+# pygixml.iterjsonl
 # ---------------------------------------------------------------------------
 
 class TestIterjson:
     def test_is_generator(self):
-        gen = jsonify.iterjson(SAMPLE, "record")
+        gen = jsonify.iterjsonl(SAMPLE, "record")
         assert hasattr(gen, "__next__")
         assert hasattr(gen, "__iter__")
 
     def test_yields_strings(self):
-        for line in jsonify.iterjson(SAMPLE, "record"):
+        for line in jsonify.iterjsonl(SAMPLE, "record"):
             assert isinstance(line, str)
 
     def test_yields_valid_json_per_record(self):
         count = 0
-        for line in jsonify.iterjson(SAMPLE, "record"):
+        for line in jsonify.iterjsonl(SAMPLE, "record"):
             json.loads(line)
             count += 1
         assert count == 3
@@ -192,38 +192,135 @@ class TestIterjson:
         # sanity: consuming the generator must not touch the filesystem
         # for output -- only reads the input file/bytes.
         before = set(tmp_path.iterdir())
-        list(jsonify.iterjson(SAMPLE, "record"))
+        list(jsonify.iterjsonl(SAMPLE, "record"))
         after = set(tmp_path.iterdir())
         assert before == after
 
     def test_content_matches_to_json(self):
-        lines = list(jsonify.iterjson(SAMPLE, "record"))
+        lines = list(jsonify.iterjsonl(SAMPLE, "record"))
         direct = [rec.to_json() for rec in pygixml.iterfind(SAMPLE, "record")]
         assert lines == direct
 
     def test_force_list(self):
-        lines = list(jsonify.iterjson(SAMPLE, "record", force_list={"tag"}))
+        lines = list(jsonify.iterjsonl(SAMPLE, "record", force_list={"tag"}))
         parsed = [json.loads(l) for l in lines]
         # record 2 has only one <tag> -- force_list keeps it a list
         assert parsed[1]["tags"]["tag"] == ["json"]
 
     def test_custom_attr_prefix_and_cdata_key(self):
         xml = b"<root><a id='1'>hi</a><a id='2'>bye</a></root>"
-        lines = list(jsonify.iterjson(xml, "a", attr_prefix="_", cdata_key="_v"))
+        lines = list(jsonify.iterjsonl(xml, "a", attr_prefix="_", cdata_key="_v"))
         parsed = [json.loads(l) for l in lines]
         assert parsed[0] == {"_id": "1", "_v": "hi"}
         assert parsed[1] == {"_id": "2", "_v": "bye"}
 
     def test_empty_when_no_match(self):
-        assert list(jsonify.iterjson(SAMPLE, "nonexistent")) == []
+        assert list(jsonify.iterjsonl(SAMPLE, "nonexistent")) == []
 
     def test_file_path_source(self, tmp_path):
         p = tmp_path / "data.xml"
         p.write_bytes(SAMPLE)
-        lines = list(jsonify.iterjson(str(p), "record"))
+        lines = list(jsonify.iterjsonl(str(p), "record"))
         assert len(lines) == 3
         for line in lines:
             json.loads(line)
+
+
+# ---------------------------------------------------------------------------
+# pygixml.jsonify.stream_to_jsonl (pure C++, file -> .jsonl file, no
+# per-element Python object -- see jsonify.pxi's xml_stream_to_jsonl_file)
+# ---------------------------------------------------------------------------
+
+class TestStreamToJsonl:
+    def test_writes_expected_count_and_returns_it(self, tmp_path):
+        xml_p = tmp_path / "data.xml"
+        out_p = tmp_path / "out.jsonl"
+        xml_p.write_bytes(SAMPLE)
+
+        n = jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record")
+        assert n == 3
+        lines = out_p.read_text().splitlines()
+        assert len(lines) == 3
+
+    def test_matches_iterjsonl_content(self, tmp_path):
+        xml_p = tmp_path / "data.xml"
+        out_p = tmp_path / "out.jsonl"
+        xml_p.write_bytes(SAMPLE)
+
+        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record")
+        from_file = [json.loads(l) for l in out_p.read_text().splitlines()]
+        from_gen = [json.loads(s) for s in jsonify.iterjsonl(SAMPLE, "record")]
+        assert from_file == from_gen
+
+    def test_force_list(self, tmp_path):
+        xml_p = tmp_path / "data.xml"
+        out_p = tmp_path / "out.jsonl"
+        xml_p.write_bytes(SAMPLE)
+
+        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record",
+                                 force_list={"tag"})
+        parsed = [json.loads(l) for l in out_p.read_text().splitlines()]
+        assert parsed[1]["tags"]["tag"] == ["json"]
+
+    def test_custom_attr_prefix_and_cdata_key(self, tmp_path):
+        xml_p = tmp_path / "data.xml"
+        out_p = tmp_path / "out.jsonl"
+        xml_p.write_bytes(b"<root><a id='1'>hi</a><a id='2'>bye</a></root>")
+
+        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "a",
+                                 attr_prefix="_", cdata_key="_v")
+        parsed = [json.loads(l) for l in out_p.read_text().splitlines()]
+        assert parsed[0] == {"_id": "1", "_v": "hi"}
+        assert parsed[1] == {"_id": "2", "_v": "bye"}
+
+    def test_zero_matches_writes_empty_file(self, tmp_path):
+        xml_p = tmp_path / "data.xml"
+        out_p = tmp_path / "out.jsonl"
+        xml_p.write_bytes(SAMPLE)
+
+        n = jsonify.stream_to_jsonl(str(xml_p), str(out_p), "nonexistent")
+        assert n == 0
+        assert out_p.read_text() == ""
+
+    def test_missing_input_raises(self, tmp_path):
+        out_p = tmp_path / "out.jsonl"
+        with pytest.raises(pygixml.PygiXMLError):
+            jsonify.stream_to_jsonl(str(tmp_path / "missing.xml"),
+                                     str(out_p), "record")
+
+    def test_leaf_and_text_only_elements(self, tmp_path):
+        xml_p = tmp_path / "data.xml"
+        out_p = tmp_path / "out.jsonl"
+        xml_p.write_bytes(
+            b"<root><record><leaf/></record><record>just text</record></root>"
+        )
+        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record")
+        lines = out_p.read_text().splitlines()
+        assert json.loads(lines[0]) == {"leaf": None}
+        assert json.loads(lines[1]) == "just text"
+
+    def test_large_document(self, tmp_path):
+        n = 5000
+        xml_p = tmp_path / "big.xml"
+        out_p = tmp_path / "big.jsonl"
+        parts = [b"<root>"]
+        for i in range(n):
+            parts.append(f'<item id="{i}"><name>Item {i}</name></item>'.encode())
+        parts.append(b"</root>")
+        xml_p.write_bytes(b"".join(parts))
+
+        count = jsonify.stream_to_jsonl(str(xml_p), str(out_p), "item")
+        assert count == n
+
+        total = 0
+        seen = 0
+        with open(out_p) as f:
+            for line in f:
+                d = json.loads(line)
+                total += int(d["@id"])
+                seen += 1
+        assert seen == n
+        assert total == sum(range(n))
 
 
 # ---------------------------------------------------------------------------
@@ -251,8 +348,8 @@ class TestIterdict:
         records = list(dictify.iterdict(SAMPLE, "record", force_list={"tag"}))
         assert records[1]["tags"]["tag"] == ["json"]
 
-    def test_iterjson_and_iterdict_agree(self):
-        jsons = [json.loads(s) for s in jsonify.iterjson(SAMPLE, "record")]
+    def test_iterjsonl_and_iterdict_agree(self):
+        jsons = [json.loads(s) for s in jsonify.iterjsonl(SAMPLE, "record")]
         dicts = list(dictify.iterdict(SAMPLE, "record"))
         assert jsons == dicts
 
@@ -262,7 +359,7 @@ class TestIterdict:
 # ---------------------------------------------------------------------------
 
 class TestLargeDocument:
-    def test_many_records_iterjson(self):
+    def test_many_records_iterjsonl(self):
         n = 5000
         parts = [b"<root>"]
         for i in range(n):
@@ -272,7 +369,7 @@ class TestLargeDocument:
 
         count = 0
         total = 0
-        for line in jsonify.iterjson(data, "item"):
+        for line in jsonify.iterjsonl(data, "item"):
             d = json.loads(line)
             count += 1
             total += int(d["@id"])

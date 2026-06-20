@@ -29,10 +29,10 @@ Usage::
     # pure C++ (yxml + hand-written JSON writer) — no pugixml DOM, no
     # Python dict/list, no `json` module, anywhere in the call chain.
 
-    # -> JSON Lines / streaming: use jsonify.iterjson() (a generator) instead
+    # -> JSON Lines / streaming: use jsonify.iterjsonl() (a generator) instead
     #    of a file-based function — write the file yourself if you need one:
     #        with open("out.jsonl", "w") as f:
-    #            for line in jsonify.iterjson("huge.xml", "record"):
+    #            for line in jsonify.iterjsonl("huge.xml", "record"):
     #                f.write(line + "\n")
 
     # -> a single standard, valid JSON document (same shape as dumps()),
@@ -40,6 +40,10 @@ Usage::
     #    subtrees just to know where array brackets go
     jsonify.stream_dump("huge.xml", "huge.json")            # compact (default)
     jsonify.stream_dump("huge.xml", "huge.json", indent=2)  # pretty, 2 spaces
+
+    # -> a .jsonl file, written straight from C++ (no per-element
+    #    Python object at all, unlike iterjsonl())
+    jsonify.stream_to_jsonl("huge.xml", "huge.jsonl", "record")
 """
 
 from .pygixml_cy import (
@@ -49,10 +53,11 @@ from .pygixml_cy import (
     jsonify_dumps_obj  as dumps_obj,
     jsonify_dumps_node as dumps_node,
     jsonify_stream_dump as stream_dump,
-    jsonify_iterjson as iterjson,
+    jsonify_iterjsonl as iterjsonl,
+    jsonify_stream_to_jsonl as stream_to_jsonl,
 )
 
 __all__ = [
     "dumps", "dumps_str", "dumps_file", "dumps_obj", "dumps_node",
-    "stream_dump", "iterjson",
+    "stream_dump", "iterjsonl", "stream_to_jsonl",
 ]

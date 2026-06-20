@@ -495,7 +495,7 @@ def dictify_iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text"
     """Stream-parse XML and yield each matching element as a plain
     ``dict``, one at a time.
 
-    Identical to :func:`iterjson` except it yields
+    Identical to :func:`iterjsonl` except it yields
     :meth:`StreamElement.to_dict` results instead of JSON strings --
     useful when you want to keep working with the data in Python rather
     than as text.

@@ -953,6 +953,439 @@ cdef extern from *:
     ) except +
 
 
+# =============================================================================
+# Constant-memory streaming XML -> JSON LINES (.jsonl) converter, scoped to
+# elements matching one tag name. Written as its own `cdef extern from *`
+# block using a RAW (r-string) literal so the C++ below can be typed
+# normally, with no Cython-level backslash/quote doubling.
+#
+# Reuses PJLevel / PJChildSlot / pgj_is_ws / pgj_all_ws from the block
+# above (same translation unit, so they're already visible here) and adds
+# only what differs from xml_stream_to_json_file:
+#   * PJStrEditor — an in-memory analog of PJFileEditor. Each matched
+#     element's own JSON object is assembled in ONE std::string (bounded
+#     by that single element's subtree, not the whole document), using
+#     the exact same array/object/repeated-tag bookkeeping as the
+#     full-document engine -- just std::string::insert() instead of
+#     file-seek splicing, since there's no file random-access involved.
+#   * No document-root wrapping ({"<root_tag>": ...}) and no pretty/indent
+#     option: JSON Lines is one compact record per line, matching
+#     StreamElement.to_json()'s own (compact-only) convention.
+#   * Elements that don't match `tag` are skipped without ever touching
+#     PJLevel/PJStrEditor at all -- the parser only starts paying for any
+#     bookkeeping once a match begins.
+# =============================================================================
+cdef extern from *:
+    r"""
+    // In-memory analog of PJFileEditor: builds ONE matched element's
+    // JSON object in a std::string instead of an on-disk file.
+    struct PJStrEditor {
+        std::string buf;
+        long tail_pos = 0;
+
+        inline void write_at_tail(const char* s, size_t n) {
+            buf.append(s, n);
+            tail_pos += (long)n;
+        }
+        inline void write_at_tail(const std::string& s) {
+            write_at_tail(s.data(), s.size());
+        }
+        inline void write_at_tail(char c) {
+            buf += c;
+            tail_pos += 1;
+        }
+        inline void patch_byte(long off, char c) {
+            buf[(size_t)off] = c;
+        }
+        // Insert `s` right before `gap_start`. Unlike the file editor's
+        // splice_insert (which has to shift bytes on disk through a
+        // scratch buffer), std::string::insert() does this directly.
+        inline void splice_insert(long gap_start, const std::string& s) {
+            buf.insert((size_t)gap_start, s);
+            tail_pos += (long)s.size();
+        }
+        inline void reset() {
+            buf.clear();
+            tail_pos = 0;
+        }
+    };
+
+    // Generic (works for both PJFileEditor and PJStrEditor) JSON string
+    // escaper -- identical logic to pgj_write_escaped above, just
+    // templated on the editor type instead of hardcoded to the file one.
+    template <typename Ed>
+    static void pgj_write_escaped_t(Ed& ed, const char* s, size_t n) {
+        std::string tmp;
+        tmp.reserve(n + 2);
+        tmp += '"';
+        for (size_t i = 0; i < n; ++i) {
+            unsigned char c = (unsigned char)s[i];
+            switch (c) {
+                case '"':  tmp += "\\\""; break;
+                case '\\': tmp += "\\\\"; break;
+                case '\n': tmp += "\\n";  break;
+                case '\r': tmp += "\\r";  break;
+                case '\t': tmp += "\\t";  break;
+                default:
+                    if (c < 0x20) {
+                        char ub[8];
+                        snprintf(ub, sizeof(ub), "\\u%04x", c);
+                        tmp += ub;
+                    } else {
+                        tmp += (char)c;
+                    }
+            }
+        }
+        tmp += '"';
+        ed.write_at_tail(tmp);
+    }
+    template <typename Ed>
+    static void pgj_write_escaped_t(Ed& ed, const std::string& s) {
+        pgj_write_escaped_t(ed, s.data(), s.size());
+    }
+
+    // -------------------------------------------------------------------
+    // Main single-pass XML -> JSON Lines converter.
+    //
+    // Note on nested same-tag elements: a match's OUTERMOST occurrence
+    // of `target_tag` opens the capture; if that tag appears again
+    // *inside* an already-open match, it is folded in as an ordinary
+    // nested field of the outer match (per its normal tag-name key),
+    // not emitted as a second, separate JSONL record. For the common
+    // "flat list of repeated sibling records" shape this never comes
+    // up; it only matters for genuinely self-nested tags.
+    // -------------------------------------------------------------------
+    static long long xml_stream_to_jsonl_file(
+        const char*  xml_path,
+        const char*  jsonl_path,
+        const char*  target_tag_c,
+        const char*  attr_prefix_c,
+        const char*  cdata_key_c,
+        PyObject*    force_set,
+        bool         force_all,
+        size_t       stack_size,
+        size_t       io_buf_size,
+        char*        errbuf,
+        size_t       errbuf_size
+    ) {
+        std::string target_tag(target_tag_c);
+        std::string attr_prefix(attr_prefix_c);
+        std::string cdata_key(cdata_key_c);
+
+        std::vector<std::string> force_list;
+        if (force_set && force_set != Py_None) {
+            PyObject* it = PyObject_GetIter(force_set);
+            if (it) {
+                PyObject* item;
+                while ((item = PyIter_Next(it))) {
+                    const char* s = PyUnicode_AsUTF8(item);
+                    if (s) force_list.push_back(s);
+                    Py_DECREF(item);
+                }
+                Py_DECREF(it);
+            }
+        }
+        auto is_forced = [&](const std::string& tag) {
+            if (force_all) return true;
+            for (auto& t : force_list) if (t == tag) return true;
+            return false;
+        };
+
+        FILE* xin = fopen(xml_path, "rb");
+        if (!xin) {
+            snprintf(errbuf, errbuf_size, "cannot open XML input: %s", xml_path);
+            return -1;
+        }
+        FILE* fout = fopen(jsonl_path, "wb");
+        if (!fout) {
+            fclose(xin);
+            snprintf(errbuf, errbuf_size, "cannot open JSONL output: %s", jsonl_path);
+            return -1;
+        }
+
+        std::vector<char> ystack(stack_size);
+        yxml_t x;
+        yxml_init(&x, ystack.data(), stack_size);
+
+        std::vector<char> chunk(io_buf_size);
+
+        PJStrEditor med;                 // builds ONE matched element at a time
+        std::vector<PJLevel> levels;     // non-empty <=> currently inside a match
+        std::string cur_attr_key, cur_attr_val;
+        std::string cur_text;
+        bool have_pending_text = false;
+        long long matches_written = 0;
+
+        auto ensure_open = [&](PJLevel& lv) {
+            if (!lv.wrote_brace) {
+                med.write_at_tail('{');
+                lv.wrote_brace = true;
+                lv.first_field = true;
+            }
+        };
+        auto field_sep = [&](PJLevel& lv) {
+            if (!lv.first_field) med.write_at_tail(',');
+            lv.first_field = false;
+        };
+        auto flush_text_field = [&](PJLevel& lv) {
+            if (!have_pending_text) return;
+            if (lv.text_flushed) {
+                cur_text.clear();
+                have_pending_text = false;
+                return;
+            }
+            bool blank = pgj_all_ws(cur_text.data(), cur_text.size());
+            if (!blank) {
+                ensure_open(lv);
+                field_sep(lv);
+                pgj_write_escaped_t(med, cdata_key);
+                med.write_at_tail(':');
+                pgj_write_escaped_t(med, cur_text);
+            }
+            lv.text_flushed = true;
+            cur_text.clear();
+            have_pending_text = false;
+        };
+
+        auto open_child = [&](PJLevel& parent, const std::string& tag) {
+            ensure_open(parent);
+            auto it = parent.children.find(tag);
+
+            if (it == parent.children.end()) {
+                field_sep(parent);
+                pgj_write_escaped_t(med, tag);
+                med.write_at_tail(':');
+
+                PJChildSlot slot;
+                if (is_forced(tag)) {
+                    med.write_at_tail('[');
+                    slot.is_list = true;
+                } else {
+                    slot.bracket_pos = med.tail_pos;
+                    med.write_at_tail(' ');   // reserved placeholder byte
+                }
+                parent.children[tag] = slot;
+                return;
+            }
+
+            PJChildSlot& slot = it->second;
+            bool contiguous = (slot.last_value_end == med.tail_pos);
+
+            if (contiguous) {
+                if (!slot.is_list) {
+                    med.patch_byte(slot.bracket_pos, '[');
+                    slot.is_list = true;
+                }
+                med.write_at_tail(',');
+                return;
+            }
+
+            if (!slot.is_list) {
+                med.patch_byte(slot.bracket_pos, '[');
+                slot.is_list = true;
+            }
+            slot.pending_splice = true;
+            slot.pending_gap_start = slot.last_value_end;
+            slot.pending_value_start = med.tail_pos;
+            med.write_at_tail(',');
+        };
+
+        auto close_child = [&](PJLevel& parent, const std::string& tag) {
+            PJChildSlot& slot = parent.children[tag];
+
+            if (!slot.pending_splice) {
+                slot.last_value_end = med.tail_pos;
+                return;
+            }
+
+            long blob_start = slot.pending_value_start;
+            long blob_end   = med.tail_pos;
+            long blob_len   = blob_end - blob_start;
+            long gap_start  = slot.pending_gap_start;
+
+            std::string blob = med.buf.substr((size_t)blob_start, (size_t)blob_len);
+            med.buf.erase((size_t)blob_start, (size_t)blob_len);
+            med.tail_pos -= blob_len;
+            med.splice_insert(gap_start, blob);
+
+            long shift = blob_len;
+            for (auto& kv : parent.children) {
+                PJChildSlot& other = kv.second;
+                if (&other == &slot) continue;
+                if (other.bracket_pos >= gap_start) other.bracket_pos += shift;
+                if (other.last_value_end >= gap_start) other.last_value_end += shift;
+            }
+            slot.pending_splice = false;
+            slot.last_value_end = gap_start + shift;
+        };
+
+        auto close_level = [&](PJLevel& lv) {
+            if (!lv.wrote_brace) {
+                bool blank = !have_pending_text ||
+                             pgj_all_ws(cur_text.data(), cur_text.size());
+                if (blank) med.write_at_tail("null", 4);
+                else pgj_write_escaped_t(med, cur_text);
+                cur_text.clear();
+                have_pending_text = false;
+                return;
+            }
+            flush_text_field(lv);
+
+            std::vector<std::pair<long, std::string>> pending_closes;
+            for (auto& kv : lv.children) {
+                if (kv.second.is_list) {
+                    pending_closes.push_back({kv.second.last_value_end, kv.first});
+                }
+            }
+            std::sort(pending_closes.begin(), pending_closes.end());
+
+            for (auto& pc : pending_closes) {
+                long close_at = pc.first;
+                if (close_at == med.tail_pos) {
+                    med.write_at_tail("]", 1);
+                } else {
+                    med.splice_insert(close_at, std::string("]"));
+                    long shift = 1;
+                    for (auto& other : pending_closes) {
+                        if (&other != &pc && other.first > close_at)
+                            other.first += shift;
+                    }
+                }
+            }
+            med.write_at_tail('}');
+        };
+
+        bool ok = true;
+
+        while (ok) {
+            size_t nread = fread(chunk.data(), 1, io_buf_size, xin);
+            if (nread == 0) break;
+
+            for (size_t i = 0; i < nread; ++i) {
+                int ret = yxml_parse(&x, (unsigned char)chunk[i]);
+                if (ret < 0) {
+                    snprintf(errbuf, errbuf_size,
+                             "XML parse error (yxml code %d) at line %u", ret, x.line);
+                    ok = false; break;
+                }
+
+                switch (ret) {
+                case YXML_OK: break;
+
+                case YXML_ELEMSTART: {
+                    if (!levels.empty()) flush_text_field(levels.back());
+
+                    size_t nlen = yxml_symlen(&x, x.elem);
+                    std::string tag(x.elem, nlen);
+
+                    if (levels.empty()) {
+                        if (tag != target_tag) break;   // not inside a match
+                        med.reset();                     // start a fresh capture
+                    } else {
+                        open_child(levels.back(), tag);
+                    }
+
+                    PJLevel lv;
+                    lv.tag = tag;
+                    levels.push_back(lv);
+                    break;
+                }
+
+                case YXML_ATTRSTART: {
+                    if (levels.empty()) break;
+                    size_t nlen = yxml_symlen(&x, x.attr);
+                    cur_attr_key.assign(x.attr, nlen);
+                    cur_attr_val.clear();
+                    break;
+                }
+                case YXML_ATTRVAL:
+                    if (levels.empty()) break;
+                    cur_attr_val += x.data;
+                    break;
+                case YXML_ATTREND: {
+                    if (levels.empty()) break;
+                    PJLevel& lv = levels.back();
+                    ensure_open(lv);
+                    field_sep(lv);
+                    pgj_write_escaped_t(med, attr_prefix + cur_attr_key);
+                    med.write_at_tail(':');
+                    pgj_write_escaped_t(med, cur_attr_val);
+                    break;
+                }
+
+                case YXML_CONTENT:
+                    if (levels.empty()) break;
+                    cur_text += x.data;
+                    have_pending_text = true;
+                    break;
+
+                case YXML_ELEMEND: {
+                    if (levels.empty()) break;   // stray close outside any match
+
+                    PJLevel finished = levels.back();
+                    levels.pop_back();
+
+                    if (levels.empty()) {
+                        // the matched element itself just closed --
+                        // flush this one record straight to disk.
+                        close_level(finished);
+                        size_t n = med.buf.size();
+                        if (fwrite(med.buf.data(), 1, n, fout) != n ||
+                            fputc('\n', fout) == EOF) {
+                            snprintf(errbuf, errbuf_size,
+                                     "cannot write to JSONL output: %s", jsonl_path);
+                            ok = false;
+                            break;
+                        }
+                        matches_written++;
+                    } else {
+                        PJLevel& parent = levels.back();
+                        close_level(finished);
+                        close_child(parent, finished.tag);
+                    }
+                    break;
+                }
+
+                case YXML_PISTART: case YXML_PICONTENT: case YXML_PIEND:
+                    break;
+
+                default: break;
+                }
+            }
+            if (!ok) break;
+        }
+
+        if (ok) {
+            int eof_ret = yxml_eof(&x);
+            if (eof_ret < 0) {
+                snprintf(errbuf, errbuf_size,
+                         "unexpected end of XML (yxml code %d)", eof_ret);
+                ok = false;
+            }
+        }
+
+        fclose(xin);
+        fclose(fout);
+
+        if (!ok) return -2;
+        return matches_written;
+    }
+    """
+    long long xml_stream_to_jsonl_file(
+        const char* xml_path,
+        const char* jsonl_path,
+        const char* target_tag,
+        const char* attr_prefix,
+        const char* cdata_key,
+        object      force_set,
+        bint        force_all,
+        size_t      stack_size,
+        size_t      io_buf_size,
+        char*       errbuf,
+        size_t      errbuf_size
+    ) except +
+
+
 # ---------------------------------------------------------------------------
 # Python-level helpers
 # ---------------------------------------------------------------------------
@@ -1299,7 +1732,7 @@ def jsonify_stream_dump(
 
 
 
-def jsonify_iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text",
+def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
              Py_ssize_t chunk_size=65536):
     """Stream-parse XML and yield each matching element as a **JSON
@@ -1321,9 +1754,10 @@ def jsonify_iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text"
     This is the right tool when you want JSON text *in Python* (to
     forward over a socket, push into a queue, write your own framing,
     etc.) without round-tripping through a file. If you actually want a
-    ``.jsonl`` file on disk, see :func:`pygixml.jsonify.stream_dump_jsonl`
-    instead -- that one streams from C++ all the way to the file, with
-    no per-element Python object ever created.
+    ``.jsonl`` file on disk, see :func:`pygixml.jsonify.stream_to_jsonl`
+    instead -- that one stays in C++ all the way from the XML bytes to
+    the file write, with no per-element Python object (no
+    ``StreamElement``, no dict, no str) ever created.
 
     Parameters
     ----------
@@ -1338,15 +1772,111 @@ def jsonify_iterjson(source, str tag, str attr_prefix="@", str cdata_key="#text"
 
     Example::
 
-        for line in jsonify.iterjson("big.xml", "record"):
+        for line in jsonify.iterjsonl("big.xml", "record"):
             send_to_queue(line)     # already a JSON string
 
         # writing a .jsonl file yourself, if you want one:
         with open("out.jsonl", "w") as f:
-            for line in jsonify.iterjson("big.xml", "record"):
+            for line in jsonify.iterjsonl("big.xml", "record"):
                 f.write(line)
                 f.write("\\n")
     """
     for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
         yield (<StreamElement>elem).to_json(attr_prefix, cdata_key, force_list)
         elem.clear()
+
+
+def jsonify_stream_to_jsonl(str xml_path, str jsonl_path, str tag,
+             str attr_prefix="@", str cdata_key="#text",
+             object force_list=None, size_t stack_size=4096,
+             size_t io_buf_size=65536):
+    """Stream-convert an XML **file** straight to a ``.jsonl`` **file**,
+    one matched element per line -- entirely in C++.
+
+    Unlike :func:`iterjsonl`, no :class:`StreamElement` is ever built and
+    no Python ``str``/``dict``/``list`` is created for the matched
+    elements themselves: the XML bytes are read with the same yxml-based
+    parser used throughout this module, each matched element's JSON
+    object is assembled in a small in-memory buffer (bounded by that one
+    element's own subtree, the same constant-memory model as
+    :func:`iterfind`), and written straight to the ``.jsonl`` file --
+    nothing crosses into Python until the function returns the count of
+    records written.
+
+    This is the right tool when the destination really is a file on
+    disk and you don't need the records in Python at all (e.g. a
+    one-shot batch conversion). If you want each record back as a
+    Python ``str`` (to forward over a socket, filter, re-encode, etc.),
+    use :func:`iterjsonl` instead.
+
+    Parameters
+    ----------
+    xml_path : str
+        Path to the source XML file.
+    jsonl_path : str
+        Path to the ``.jsonl`` file to write (overwritten if it exists).
+    tag : str
+        Tag name of the elements to convert and write, one per line.
+    attr_prefix, cdata_key, force_list :
+        Same meaning as :meth:`StreamElement.to_json`.
+    stack_size, io_buf_size :
+        ``stack_size`` is yxml's internal element/attribute name stack
+        (same meaning as :func:`iterparse`'s ``stack_size``);
+        ``io_buf_size`` is the read chunk size from the XML file.
+
+    Returns
+    -------
+    int
+        The number of matched elements written.
+
+    Notes
+    -----
+    If ``tag`` itself appears *nested inside* an already-matched
+    element, that inner occurrence is folded in as an ordinary nested
+    field of the outer match (under its own tag-name key) rather than
+    being written as a second, separate line -- only the outermost
+    occurrence of a match starts a new JSONL record. This only matters
+    for genuinely self-nested tags; a flat list of repeated sibling
+    records (the common case) is unaffected.
+
+    Example::
+
+        from pygixml import jsonify
+        n = jsonify.stream_to_jsonl("big.xml", "big.jsonl", "record")
+        print(f"wrote {n} records")
+    """
+    cdef bytes xml_b   = xml_path.encode("utf-8")
+    cdef bytes jsonl_b = jsonl_path.encode("utf-8")
+    cdef bytes tag_b   = tag.encode("utf-8")
+    cdef bytes ap_b    = attr_prefix.encode("utf-8")
+    cdef bytes ck_b    = cdata_key.encode("utf-8")
+
+    cdef bint force_all = False
+    cdef object force_set = None
+    if force_list is True:
+        force_all = True
+    elif force_list:
+        force_set = set(force_list)
+
+    cdef char errbuf[512]
+    errbuf[0] = 0
+
+    cdef long long result = xml_stream_to_jsonl_file(
+        <const char*>xml_b,
+        <const char*>jsonl_b,
+        <const char*>tag_b,
+        <const char*>ap_b,
+        <const char*>ck_b,
+        force_set,
+        force_all,
+        stack_size,
+        io_buf_size,
+        errbuf,
+        sizeof(errbuf),
+    )
+
+    if result < 0:
+        msg = errbuf.decode("utf-8", "replace") if errbuf[0] else "unknown error"
+        raise PygiXMLError(f"jsonify_stream_to_jsonl failed: {msg}")
+
+    return result
