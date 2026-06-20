@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [0.13.0] - 2026-05-31
+## [0.12.0] - 2026-05-31
 
 ### Added
 
@@ -33,22 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   characters, `\n`, `\r`, `\t`, `\"`, `\\`.
 - Output is consistent with `dictify.parse` + `json.dumps` — the
   `TestConsistencyWithDictify` test class verifies this.
-
-### Changed
-- `pygixml/__init__.py` exports `jsonify` module and `jsonify_dumps`,
-  `jsonify_dumps_file`, `jsonify_dumps_node`.
-- `pygixml_cy.pyx` include order: `objectify.pxi` → `namespace.pxi` →
-  `dictify.pxi` → `jsonify.pxi`.
-
-### Testing
-- Added `tests/test_jsonify.py` — 9 test classes, ~40 tests covering:
-  basic structure, valid JSON output, options, `force_list`, pretty printing,
-  `dumps_file`, `dumps_node`, consistency with dictify, and edge cases.
-
-
-## [0.12.0] - 2026-05-31
-
-### Added
 
 #### Namespace support for `pygixml.objectify`
 - New `namespace.pxi` compiled into `pygixml_cy.so` (include after
@@ -82,16 +66,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `_ns_collect_siblings` and `_ns_find_all` — namespace-aware variants of
   the sibling collection and search helpers.
 
+#### Streaming XML → dict/JSON (`stream.pxi`, `iterfind`, `iterdict`, `iterjsonl`, `stream_dump`, `stream_to_jsonl`)
+- New `stream.pxi` compiled into `pygixml_cy.so` — a self-contained,
+  inlined [yxml](https://dev.yorhel.nl/yxml) push parser (no external
+  dependency) driving `pygixml.iterparse(source, events=..., tag=...)`,
+  an `ElementTree`-style incremental parser over a path, file-like
+  object, `str`, or `bytes`/`bytearray` source.
+- `pygixml.iterfind(source, tag, ...)` — shortcut for
+  `iterparse(source, events=("end",), tag=tag)` that yields
+  `StreamElement` objects directly, one per matching tag, in constant
+  memory regardless of document size.
+- `StreamElement` — a small, `ElementTree`-like element produced while
+  streaming, with `.tag`, `.attrib`, `.text`, children access, and
+  `.clear()` to drop a finished element's memory before the next one
+  arrives.
+- `StreamElement.to_dict(attr_prefix="@", cdata_key="#text", force_list=None)`
+  and `StreamElement.to_json(...)` — convert one streamed element to the
+  same `attr_prefix`/`cdata_key`/repeated-sibling-as-array conventions
+  used by `dictify.parse` and `jsonify.dumps`.
+- `pygixml.dictify.iterdict(source, tag, ...)` — generator yielding
+  `StreamElement.to_dict()` for every match, for processing huge XML
+  files as a stream of plain dicts without ever holding the whole
+  document (or its full dict form) in memory.
+- `pygixml.jsonify.iterjsonl(source, tag, ...)` — generator yielding
+  `StreamElement.to_json()` (one JSON object string per match) for
+  every match; intended for building a `.jsonl` file or stream by
+  joining yielded lines with `\n` yourself, or forwarding each line
+  elsewhere (socket, queue, etc.) without writing to disk at all.
+- `pygixml.jsonify.stream_dump(xml_path, json_path, indent=None)` — the
+  *whole-document* counterpart: streams an entire XML file straight to
+  a single valid JSON file on disk, entirely in C++, using an
+  in-place seek-and-patch trick on the output file so repeated sibling
+  tags still collapse into JSON arrays without buffering whole subtrees
+  in memory first.
+- `pygixml.jsonify.stream_to_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536)` —
+  the per-tag, **JSON Lines** counterpart to `stream_dump`: streams an
+  XML file straight to a `.jsonl` file (one matched element per line),
+  entirely in C++. Unlike `iterjsonl`, no `StreamElement` and no
+  Python `str`/`dict`/`list` is ever created for the matched elements
+  themselves — each element's JSON object is assembled in a small
+  in-memory buffer (bounded by that one element's own subtree, reusing
+  the same array/object/repeated-tag bookkeeping as `stream_dump`) and
+  written straight to the file. Returns the number of records written.
+  Nested same-tag elements (a `tag` appearing *inside* an
+  already-matched `tag`) are folded into the outer match as an
+  ordinary nested field rather than emitted as a second record — this
+  only matters for genuinely self-nested tags.
+
 ### Changed
+- `pygixml/__init__.py` exports `jsonify` module and `jsonify_dumps`,
+  `jsonify_dumps_file`, `jsonify_dumps_node`.
+- `pygixml_cy.pyx` include order: `objectify.pxi` → `namespace.pxi` →
+  `dictify.pxi` → `jsonify.pxi`.
+- `jsonify.iterjson` renamed to `jsonify.iterjsonl` (and the underlying
+  Cython entry point `jsonify_iterjson` to `jsonify_iterjsonl`) for
+  naming consistency with `jsonify.stream_to_jsonl` and to make clear
+  the generator yields JSON *Lines*-shaped output (one independent
+  JSON value per matched element), not a single parsed JSON document.
 - `objectify_from_string` and `objectify_from_file` signatures extended with
   `namespaces=None` and `auto_ns=True` — fully backward compatible.
 - `objectify.py` shim exports `NamespacedElement`.
 - `pygixml/__init__.py` exports `NamespacedElement`.
 
 ### Testing
+- Added `tests/test_jsonify.py` — 9 test classes, ~40 tests covering:
+  basic structure, valid JSON output, options, `force_list`, pretty printing,
+  `dumps_file`, `dumps_node`, consistency with dictify, and edge cases.
 - Added `tests/test_namespace.py` — 7 test classes, ~40 tests covering:
   auto-detection, dotted access, Clark notation, prefix notation, `findall`,
   ns_map inheritance, real-world Atom feed, and backward compatibility.
+- Added `tests/test_stream.py` covering `iterparse`/`iterfind`/`StreamElement`
+  over path, file-like, `str`, and `bytes` sources, including large-document
+  constant-memory smoke tests.
+- Added `tests/test_stream_json.py` — `StreamElement.to_dict()`/`to_json()`,
+  `iterdict`, `iterjsonl`, and `stream_to_jsonl`: generator behavior,
+  consistency between `iterjsonl`/`iterdict`/`to_json`/`to_dict`,
+  `force_list`, custom `attr_prefix`/`cdata_key`, missing-tag and
+  missing-file error handling, and a 5,000-record large-document check.
 
 
 ## [0.11.0] - 2026-05-31
