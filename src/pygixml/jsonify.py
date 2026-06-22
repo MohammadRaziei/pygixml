@@ -43,7 +43,7 @@ Usage::
 
     # -> a .jsonl file, written straight from C++ (no per-element
     #    Python object at all, unlike iterjsonl())
-    jsonify.stream_to_jsonl("huge.xml", "huge.jsonl", "record")
+    jsonify.stream_jsonl("huge.xml", "huge.jsonl", "record")
 """
 
 from .pygixml_cy import (
@@ -54,10 +54,10 @@ from .pygixml_cy import (
     jsonify_dumps_node as dumps_node,
     jsonify_stream_dump as stream_dump,
     jsonify_iterjsonl as iterjsonl,
-    jsonify_stream_to_jsonl as stream_to_jsonl,
+    jsonify_stream_jsonl as stream_jsonl,
 )
 
 __all__ = [
     "dumps", "dumps_str", "dumps_file", "dumps_obj", "dumps_node",
-    "stream_dump", "iterjsonl", "stream_to_jsonl",
+    "stream_dump", "iterjsonl", "stream_jsonl",
 ]

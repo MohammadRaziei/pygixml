@@ -1055,7 +1055,7 @@ cdef extern from *:
     // "flat list of repeated sibling records" shape this never comes
     // up; it only matters for genuinely self-nested tags.
     // -------------------------------------------------------------------
-    static long long xml_stream_to_jsonl_file(
+    static long long xml_stream_jsonl_file(
         const char*  xml_path,
         const char*  jsonl_path,
         const char*  target_tag_c,
@@ -1371,7 +1371,7 @@ cdef extern from *:
         return matches_written;
     }
     """
-    long long xml_stream_to_jsonl_file(
+    long long xml_stream_jsonl_file(
         const char* xml_path,
         const char* jsonl_path,
         const char* target_tag,
@@ -1604,7 +1604,7 @@ def jsonify_stream_dump(
     """Convert a (potentially gigantic) XML file to a single, **standard,
     valid JSON document** — in roughly constant memory.
 
-    Unlike :func:`stream_to_jsonl` (which writes JSON *Lines* — one
+    Unlike :func:`stream_jsonl` (which writes JSON *Lines* — one
     independent object per line, by design, to sidestep the
     "do I need an array bracket" problem), this function produces exactly
     what :func:`dumps`/:func:`dumps_file` would produce: one JSON value
@@ -1612,7 +1612,7 @@ def jsonify_stream_dump(
     normal ``json.load`` like any other JSON file. No pugixml DOM, no
     Python ``dict``/``list``, and no ``json`` module are used internally
     — every byte is hand-emitted in C++, the same as
-    :func:`stream_to_jsonl`.
+    :func:`stream_jsonl`.
 
     How it stays (mostly) constant-memory while still producing valid
     JSON syntax: a normal JSON array must know, before its closing ``]``,
@@ -1636,7 +1636,7 @@ def jsonify_stream_dump(
       and is the only case where any data movement happens at all.
 
     Because of that splice fallback, worst-case time can exceed
-    :func:`stream_to_jsonl`'s for documents where repeated sibling
+    :func:`stream_jsonl`'s for documents where repeated sibling
     tags are heavily interleaved with unrelated children — for typical
     record-oriented XML (where ``<tag>`` repeats appear consecutively)
     this never triggers and the function runs at full streaming speed.
@@ -1754,7 +1754,7 @@ def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text
     This is the right tool when you want JSON text *in Python* (to
     forward over a socket, push into a queue, write your own framing,
     etc.) without round-tripping through a file. If you actually want a
-    ``.jsonl`` file on disk, see :func:`pygixml.jsonify.stream_to_jsonl`
+    ``.jsonl`` file on disk, see :func:`pygixml.jsonify.stream_jsonl`
     instead -- that one stays in C++ all the way from the XML bytes to
     the file write, with no per-element Python object (no
     ``StreamElement``, no dict, no str) ever created.
@@ -1793,7 +1793,7 @@ def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text
         elem.clear()
 
 
-def jsonify_stream_to_jsonl(str xml_path, str jsonl_path, str tag,
+def jsonify_stream_jsonl(str xml_path, str jsonl_path, str tag,
              str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
              size_t io_buf_size=65536):
@@ -1851,7 +1851,7 @@ def jsonify_stream_to_jsonl(str xml_path, str jsonl_path, str tag,
     ::
 
         from pygixml import jsonify
-        n = jsonify.stream_to_jsonl("big.xml", "big.jsonl", "record")
+        n = jsonify.stream_jsonl("big.xml", "big.jsonl", "record")
         print(f"wrote {n} records")
     """
     cdef bytes xml_b   = xml_path.encode("utf-8")
@@ -1870,7 +1870,7 @@ def jsonify_stream_to_jsonl(str xml_path, str jsonl_path, str tag,
     cdef char errbuf[512]
     errbuf[0] = 0
 
-    cdef long long result = xml_stream_to_jsonl_file(
+    cdef long long result = xml_stream_jsonl_file(
         <const char*>xml_b,
         <const char*>jsonl_b,
         <const char*>tag_b,
@@ -1886,6 +1886,6 @@ def jsonify_stream_to_jsonl(str xml_path, str jsonl_path, str tag,
 
     if result < 0:
         msg = errbuf.decode("utf-8", "replace") if errbuf[0] else "unknown error"
-        raise PygiXMLError(f"jsonify_stream_to_jsonl failed: {msg}")
+        raise PygiXMLError(f"jsonify_stream_jsonl failed: {msg}")
 
     return result

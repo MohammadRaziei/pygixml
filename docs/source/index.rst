@@ -3,9 +3,16 @@
 Welcome to pygixml
 ==================
 
-**pygixml** is a high-performance XML parser for Python built on Cython and
-`pugixml <https://pugixml.org/>`_.  It delivers fast parsing, full XPath 1.0
-support, and a clean Pythonic API for reading, writing, and transforming XML.
+**pygixml** (*Python Giant XML*) is a high-performance Cython framework
+bridging two specialized C++ engines: `pugixml <https://pugixml.org/>`_
+for its in-memory DOM parser (full XPath 1.0, :doc:`objectify`,
+:doc:`dictify`), and an inlined `yxml <https://dev.yorhel.nl/yxml>`_
+push parser for true constant-memory :doc:`streaming <streaming>`. The
+result is a faster, constant-memory alternative to
+`lxml <https://lxml.de/>`_ and
+`xmltodict <https://github.com/martinblech/xmltodict>`_ — everything
+they do, plus a streaming layer neither of them has, which is what
+makes pygixml the package to reach for once a dataset gets *massive*.
 
 New to XML?  Start with :doc:`xml_basics` for a primer on the format, its
 structure, and real-world applications.

@@ -88,7 +88,7 @@ to disk — see :doc:`jsonify`.
 .. function:: pygixml.iterfind(source, tag, stack_size=4096, chunk_size=65536)
    :no-index:
 
-   Shortcut for ``pygixml.iterparse(source, events=("end",), tag=tag)`` that
+   Shortcut for ``iterparse(source, events=("end",), tag=tag)`` that
    yields :class:`~pygixml.StreamElement` objects directly — no
    ``(event, elem)`` tuple to unpack.
 
@@ -239,7 +239,7 @@ Wrapping every loop in ``elem.to_dict()`` / ``elem.to_json()`` /
               f.write(line + "\n")
 
    If the destination really is just a ``.jsonl`` file and you don't
-   need the records in Python at all, :func:`pygixml.jsonify.stream_to_jsonl`
+   need the records in Python at all, :func:`pygixml.jsonify.stream_jsonl`
    does the same job without creating a single Python object per
    element — see :doc:`jsonify`.
 

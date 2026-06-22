@@ -10,7 +10,7 @@ JSON string buffer — no intermediate Python ``dict``/``list`` is ever
 built, unlike going through :func:`pygixml.dictify.parse` followed by
 :func:`json.dumps`. The streaming entry points
 (:func:`~pygixml.jsonify.stream_dump`,
-:func:`~pygixml.jsonify.stream_to_jsonl`) go a step further and skip
+:func:`~pygixml.jsonify.stream_jsonl`) go a step further and skip
 even the DOM, converting a giant XML *file* to a giant JSON *file* in
 roughly constant memory.
 
@@ -224,12 +224,14 @@ individual elements, and no ``json`` module anywhere in the call chain.
       with open("huge.json") as f:
           data = json.load(f)   # a single, ordinary, valid JSON document
 
-.. function:: pygixml.jsonify.stream_to_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536)
+.. function:: pygixml.jsonify.stream_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536)
    :no-index:
 
-   The per-record sibling of :func:`~pygixml.jsonify.stream_dump`:
-   streams an XML **file** straight to a ``.jsonl`` **file**, one
-   matched element per line, entirely in C++. Unlike
+   The file-to-file counterpart of :func:`~pygixml.jsonify.iterjsonl`
+   (and the per-tag, filtering complement to
+   :func:`~pygixml.jsonify.stream_dump`, which always converts the
+   *entire* document): streams an XML **file** straight to a ``.jsonl``
+   **file**, one matched element per line, entirely in C++. Unlike
    :func:`~pygixml.jsonify.iterjsonl`, no
    :class:`~pygixml.StreamElement` and no Python
    ``str``/``dict``/``list`` is ever created for the matched elements
@@ -271,7 +273,7 @@ individual elements, and no ``json`` module anywhere in the call chain.
 
       from pygixml import jsonify
 
-      n = jsonify.stream_to_jsonl("huge.xml", "huge.jsonl", "record")
+      n = jsonify.stream_jsonl("huge.xml", "huge.jsonl", "record")
       print(f"wrote {n} records")
 
       import json
@@ -297,7 +299,7 @@ Choosing the right entry point
    * - One record per line, output as a ``.jsonl`` file
      - Loop + write yourself (see
        :func:`~pygixml.jsonify.iterjsonl`)
-     - :func:`~pygixml.jsonify.stream_to_jsonl`
+     - :func:`~pygixml.jsonify.stream_jsonl`
    * - One record per line, kept as Python ``str`` objects
      - :func:`~pygixml.jsonify.iterjsonl`
      - *(inherently produces a Python object per line — see*
@@ -310,4 +312,4 @@ Choosing the right entry point
 
 See :doc:`streaming` for ``iterjsonl`` and the rest of the underlying
 constant-memory parsing layer that ``stream_dump`` and
-``stream_to_jsonl`` are built on top of.
+``stream_jsonl`` are built on top of.

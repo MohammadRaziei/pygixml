@@ -227,8 +227,8 @@ class TestIterjson:
 
 
 # ---------------------------------------------------------------------------
-# pygixml.jsonify.stream_to_jsonl (pure C++, file -> .jsonl file, no
-# per-element Python object -- see jsonify.pxi's xml_stream_to_jsonl_file)
+# pygixml.jsonify.stream_jsonl (pure C++, file -> .jsonl file, no
+# per-element Python object -- see jsonify.pxi's xml_stream_jsonl_file)
 # ---------------------------------------------------------------------------
 
 class TestStreamToJsonl:
@@ -237,7 +237,7 @@ class TestStreamToJsonl:
         out_p = tmp_path / "out.jsonl"
         xml_p.write_bytes(SAMPLE)
 
-        n = jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record")
+        n = jsonify.stream_jsonl(str(xml_p), str(out_p), "record")
         assert n == 3
         lines = out_p.read_text().splitlines()
         assert len(lines) == 3
@@ -247,7 +247,7 @@ class TestStreamToJsonl:
         out_p = tmp_path / "out.jsonl"
         xml_p.write_bytes(SAMPLE)
 
-        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record")
+        jsonify.stream_jsonl(str(xml_p), str(out_p), "record")
         from_file = [json.loads(l) for l in out_p.read_text().splitlines()]
         from_gen = [json.loads(s) for s in jsonify.iterjsonl(SAMPLE, "record")]
         assert from_file == from_gen
@@ -257,7 +257,7 @@ class TestStreamToJsonl:
         out_p = tmp_path / "out.jsonl"
         xml_p.write_bytes(SAMPLE)
 
-        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record",
+        jsonify.stream_jsonl(str(xml_p), str(out_p), "record",
                                  force_list={"tag"})
         parsed = [json.loads(l) for l in out_p.read_text().splitlines()]
         assert parsed[1]["tags"]["tag"] == ["json"]
@@ -267,7 +267,7 @@ class TestStreamToJsonl:
         out_p = tmp_path / "out.jsonl"
         xml_p.write_bytes(b"<root><a id='1'>hi</a><a id='2'>bye</a></root>")
 
-        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "a",
+        jsonify.stream_jsonl(str(xml_p), str(out_p), "a",
                                  attr_prefix="_", cdata_key="_v")
         parsed = [json.loads(l) for l in out_p.read_text().splitlines()]
         assert parsed[0] == {"_id": "1", "_v": "hi"}
@@ -278,14 +278,14 @@ class TestStreamToJsonl:
         out_p = tmp_path / "out.jsonl"
         xml_p.write_bytes(SAMPLE)
 
-        n = jsonify.stream_to_jsonl(str(xml_p), str(out_p), "nonexistent")
+        n = jsonify.stream_jsonl(str(xml_p), str(out_p), "nonexistent")
         assert n == 0
         assert out_p.read_text() == ""
 
     def test_missing_input_raises(self, tmp_path):
         out_p = tmp_path / "out.jsonl"
         with pytest.raises(pygixml.PygiXMLError):
-            jsonify.stream_to_jsonl(str(tmp_path / "missing.xml"),
+            jsonify.stream_jsonl(str(tmp_path / "missing.xml"),
                                      str(out_p), "record")
 
     def test_leaf_and_text_only_elements(self, tmp_path):
@@ -294,7 +294,7 @@ class TestStreamToJsonl:
         xml_p.write_bytes(
             b"<root><record><leaf/></record><record>just text</record></root>"
         )
-        jsonify.stream_to_jsonl(str(xml_p), str(out_p), "record")
+        jsonify.stream_jsonl(str(xml_p), str(out_p), "record")
         lines = out_p.read_text().splitlines()
         assert json.loads(lines[0]) == {"leaf": None}
         assert json.loads(lines[1]) == "just text"
@@ -309,7 +309,7 @@ class TestStreamToJsonl:
         parts.append(b"</root>")
         xml_p.write_bytes(b"".join(parts))
 
-        count = jsonify.stream_to_jsonl(str(xml_p), str(out_p), "item")
+        count = jsonify.stream_jsonl(str(xml_p), str(out_p), "item")
         assert count == n
 
         total = 0

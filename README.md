@@ -80,9 +80,11 @@ simply don't have:
   know, this is the only Python package that can do this without
   buffering the document, the output, or both, and without crashing
   the process once the file gets genuinely large.
-* **`jsonify.stream_to_jsonl(xml_path, jsonl_path, tag)`** — the
-  per-record sibling: streams straight to a `.jsonl` file, one matched
-  element per line, same constant-memory, all-C++ guarantee.
+* **`jsonify.stream_jsonl(xml_path, jsonl_path, tag)`** — the
+  file-to-file counterpart of `iterjsonl` (filters by `tag`, unlike
+  `stream_dump` which always converts the whole document): streams
+  straight to a `.jsonl` file, one matched element per line, same
+  constant-memory, all-C++ guarantee.
 
 ```python
 from pygixml import jsonify
@@ -91,7 +93,7 @@ from pygixml import jsonify
 jsonify.stream_dump("huge_export.xml", "huge_export.json")
 
 # Or, one record per line:
-jsonify.stream_to_jsonl("huge_export.xml", "huge_export.jsonl", "record")
+jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 ```
 
 ### Features
@@ -104,7 +106,7 @@ jsonify.stream_to_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 * **`objectify`** — lxml.objectify-style dotted navigation
 * **`dictify`** — xmltodict-compatible XML → dict conversion
 * **`jsonify`** — direct XML → JSON, in memory or streamed straight to
-  disk in constant memory (`stream_dump`, `stream_to_jsonl`)
+  disk in constant memory (`stream_dump`, `stream_jsonl`)
 * **Streaming (`iterfind`, `iterdict`, `iterjsonl`)** — constant-memory,
   yxml-based incremental parsing for documents too big to load whole
 * **Cross-platform** — Windows, Linux, macOS
@@ -491,7 +493,7 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `XPathNodeSet`   | Collection of XPath results                                |
 | `objectify`      | lxml.objectify-style dotted navigation                     |
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
-| `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_to_jsonl` |
+| `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_jsonl` |
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`.
