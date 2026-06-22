@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pygixml"
-version = "0.12.0"
+version = "0.12.1"
 description = "PyGiXML (Python Giant XML Framework): A high-performance Cython library bridging pugixml and yxml. It offers a faster, constant-memory alternative to lxml and xmltodict, providing full XPath, objectify, and streaming capabilities for massive datasets"
 authors = [
     {name = "Mohammad Raziei", email = "mohammadraziei1375@gmail.com"},
