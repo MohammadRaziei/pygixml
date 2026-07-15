@@ -98,6 +98,40 @@ class TestXMLNodeChildren:
         assert elements[0].attribute("id") is not None
         assert elements[0].attribute("id").value == "007"
 
+    def test_insert_child_before(self):
+        doc = pygixml.parse_string(
+            '<class name="CS101">'
+            '<student id="001"/>'
+            '<student id="003"/>'
+            '</class>'
+        )
+        class_item = doc.first_child()
+        ref = class_item.child("student")
+        new_student = class_item.insert_child_before("student", ref)
+        new_student.append_attribute("id").set_value("000")
+
+        elements = list(class_item.children())
+        assert new_student is not None
+        assert new_student.name == "student"
+        assert [e.attribute("id").value for e in elements] == ["000", "001", "003"]
+
+    def test_insert_child_after(self):
+        doc = pygixml.parse_string(
+            '<class name="CS101">'
+            '<student id="001"/>'
+            '<student id="003"/>'
+            '</class>'
+        )
+        class_item = doc.first_child()
+        ref = class_item.child("student")
+        new_student = class_item.insert_child_after("student", ref)
+        new_student.append_attribute("id").set_value("002")
+
+        elements = list(class_item.children())
+        assert new_student is not None
+        assert new_student.name == "student"
+        assert [e.attribute("id").value for e in elements] == ["001", "002", "003"]
+
     def test_from_mem_id_unsafe_matches_find_mem_id(self):
         """from_mem_id_unsafe should produce the same node as find_mem_id"""
         doc = pygixml.parse_string("<root><item>Hello</item></root>")
