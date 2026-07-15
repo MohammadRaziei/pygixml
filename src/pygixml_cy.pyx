@@ -886,6 +886,50 @@ cdef class XMLNode:
         cdef xml_node node = self._node.prepend_child(name_bytes)
         return XMLNode.create_from_cpp(node)
 
+    def insert_child_before(self, str name, XMLNode node):
+        """Insert a new child element before an existing child and return it.
+
+        Args:
+            name (str): Tag name.  Use an empty string to create a text
+                node instead.
+            node (XMLNode): The existing direct child before which the new
+                child is inserted.
+
+        Returns:
+            XMLNode: The newly created child.
+
+        Example::
+
+            >>> root = doc.root
+            >>> ref = root.child('item')
+            >>> root.insert_child_before('title', ref).set_value('My Title')
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef xml_node new_node = self._node.insert_child_before(name_bytes, node._node)
+        return XMLNode.create_from_cpp(new_node)
+
+    def insert_child_after(self, str name, XMLNode node):
+        """Insert a new child element after an existing child and return it.
+
+        Args:
+            name (str): Tag name.  Use an empty string to create a text
+                node instead.
+            node (XMLNode): The existing direct child after which the new
+                child is inserted.
+
+        Returns:
+            XMLNode: The newly created child.
+
+        Example::
+
+            >>> root = doc.root
+            >>> ref = root.child('item')
+            >>> root.insert_child_after('title', ref).set_value('My Title')
+        """
+        cdef bytes name_bytes = name.encode('utf-8')
+        cdef xml_node new_node = self._node.insert_child_after(name_bytes, node._node)
+        return XMLNode.create_from_cpp(new_node)
+
     def remove_child(self, XMLNode node):
         """Remove a direct child element from this node.
 
