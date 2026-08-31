@@ -520,6 +520,19 @@ Results are printed as tables and saved to
 
 ---
 
+## Security
+
+pygixml is not affected by the common XML attacks (XXE, Billion Laughs,
+external DTD retrieval) that `lxml`/`defusedxml` guard against, because
+its two embedded parsers — [pugixml](https://pugixml.org/) (DOM API) and
+[yxml](https://dev.yorhel.nl/yxml) (streaming API) — never implement
+custom entity resolution or external DTD fetching in the first place, so
+there's no "safe mode" to configure. See
+[#8](https://github.com/MohammadRaziei/pygixml/issues/8) for the full
+technical breakdown.
+
+---
+
 ## License
 
 MIT License — see [LICENSE](LICENSE).
