@@ -1,0 +1,101 @@
+name: Orchestration & Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  init:
+    name: Determine release
+    runs-on: ubuntu-latest
+    outputs:
+      release_name: ${{ steps.init.outputs.release_name }}
+      is_tag: ${{ steps.init.outputs.is_tag }}
+    steps:
+      - name: Determine release type
+        id: init
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v.*$ ]]; then
+            echo "release_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "is_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_name=__beta__" >> "$GITHUB_OUTPUT"
+            echo "is_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  cmake:
+    name: CMake build, test & docs
+    needs: [init]
+    uses: ./.github/workflows/cmake.yml
+
+  wheel:
+    name: Build wheels & sdist
+    needs: [init]
+    uses: ./.github/workflows/wheels.yml
+
+  release-wheels:
+    name: Release Assets and Upload to PyPI
+    needs: [wheel, init]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all wheel/sdist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheelhouse-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.init.outputs.release_name }}
+          name: ${{ needs.init.outputs.release_name }}
+          draft: false
+          prerelease: ${{ needs.init.outputs.is_tag == 'false' }}
+          files: dist/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publishing to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  deploy-pages:
+    name: Deploy Docs
+    needs: [cmake]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cmake-documentation
+          path: ./pages
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./pages
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

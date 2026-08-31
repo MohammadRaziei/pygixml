@@ -2,21 +2,12 @@ name: cmake
 
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
-  push:
-    branches:
-      - master
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build_and_test:
@@ -52,7 +43,6 @@ jobs:
     name: Build Docs
     runs-on: ubuntu-latest
     needs: build_and_test
-    if: github.event_name == 'push'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,22 +66,9 @@ jobs:
       - name: Build documentation
         run: cmake --build build --target sphinx_docs
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: cmake-documentation
           path: build/docs
-
-  deploy:
-    name: Deploy Docs
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build_docs
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          retention-days: 5

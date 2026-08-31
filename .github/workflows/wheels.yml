@@ -2,22 +2,15 @@ name: build wheels
 
 on:
   workflow_dispatch:
+  workflow_call:
   pull_request:
-  push:
-    branches:
-      - master
-    tags:
-      - "v*"
 
 env:
   FORCE_COLOR: 3
 
 concurrency:
-  group: github.workflow-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-permissions:
-  contents: write
 
 jobs:
   build_sdist:
@@ -28,7 +21,7 @@ jobs:
       with:
         submodules: true
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: "3.x"
 
@@ -43,6 +36,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
+        name: wheelhouse-sdist
         path: dist/*.tar.gz
         overwrite: true
 
@@ -74,47 +68,3 @@ jobs:
         name: wheelhouse-${{ matrix.os }}
         path: wheelhouse/*.whl
         overwrite: false
-
-  release:
-    name: Release Assets and Upload to PyPI
-    needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
-
-    steps:
-      # Determine release type
-      - name: Determine release type
-        id: release_type
-        run: |
-          if [[ "${{ github.ref }}" =~ ^refs/tags/v.*$ ]]; then
-            echo "RELEASE_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-            echo "IS_TAG=true" >> $GITHUB_ENV
-          else
-            echo "RELEASE_NAME=__beta__" >> $GITHUB_ENV
-            echo "IS_TAG=false" >> $GITHUB_ENV
-          fi
-        shell: bash # Use bash for all platforms
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      # - name: List dist directory
-        # run: tree --du -shaC . # Ensure the directory is not empty
-
-      - name: Create or update release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.RELEASE_NAME }}
-          name: ${{ env.RELEASE_NAME }}
-          draft: false
-          prerelease: ${{ env.IS_TAG == 'false' }}
-          files: dist/*
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publishing to PyPi
-        uses: pypa/gh-action-pypi-publish@release/v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
