@@ -59,7 +59,11 @@ args = ["--no-warn-unused-cli"]
 [tool.scikit-build.build]
 targets = ["pygixml_cy"]
 
+[tool.scikit-build.wheel]
+py-api = "cp310"
+
 [tool.cibuildwheel]
+build = ["cp38-*", "cp39-*", "cp310-*"]
 test-command = "pytest {project}/tests"
 test-extras = ["test"]
 # Ensure CI/GITHUB_ACTIONS are visible inside the manylinux/musllinux build

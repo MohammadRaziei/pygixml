@@ -241,7 +241,7 @@ cdef extern from *:
             if (iter) {
                 PyObject* item;
                 while ((item = PyIter_Next(iter)) != nullptr) {
-                    const char* s = PyUnicode_AsUTF8(item);
+                    const char* s = PyUnicode_AsUTF8AndSize(item, NULL);
                     if (s) force_list.insert(s);
                     Py_DECREF(item);
                 }
@@ -505,7 +505,7 @@ cdef extern from *:
             if (it) {
                 PyObject* item;
                 while ((item = PyIter_Next(it))) {
-                    const char* s = PyUnicode_AsUTF8(item);
+                    const char* s = PyUnicode_AsUTF8AndSize(item, NULL);
                     if (s) force_list.push_back(s);
                     Py_DECREF(item);
                 }
@@ -1078,7 +1078,7 @@ cdef extern from *:
             if (it) {
                 PyObject* item;
                 while ((item = PyIter_Next(it))) {
-                    const char* s = PyUnicode_AsUTF8(item);
+                    const char* s = PyUnicode_AsUTF8AndSize(item, NULL);
                     if (s) force_list.push_back(s);
                     Py_DECREF(item);
                 }

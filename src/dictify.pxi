@@ -70,7 +70,7 @@ cdef extern from *:
                              std::string& buf,
                              const std::string& indent,
                              int level, bool pretty) {
-        const char* tag = PyUnicode_AsUTF8(tag_obj);
+        const char* tag = PyUnicode_AsUTF8AndSize(tag_obj, NULL);
         if (pretty) append_indent(buf, indent, level);
         buf += '<';
         buf += tag;
@@ -79,7 +79,7 @@ cdef extern from *:
             // nothing
         } else {
             PyObject* s = PyObject_Str(value);
-            xml_escape_text(PyUnicode_AsUTF8(s), buf);
+            xml_escape_text(PyUnicode_AsUTF8AndSize(s, NULL), buf);
             Py_DECREF(s);
         }
         buf += "</";
@@ -98,7 +98,7 @@ cdef extern from *:
         int                level,
         bool               pretty
     ) {
-        const char* tag = PyUnicode_AsUTF8(tag_obj);
+        const char* tag = PyUnicode_AsUTF8AndSize(tag_obj, NULL);
 
         // --- None → self-closing ---
         if (value == Py_None) {
@@ -110,9 +110,9 @@ cdef extern from *:
 
         // --- list → repeated siblings ---
         if (PyList_Check(value)) {
-            Py_ssize_t n = PyList_GET_SIZE(value);
+            Py_ssize_t n = PyList_Size(value);
             for (Py_ssize_t i = 0; i < n; ++i)
-                dict_to_xml(tag_obj, PyList_GET_ITEM(value, i),
+                dict_to_xml(tag_obj, PyList_GetItem(value, i),
                             buf, attr_prefix, cdata_key, indent, level, pretty);
             return;
         }
@@ -127,7 +127,7 @@ cdef extern from *:
             PyObject *k, *v;
             Py_ssize_t pos = 0;
             while (PyDict_Next(value, &pos, &k, &v)) {
-                const char* ks = PyUnicode_AsUTF8(k);
+                const char* ks = PyUnicode_AsUTF8AndSize(k, NULL);
                 // attribute key
                 if (!attr_prefix.empty() &&
                     strncmp(ks, attr_prefix.c_str(), attr_prefix.size()) == 0) {
@@ -136,12 +136,12 @@ cdef extern from *:
                     attrs_str += attr_name;
                     attrs_str += "=\\"";
                     PyObject* vs = PyObject_Str(v);
-                    xml_escape_attr(PyUnicode_AsUTF8(vs), attrs_str);
+                    xml_escape_attr(PyUnicode_AsUTF8AndSize(vs, NULL), attrs_str);
                     Py_DECREF(vs);
                     attrs_str += '"';
                 } else if (cdata_key == ks) {
                     PyObject* vs = PyObject_Str(v);
-                    text_storage = PyUnicode_AsUTF8(vs);
+                    text_storage = PyUnicode_AsUTF8AndSize(vs, NULL);
                     Py_DECREF(vs);
                     text_val = text_storage.c_str();
                 }
@@ -151,7 +151,7 @@ cdef extern from *:
             bool has_children = false;
             pos = 0;
             while (PyDict_Next(value, &pos, &k, &v)) {
-                const char* ks = PyUnicode_AsUTF8(k);
+                const char* ks = PyUnicode_AsUTF8AndSize(k, NULL);
                 if ((attr_prefix.empty() ||
                      strncmp(ks, attr_prefix.c_str(), attr_prefix.size()) != 0)
                     && cdata_key != ks) {
@@ -191,7 +191,7 @@ cdef extern from *:
             // child elements
             pos = 0;
             while (PyDict_Next(value, &pos, &k, &v)) {
-                const char* ks = PyUnicode_AsUTF8(k);
+                const char* ks = PyUnicode_AsUTF8AndSize(k, NULL);
                 if ((attr_prefix.empty() ||
                      strncmp(ks, attr_prefix.c_str(), attr_prefix.size()) != 0)
                     && cdata_key != ks) {

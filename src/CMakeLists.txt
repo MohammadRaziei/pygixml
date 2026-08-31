@@ -1,6 +1,9 @@
 if(DEFINED SKBUILD)
     # Transpile Cython to C++
-    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+    # ${SKBUILD_SABI_COMPONENT} expands to Development.SABIModule when
+    # scikit-build-core is targeting the Stable ABI (see wheel.py-api in
+    # pyproject.toml), and to nothing otherwise (older Python, PyPy, etc.)
+    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module ${SKBUILD_SABI_COMPONENT})
 
     find_package(Cython MODULE REQUIRED VERSION 3.0)
     include(UseCython)
@@ -9,8 +12,20 @@ if(DEFINED SKBUILD)
                     LANGUAGE CXX 
                     OUTPUT_VARIABLE pygixml_cxx_file)
 
+    # When scikit-build-core is targeting the Stable ABI, SKBUILD_SABI_VERSION
+    # holds the minimum ABI version (e.g. "3.10") and SKBUILD_SOABI the
+    # matching filename tag; USE_SABI makes CMake define Py_LIMITED_API for
+    # us. Below the configured floor (or on PyPy) both are empty and a
+    # normal, version-specific extension is built as before.
+    if(NOT "${SKBUILD_SABI_VERSION}" STREQUAL "")
+        set(USE_SABI USE_SABI ${SKBUILD_SABI_VERSION})
+    endif()
+    if(SKBUILD_SOABI)
+        set(Python_SOABI ${SKBUILD_SOABI})
+    endif()
+
     # Create the Python extension module
-    python_add_library(pygixml_cy MODULE "${pygixml_cxx_file}" WITH_SOABI)
+    python_add_library(pygixml_cy MODULE "${pygixml_cxx_file}" WITH_SOABI ${USE_SABI})
 
     # Include directories
     target_include_directories(pygixml_cy PRIVATE 
