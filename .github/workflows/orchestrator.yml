@@ -9,7 +9,7 @@ on:
       - "v*"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: orchestrator-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
