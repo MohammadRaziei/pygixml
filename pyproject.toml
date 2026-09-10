@@ -43,6 +43,8 @@ test = [
 [project.scripts]
 pygixq        = "pygixml.query:main"
 pygixml       = "pygixml.__main__:main"
+pygixml-json  = "pygixml.jsoncmd:main"
+pygixml-stream = "pygixml.streamcmd:main"
 
 [project.urls]
 "Homepage" = "https://github.com/mohammadraziei/pygixml"

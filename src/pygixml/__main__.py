@@ -2,7 +2,11 @@
 python -m pygixml <subcommand> [OPTIONS] [ARGS]
 
 Subcommands:
-    query    Query XML files with XPath or dotted notation
+    query    Query XML files with XPath or dotted notation (loads full DOM)
+    json     Convert XML to JSON (auto-streams for big files, O(1) memory)
+    stream   Stream matching elements from huge XML as JSON, one record
+             at a time (bounded memory) -- like a jq/xq filter for XML
+             too large to load as a whole
 """
 
 import sys
@@ -21,6 +25,14 @@ def main():
         from pygixml.query import main as query_main
         sys.exit(query_main())
 
+    elif subcommand == "json":
+        from pygixml.jsoncmd import main as json_main
+        sys.exit(json_main())
+
+    elif subcommand == "stream":
+        from pygixml.streamcmd import main as stream_main
+        sys.exit(stream_main())
+
     elif subcommand in ("-h", "--help", "help"):
         print(__doc__.strip())
         sys.exit(0)
@@ -32,7 +44,7 @@ def main():
 
     else:
         print(f"pygixml: unknown subcommand {subcommand!r}", file=sys.stderr)
-        print("Available subcommands: query", file=sys.stderr)
+        print("Available subcommands: query, json, stream", file=sys.stderr)
         sys.exit(1)
 
 

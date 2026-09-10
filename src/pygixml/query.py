@@ -165,16 +165,27 @@ def _last_child_name(node) -> str:
 
 
 def _execute_dotted_tracked(root, steps: list) -> list:
-    """Execute dotted steps with proper index handling."""
+    """Execute dotted steps with proper index handling.
+
+    The root object returned by objectify.from_file/from_string is
+    already the document's root element (e.g. tag == "database"), so
+    the first dotted segment (".database...") names/anchors the root
+    rather than being a real child-descent step.
+    """
     from pygixml.objectify import ObjectifiedElement, NodeSequence
 
     current = [root]
     last_tag = None
+    first_step = True
 
     for kind, value in steps:
         next_nodes = []
 
-        if kind == "child":
+        if kind == "child" and first_step:
+            # first segment anchors the root itself -- don't descend
+            next_nodes = [root]
+
+        elif kind == "child":
             last_tag = value
             for node in current:
                 if not isinstance(node, ObjectifiedElement):
@@ -217,6 +228,7 @@ def _execute_dotted_tracked(root, steps: list) -> list:
                         next_nodes.append(text)
 
         current = next_nodes
+        first_step = False
 
     return current
 
@@ -432,13 +444,8 @@ def main(argv: list[str] | None = None) -> int:
     # argparse can't do this natively — we split manually.
     args = parser.parse_args(argv)
 
-    # The last positional is the query; everything before it is files.
-    all_positional = args.files
-    if len(all_positional) < 2:
-        parser.error("Must provide at least one FILE and a QUERY.")
-
-    files = all_positional[:-1]
-    q     = all_positional[-1]
+    files = args.files
+    q     = args.query
 
     sep = "\0" if args.null else args.separator
     total = 0
