@@ -80,6 +80,18 @@ simply don't have:
   know, this is the only Python package that can do this without
   buffering the document, the output, or both, and without crashing
   the process once the file gets genuinely large.
+
+  The memory guarantee is unconditional (verified: ~17MB peak,
+  completely flat from 5K to 640K records — see
+  `benchmarks/adhoc/bench_record_shaped.py`). The **time** guarantee
+  is O(n) for the shape almost all real giant XML actually has — one
+  repeated tag per nesting level (`<orders><order>...</order>...`).
+  It degrades towards O(n²) only in an adversarial shape: two or more
+  *different* tags repeating and interleaving at the *same* level for
+  many iterations (e.g. `<a>1</a><b>1</b><a>2</a><b>2</b>...` with no
+  wrapping element around each pair). If that's genuinely your data
+  shape, `jsonify.stream_jsonl` (below) sidesteps the problem entirely
+  by not trying to preserve a single JSON document at all.
 * **`jsonify.stream_jsonl(xml_path, jsonl_path, tag)`** — the
   file-to-file counterpart of `iterjsonl` (filters by `tag`, unlike
   `stream_dump` which always converts the whole document): streams
@@ -109,6 +121,9 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
   disk in constant memory (`stream_dump`, `stream_jsonl`)
 * **Streaming (`iterfind`, `iterdict`, `iterjsonl`)** — constant-memory,
   yxml-based incremental parsing for documents too big to load whole
+* **CLI tools** — `pygixq` (XPath/dotted query), `pygixml json`
+  (convert), `pygixml stream` (filter giant files in bounded memory) —
+  see [Command Line Tools](#command-line-tools)
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -334,6 +349,94 @@ print(xml_out)
 
 ---
 
+---
+
+## Command Line Tools
+
+pygixml installs three CLI entry points — no Python code required for
+one-off queries, conversions, or filtering giant files from a shell
+pipeline.
+
+| Command | Loads | Use it for |
+|---|---|---|
+| `pygixq` (or `pygixml query`) | full DOM | ad-hoc XPath / dotted queries — a `jq`/`xq`-style tool for XML you can fit in memory |
+| `pygixml json` | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
+| `pygixml stream` | one record at a time | filtering matches out of a file **too big to load**, bounded memory |
+
+### `pygixq` — query
+
+```bash
+# XPath (starts with / or //)
+pygixq data.xml "//user-profile[@id='101']/first_name"
+
+# dotted, objectify-style (starts with .) — first segment names the root
+pygixq data.xml ".database.user_profile.first_name"
+pygixq data.xml ".database.user_profile.@id"      # attribute
+pygixq data.xml ".database.entry[1]"              # index
+pygixq data.xml ".database.entry[*]"              # all siblings
+pygixq data.xml ".database.user_profile.text()"   # text content
+
+# output formats
+pygixq data.xml ".database" --format xml
+pygixq data.xml ".database" --format json --pretty
+
+# just the count, exit code like grep (0 = match, 1 = no match)
+pygixq data.xml ".database.entry[*]" --count
+
+# multiple files, stdin, NUL-separated for xargs -0
+pygixq *.xml ".config.host"
+cat data.xml | pygixq - ".config.host"
+pygixq data.xml ".database.entry[*]" --null | xargs -0 -n1 echo
+```
+
+### `pygixml json` — convert a whole file
+
+```bash
+pygixml json data.xml                        # compact JSON to stdout
+pygixml json data.xml -p                     # pretty (2-space indent)
+pygixml json data.xml -o data.json           # write to a file
+pygixml json data.xml --force-list item      # always make <item> a list
+cat data.xml | pygixml json -                # read from stdin
+```
+
+Automatically switches to `jsonify.stream_dump` (constant memory) for
+files over 64MB; `--stream` / `--no-stream` force one mode or the
+other regardless of size.
+
+### `pygixml stream` — filter a giant file
+
+Reads the file once via `iterparse`, tag by tag, holding at most one
+matched element's subtree in memory — the right tool once a file is
+too large for `pygixq`/`pygixml json`'s DOM mode.
+
+```bash
+# every <order>, one JSON object per line (JSONL)
+pygixml stream orders.xml --tag order
+
+# simple filters — numeric or string, on a child path or an @attribute
+pygixml stream orders.xml --tag order --where "total>100"
+pygixml stream orders.xml --tag order --where "@status=shipped"
+
+# multiple --where are AND'ed together
+pygixml stream orders.xml --tag order \
+    --where "@status=shipped" --where "customer=acme"
+
+# a real JSON array instead of JSONL — still one pass, still bounded memory
+pygixml stream orders.xml --tag order --where "total>100" --format array -p
+
+# just count, or stop after N
+pygixml stream orders.xml --tag order --where "@status=shipped" --count
+pygixml stream orders.xml --tag order --limit 10
+
+cat orders.xml | pygixml stream - --tag order
+```
+
+`--where` supports `=`, `!=`, `>`, `<`, `>=`, `<=`; the left-hand side
+is either `@attr` or a child path like `customer` / `items/item/sku`
+(same syntax as `StreamElement.findtext`).
+
+---
+
 ## Advanced Features
 
 ### Text Content Extraction
@@ -495,6 +598,7 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
 | `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_jsonl` |
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
+| `pygixq`, `pygixml json`, `pygixml stream` | CLI tools — see [Command Line Tools](#command-line-tools) |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 
