@@ -212,7 +212,7 @@ cdef extern from *:
         buf.reserve(4096);
 
         buf += '{';
-        if (pretty) buf += "\\n  ";
+        if (pretty) buf += "\\n" + std::string(indent);
         json_escape(root.name(), buf);
         buf += ':';
         if (pretty) buf += ' ';
@@ -253,7 +253,7 @@ cdef extern from *:
         std::string buf;
         buf.reserve(4096);
         buf += '{';
-        if (pretty) buf += "\\n  ";
+        if (pretty) buf += "\\n" + std::string(indent);
         json_escape(root.name(), buf);
         buf += ':';
         if (pretty) buf += ' ';
@@ -439,6 +439,60 @@ cdef extern from *:
         bool splice_insert(long gap_start, const std::string& s) {
             return splice_insert(gap_start, s.data(), s.size());
         }
+
+        // Replace the region [start, start+old_len) with `new_content`
+        // (which may be a different length), shifting everything after
+        // the region forward or backward as needed. Cost is O(old_len +
+        // bytes after the region up to tail_pos) -- bounded by however
+        // much follows the replaced region, same cost model as
+        // splice_insert (this *is* splice_insert generalized to also
+        // replace/shrink, not just insert).
+        bool replace_region(long start, long old_len, const std::string& new_content) {
+            long old_end  = start + old_len;
+            long new_len  = (long)new_content.size();
+            long rest_len = tail_pos - old_end;
+            if (rest_len < 0 || old_len < 0) return false;
+
+            if (new_len >= old_len) {
+                long grow = new_len - old_len;
+                if (grow > 0 && rest_len > 0) {
+                    std::vector<char> buf(PYGIXML_SHIFT_BUF);
+                    long remaining = rest_len;
+                    while (remaining > 0) {
+                        long chunk = (remaining < (long)buf.size()) ? remaining : (long)buf.size();
+                        long src_off = old_end + remaining - chunk;
+                        long dst_off = src_off + grow;
+                        seek(src_off);
+                        if (fread(buf.data(), 1, (size_t)chunk, fp) != (size_t)chunk) return false;
+                        seek(dst_off);
+                        if (fwrite(buf.data(), 1, (size_t)chunk, fp) != (size_t)chunk) return false;
+                        remaining -= chunk;
+                    }
+                }
+                seek(start);
+                fwrite(new_content.data(), 1, new_content.size(), fp);
+                tail_pos += grow;
+            } else {
+                long shrink = old_len - new_len;
+                std::vector<char> buf(PYGIXML_SHIFT_BUF);
+                long done = 0;
+                while (done < rest_len) {
+                    long chunk = ((rest_len - done) < (long)buf.size()) ? (rest_len - done) : (long)buf.size();
+                    long src_off = old_end + done;
+                    long dst_off = src_off - shrink;
+                    seek(src_off);
+                    if (fread(buf.data(), 1, (size_t)chunk, fp) != (size_t)chunk) return false;
+                    seek(dst_off);
+                    if (fwrite(buf.data(), 1, (size_t)chunk, fp) != (size_t)chunk) return false;
+                    done += chunk;
+                }
+                seek(start);
+                fwrite(new_content.data(), 1, new_content.size(), fp);
+                tail_pos -= shrink;
+            }
+            seek(tail_pos);
+            return true;
+        }
     };
 
     static inline bool pgj_is_ws(char c) {
@@ -592,6 +646,64 @@ cdef extern from *:
             have_pending_text = false;
         };
 
+        // Turn a child slot from "plain value" into "array": insert the
+        // multi-byte opening sequence ('[' + newline + first-item indent)
+        // right where the placeholder position was recorded, shifting
+        // whatever was already written there (the first value) forward.
+        // Unlike a single reserved byte, this correctly reproduces
+        // node_to_json's pretty-printed array opening (first item on its
+        // own indented line) and leaves no stray byte behind for fields
+        // that never repeat (nothing is reserved until this is called).
+        // Returns the number of bytes inserted, which the caller must
+        // add to `slot.last_value_end` (the first value's end position
+        // moved forward by that many bytes too).
+        auto open_bracket = [&](PJLevel& parent, PJChildSlot& slot) -> long {
+            std::string item_pad = pad_for(parent.depth + 1) + ind;
+            std::string open_seq = "[";
+            open_seq += nl;
+            open_seq += item_pad;
+
+            long old_start = slot.bracket_pos;
+            long old_end   = slot.last_value_end;   // end of the first value, as written
+            long old_len   = old_end - old_start;
+
+            // Re-indent the already-written first value: it was written
+            // assuming it would be a plain field (depth+1), but as the
+            // first item of an array it must sit one level deeper
+            // (depth+2, matching node_to_json's array-item convention).
+            // Every structural newline inside it needs one more `ind`
+            // unit after it. Newlines never occur raw inside a JSON
+            // string (pgj_write_escaped always emits "\\n" as two chars,
+            // backslash+n), so every literal '\\n' byte here is
+            // structural and safe to touch; in compact mode (nl empty)
+            // there are none, so this is a no-op.
+            std::string first_val(old_len, '\\0');
+            if (old_len > 0) {
+                ed.seek(old_start);
+                size_t nrd = fread(&first_val[0], 1, (size_t)old_len, fout);
+                (void)nrd;
+            }
+            std::string reindented;
+            reindented.reserve(first_val.size() + 8);
+            for (char c : first_val) {
+                reindented += c;
+                if (c == '\\n') reindented += ind;
+            }
+
+            std::string new_content = open_seq + reindented;
+            ed.replace_region(old_start, old_len, new_content);
+            long shift = (long)new_content.size() - old_len;
+
+            for (auto& kv : parent.children) {
+                PJChildSlot& other = kv.second;
+                if (&other == &slot) continue;
+                if (other.bracket_pos >= old_start) other.bracket_pos += shift;
+                if (other.last_value_end >= old_start) other.last_value_end += shift;
+            }
+            slot.is_list = true;
+            return shift;
+        };
+
         // Called when a child element with tag `tag` STARTS under `parent`
         // (i.e. at the child's ELEMSTART). This writes everything that
         // must precede the child's own content: the field separator, the
@@ -630,8 +742,11 @@ cdef extern from *:
                     ed.write_at_tail(item_pad);
                     slot.is_list = true;
                 } else {
+                    // Nothing is written here -- just remember where the
+                    // value is about to start. If a sibling never shows
+                    // up, this position is never touched again, so no
+                    // stray placeholder byte is left in the output.
                     slot.bracket_pos = ed.tail_pos;
-                    ed.write_at_tail(' ');   // reserved placeholder byte
                 }
                 parent.children[tag] = slot;
                 return;
@@ -642,8 +757,7 @@ cdef extern from *:
 
             if (contiguous) {
                 if (!slot.is_list) {
-                    ed.patch_byte(slot.bracket_pos, '[');
-                    slot.is_list = true;
+                    slot.last_value_end += open_bracket(parent, slot);
                 }
                 ed.write_at_tail(',');
                 ed.write_at_tail(nl);
@@ -662,12 +776,9 @@ cdef extern from *:
             // observes that the value is complete, IT performs the
             // actual relocation of the whole "," + value blob into the
             // gap in one shot.
-            bool was_list_already = slot.is_list;
             if (!slot.is_list) {
-                ed.patch_byte(slot.bracket_pos, '[');
-                slot.is_list = true;
+                slot.last_value_end += open_bracket(parent, slot);
             }
-            (void)was_list_already;
             slot.pending_splice = true;
             slot.pending_gap_start = slot.last_value_end;
             slot.pending_value_start = ed.tail_pos;
@@ -875,8 +986,6 @@ cdef extern from *:
                     PJLevel finished = levels.back();
                     levels.pop_back();
 
-                    int depth = (int)levels.size();
-
                     if (levels.empty()) {
                         // document root -- close its own object, then
                         // close the outer wrapper opened at ELEMSTART.
@@ -885,7 +994,12 @@ cdef extern from *:
                         ed.write_at_tail('}');
                     } else {
                         PJLevel& parent = levels.back();
-                        close_level(finished, depth + 1);
+                        // finished.depth (set at ELEMSTART) already
+                        // accounts for the extra indent level an array
+                        // item gets over a plain field -- raw XML
+                        // nesting-stack size does not know about that,
+                        // so it must not be used here.
+                        close_level(finished, finished.depth);
                         close_child(parent, finished.tag);
                     }
                     break;
