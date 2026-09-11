@@ -121,9 +121,9 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
   disk in constant memory (`stream_dump`, `stream_jsonl`)
 * **Streaming (`iterfind`, `iterdict`, `iterjsonl`)** — constant-memory,
   yxml-based incremental parsing for documents too big to load whole
-* **CLI tools** — `pygixq` (XPath/dotted query), `pygixml json`
-  (convert), `pygixml stream` (filter giant files in bounded memory) —
-  see [Command Line Tools](#command-line-tools)
+* **CLI tools** — `pygixml query` (XPath/dotted query), `pygixml
+  jsonify` (convert), `pygixml stream` (filter giant files in bounded
+  memory) — see [Command Line Tools](#command-line-tools)
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -353,50 +353,57 @@ print(xml_out)
 
 ## Command Line Tools
 
-pygixml installs three CLI entry points — no Python code required for
-one-off queries, conversions, or filtering giant files from a shell
-pipeline.
+pygixml installs one CLI entry point, `pygixml`, with three
+subcommands — no Python code required for one-off queries,
+conversions, or filtering giant files from a shell pipeline. Every
+subcommand also works as `python -m pygixml <subcommand>`.
 
-| Command | Loads | Use it for |
+| Subcommand | Loads | Use it for |
 |---|---|---|
-| `pygixq` (or `pygixml query`) | full DOM | ad-hoc XPath / dotted queries — a `jq`/`xq`-style tool for XML you can fit in memory |
-| `pygixml json` | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
+| `pygixml query` | full DOM | ad-hoc XPath / dotted queries — a `jq`/`xq`-style tool for XML you can fit in memory |
+| `pygixml jsonify` (`json` alias) | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
 | `pygixml stream` | one record at a time | filtering matches out of a file **too big to load**, bounded memory |
 
-### `pygixq` — query
+### `pygixml query`
 
 ```bash
 # XPath (starts with / or //)
-pygixq data.xml "//user-profile[@id='101']/first_name"
+pygixml query data.xml "//user-profile[@id='101']/first_name"
 
 # dotted, objectify-style (starts with .) — first segment names the root
-pygixq data.xml ".database.user_profile.first_name"
-pygixq data.xml ".database.user_profile.@id"      # attribute
-pygixq data.xml ".database.entry[1]"              # index
-pygixq data.xml ".database.entry[*]"              # all siblings
-pygixq data.xml ".database.user_profile.text()"   # text content
+pygixml query data.xml ".database.user_profile.first_name"
+pygixml query data.xml ".database.user_profile.@id"      # attribute
+pygixml query data.xml ".database.entry[1]"              # index
+pygixml query data.xml ".database.entry[*]"              # all siblings
+pygixml query data.xml ".database.user_profile.text()"   # text content
 
 # output formats
-pygixq data.xml ".database" --format xml
-pygixq data.xml ".database" --format json --pretty
+pygixml query data.xml ".database" --format xml
+pygixml query data.xml ".database" --format json --pretty
 
 # just the count, exit code like grep (0 = match, 1 = no match)
-pygixq data.xml ".database.entry[*]" --count
+pygixml query data.xml ".database.entry[*]" --count
 
 # multiple files, stdin, NUL-separated for xargs -0
-pygixq *.xml ".config.host"
-cat data.xml | pygixq - ".config.host"
-pygixq data.xml ".database.entry[*]" --null | xargs -0 -n1 echo
+pygixml query *.xml ".config.host"
+cat data.xml | pygixml query - ".config.host"
+pygixml query data.xml ".database.entry[*]" --null | xargs -0 -n1 echo
+
+# python -m form works identically
+python -m pygixml query data.xml ".database.user_profile.first_name"
 ```
 
-### `pygixml json` — convert a whole file
+### `pygixml jsonify` — convert a whole file
 
 ```bash
-pygixml json data.xml                        # compact JSON to stdout
-pygixml json data.xml -p                     # pretty (2-space indent)
-pygixml json data.xml -o data.json           # write to a file
-pygixml json data.xml --force-list item      # always make <item> a list
-cat data.xml | pygixml json -                # read from stdin
+pygixml jsonify data.xml                        # compact JSON to stdout
+pygixml jsonify data.xml -p                     # pretty (2-space indent)
+pygixml jsonify data.xml -o data.json           # write to a file
+pygixml jsonify data.xml --force-list item      # always make <item> a list
+cat data.xml | pygixml jsonify -                # read from stdin
+
+python -m pygixml jsonify data.xml -o data.json
+pygixml json data.xml                           # `json` is a short alias
 ```
 
 Automatically switches to `jsonify.stream_dump` (constant memory) for
@@ -407,7 +414,7 @@ other regardless of size.
 
 Reads the file once via `iterparse`, tag by tag, holding at most one
 matched element's subtree in memory — the right tool once a file is
-too large for `pygixq`/`pygixml json`'s DOM mode.
+too large for `pygixml query`/`pygixml jsonify`'s DOM mode.
 
 ```bash
 # every <order>, one JSON object per line (JSONL)
@@ -429,6 +436,7 @@ pygixml stream orders.xml --tag order --where "@status=shipped" --count
 pygixml stream orders.xml --tag order --limit 10
 
 cat orders.xml | pygixml stream - --tag order
+python -m pygixml stream orders.xml --tag order
 ```
 
 `--where` supports `=`, `!=`, `>`, `<`, `>=`, `<=`; the left-hand side
@@ -598,7 +606,7 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
 | `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_jsonl` |
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
-| `pygixq`, `pygixml json`, `pygixml stream` | CLI tools — see [Command Line Tools](#command-line-tools) |
+| `pygixml query`, `pygixml jsonify`, `pygixml stream` | CLI tools — see [Command Line Tools](#command-line-tools) |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 

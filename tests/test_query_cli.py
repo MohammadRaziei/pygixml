@@ -32,7 +32,7 @@ def xml_file(tmp_path):
 
 def run_cli(*args, input=None):
     return subprocess.run(
-        [sys.executable, "-m", "pygixml.query", *args],
+        [sys.executable, "-m", "pygixml", "query", *args],
         capture_output=True, text=True, input=input,
     )
 

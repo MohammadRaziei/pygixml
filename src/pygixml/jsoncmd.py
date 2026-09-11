@@ -3,18 +3,19 @@ pygixml.jsoncmd — command-line XML -> JSON converter.
 
 Usage::
 
-    python -m pygixml json [OPTIONS] FILE
+    pygixml jsonify [OPTIONS] FILE     # `json` also works, as a short alias
+    python -m pygixml jsonify [OPTIONS] FILE
 
 Examples::
 
-    pygixml json data.xml                       # print JSON to stdout
-    pygixml json data.xml -p                    # pretty-printed
-    pygixml json data.xml -o data.json          # write to a file
-    pygixml json big.xml -o big.json --stream   # force streaming mode
-    pygixml json huge.xml -o huge.json          # auto-streams: huge.xml
-                                                 # is over the size threshold
-    cat data.xml | pygixml json -               # read from stdin
-    pygixml json data.xml --force-list item     # always make <item> a list
+    pygixml jsonify data.xml                       # print JSON to stdout
+    pygixml jsonify data.xml -p                    # pretty-printed
+    pygixml jsonify data.xml -o data.json          # write to a file
+    pygixml jsonify big.xml -o big.json --stream   # force streaming mode
+    pygixml jsonify huge.xml -o huge.json          # auto-streams: huge.xml
+                                                    # is over the size threshold
+    cat data.xml | pygixml jsonify -               # read from stdin
+    pygixml jsonify data.xml --force-list item     # always make <item> a list
 
 Streaming mode (used automatically for files over ~64MB, or with
 --stream) calls :func:`pygixml.jsonify.stream_dump`, which holds only a
@@ -41,7 +42,6 @@ STREAM_THRESHOLD_BYTES = 64 * 1024 * 1024  # 64MB
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="pygixml-json",
         description="Convert an XML file to JSON.",
     )
     p.add_argument(

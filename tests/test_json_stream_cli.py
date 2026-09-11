@@ -1,5 +1,6 @@
 """
-Tests for the new `pygixml json` and `pygixml stream` CLI subcommands.
+Tests for the `pygixml jsonify` (née `json`) and `pygixml stream` CLI
+subcommands.
 """
 import json
 import subprocess
@@ -28,18 +29,18 @@ def run(*args, input=None):
     )
 
 
-# --- pygixml json --------------------------------------------------
+# --- pygixml jsonify -------------------------------------------------
 
 def test_json_compact_matches_dumps_file(orders_file):
     from pygixml import jsonify
     expected = jsonify.dumps_file(orders_file, pretty=False)
-    r = run("json", orders_file)
+    r = run("jsonify", orders_file)
     assert r.returncode == 0, r.stderr
     assert r.stdout.strip() == expected
 
 
 def test_json_pretty(orders_file):
-    r = run("json", orders_file, "-p")
+    r = run("jsonify", orders_file, "-p")
     parsed = json.loads(r.stdout)
     assert parsed["orders"]["order"][0]["customer"] == "acme"
     assert "\n" in r.stdout  # actually pretty-printed
@@ -47,7 +48,7 @@ def test_json_pretty(orders_file):
 
 def test_json_to_output_file(orders_file, tmp_path):
     out = tmp_path / "out.json"
-    r = run("json", orders_file, "-o", str(out))
+    r = run("jsonify", orders_file, "-o", str(out))
     assert r.returncode == 0, r.stderr
     data = json.loads(out.read_text())
     assert len(data["orders"]["order"]) == 3
@@ -56,15 +57,15 @@ def test_json_to_output_file(orders_file, tmp_path):
 def test_json_forced_stream_matches_dom_mode(orders_file, tmp_path):
     out_dom = tmp_path / "dom.json"
     out_stream = tmp_path / "stream.json"
-    run("json", orders_file, "-o", str(out_dom), "--no-stream")
-    run("json", orders_file, "-o", str(out_stream), "--stream")
+    run("jsonify", orders_file, "-o", str(out_dom), "--no-stream")
+    run("jsonify", orders_file, "-o", str(out_stream), "--stream")
     assert out_dom.read_text() == out_stream.read_text()
 
 
 def test_json_from_stdin(orders_file):
     with open(orders_file) as f:
         content = f.read()
-    r = run("json", "-", input=content)
+    r = run("jsonify", "-", input=content)
     assert r.returncode == 0, r.stderr
     assert json.loads(r.stdout)["orders"]["order"][0]["customer"] == "acme"
 
@@ -72,9 +73,15 @@ def test_json_from_stdin(orders_file):
 def test_json_force_list_on_singleton(tmp_path):
     p = tmp_path / "single.xml"
     p.write_text("<root><item>only</item></root>")
-    r = run("json", str(p), "--force-list", "item")
+    r = run("jsonify", str(p), "--force-list", "item")
     parsed = json.loads(r.stdout)
     assert parsed["root"]["item"] == ["only"]
+
+
+def test_json_is_an_alias_for_jsonify(orders_file):
+    r = run("json", orders_file)
+    assert r.returncode == 0, r.stderr
+    assert json.loads(r.stdout)["orders"]["order"][0]["customer"] == "acme"
 
 
 # --- pygixml stream -------------------------------------------------
@@ -160,6 +167,7 @@ def test_unknown_subcommand():
 
 
 def test_pygixq_still_works(orders_file):
-    r = subprocess.run(["pygixq", orders_file, ".orders.order[0].customer"],
+    r = subprocess.run([sys.executable, "-m", "pygixml", "query",
+                        orders_file, ".orders.order[0].customer"],
                         capture_output=True, text=True)
     assert r.stdout.strip() == "acme"

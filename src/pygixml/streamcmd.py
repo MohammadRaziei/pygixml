@@ -95,7 +95,6 @@ def _compare(actual, op: str, expected: str) -> bool:
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="pygixml-stream",
         description="Stream matching elements out of a huge XML file as JSON, "
                      "in bounded (one-record) memory.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -129,12 +128,13 @@ def main(argv: list[str] | None = None) -> int:
     import pygixml
     from pygixml import jsonify
 
-    args = _build_parser().parse_args(argv)
+    parser = _build_parser()
+    args = parser.parse_args(argv)
 
     try:
         conditions = [_parse_where(w) for w in args.where]
     except ValueError as e:
-        print(f"pygixml-stream: {e}", file=sys.stderr)
+        sys.stderr.write(f"{parser.prog}: {e}\n")
         return 2
 
     force_list = set(args.force_list) if args.force_list else None

@@ -2,11 +2,11 @@
 python -m pygixml <subcommand> [OPTIONS] [ARGS]
 
 Subcommands:
-    query    Query XML files with XPath or dotted notation (loads full DOM)
-    json     Convert XML to JSON (auto-streams for big files, O(1) memory)
-    stream   Stream matching elements from huge XML as JSON, one record
-             at a time (bounded memory) -- like a jq/xq filter for XML
-             too large to load as a whole
+    query           Query XML files with XPath or dotted notation (loads full DOM)
+    jsonify (json)  Convert XML to JSON (auto-streams for big files, O(1) memory)
+    stream          Stream matching elements from huge XML as JSON, one record
+                    at a time (bounded memory) -- like a jq/xq filter for XML
+                    too large to load as a whole
 """
 
 import sys
@@ -14,7 +14,7 @@ import sys
 
 def main():
     if len(sys.argv) < 2:
-        print(__doc__.strip())
+        sys.stdout.write(__doc__.strip() + "\n")
         sys.exit(1)
 
     subcommand = sys.argv[1]
@@ -25,7 +25,7 @@ def main():
         from pygixml.query import main as query_main
         sys.exit(query_main())
 
-    elif subcommand == "json":
+    elif subcommand in ("jsonify", "json"):
         from pygixml.jsoncmd import main as json_main
         sys.exit(json_main())
 
@@ -34,17 +34,17 @@ def main():
         sys.exit(stream_main())
 
     elif subcommand in ("-h", "--help", "help"):
-        print(__doc__.strip())
+        sys.stdout.write(__doc__.strip() + "\n")
         sys.exit(0)
 
     elif subcommand in ("-v", "--version", "version"):
         from pygixml import __version__
-        print(f"pygixml {__version__}")
+        sys.stdout.write(f"pygixml {__version__}\n")
         sys.exit(0)
 
     else:
-        print(f"pygixml: unknown subcommand {subcommand!r}", file=sys.stderr)
-        print("Available subcommands: query, json, stream", file=sys.stderr)
+        sys.stderr.write(f"pygixml: unknown subcommand {subcommand!r}\n")
+        sys.stderr.write("Available subcommands: query, jsonify, stream\n")
         sys.exit(1)
 
 

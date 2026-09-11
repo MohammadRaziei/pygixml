@@ -8,30 +8,27 @@ Supports two query syntaxes:
 
 Usage::
 
-    # As a module
-    python -m pygixml.query [OPTIONS] FILE QUERY
-
-    # As a CLI (after pip install)
-    pygixml-query [OPTIONS] FILE QUERY
+    pygixml query [OPTIONS] FILE QUERY
+    python -m pygixml query [OPTIONS] FILE QUERY
 
 Examples::
 
-    pygixml-query data.xml "//user-profile[@id='101']/first_name"
-    pygixml-query data.xml ".database.user_profile.first_name"
-    pygixml-query data.xml ".database.entry[1]"
-    pygixml-query data.xml ".database.user_profile.@id"
-    pygixml-query data.xml ".database.entry[*]"
+    pygixml query data.xml "//user-profile[@id='101']/first_name"
+    pygixml query data.xml ".database.user_profile.first_name"
+    pygixml query data.xml ".database.entry[1]"
+    pygixml query data.xml ".database.user_profile.@id"
+    pygixml query data.xml ".database.entry[*]"
 
     # Output formats
-    pygixml-query data.xml ".database" --format xml
-    pygixml-query data.xml ".database" --format json
-    pygixml-query data.xml ".database" --format json --pretty
+    pygixml query data.xml ".database" --format xml
+    pygixml query data.xml ".database" --format json
+    pygixml query data.xml ".database" --format json --pretty
 
     # From stdin
-    cat data.xml | pygixml-query - ".database.user_profile.first_name"
+    cat data.xml | pygixml query - ".database.user_profile.first_name"
 
     # Multiple files
-    pygixml-query *.xml ".config.host"
+    pygixml query *.xml ".config.host"
 """
 
 from __future__ import annotations
@@ -361,7 +358,6 @@ def query(
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="pygixml-query",
         description=(
             "Query XML files using XPath or dotted objectify-style notation.\n\n"
             "Query syntax:\n"
@@ -461,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         except Exception as e:
             if not args.quiet:
-                print(f"pygixml-query: {path}: {e}", file=sys.stderr)
+                sys.stderr.write(f"{parser.prog}: {path}: {e}\n")
             exit_code = 1
             continue
 
@@ -469,12 +465,12 @@ def main(argv: list[str] | None = None) -> int:
             total += len(results)
         else:
             if results:
-                print(sep.join(str(r) for r in results))
+                sys.stdout.write(sep.join(str(r) for r in results) + "\n")
             elif not args.quiet:
                 exit_code = 1   # no match = exit 1 like grep
 
     if args.count:
-        print(total)
+        sys.stdout.write(f"{total}\n")
 
     return exit_code
 
