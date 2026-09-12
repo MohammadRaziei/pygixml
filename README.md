@@ -121,9 +121,11 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
   disk in constant memory (`stream_dump`, `stream_jsonl`)
 * **Streaming (`iterfind`, `iterdict`, `iterjsonl`)** — constant-memory,
   yxml-based incremental parsing for documents too big to load whole
-* **CLI tools** — `pygixml query` (XPath/dotted query), `pygixml
-  jsonify` (convert), `pygixml stream` (filter giant files in bounded
-  memory) — see [Command Line Tools](#command-line-tools)
+* **CLI tools** — `pygixml cat` (pretty-print/colorize), `pygixml
+  query` (XPath/dotted query), `pygixml jsonify` (convert to JSON),
+  `pygixml convert` (XML/JSON/YAML/TOON, any direction), `pygixml
+  stream` (filter giant files in bounded memory) — see
+  [Command Line Tools](#command-line-tools)
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -360,9 +362,31 @@ subcommand also works as `python -m pygixml <subcommand>`.
 
 | Subcommand | Loads | Use it for |
 |---|---|---|
+| `pygixml cat` | full DOM | pretty-print (and colorize) an XML file for the terminal — the XML analog of `bat`/`jq -C` |
 | `pygixml query` | full DOM | ad-hoc XPath / dotted queries — a `jq`/`xq`-style tool for XML you can fit in memory |
 | `pygixml jsonify` (`json` alias) | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
 | `pygixml stream` | one record at a time | filtering matches out of a file **too big to load**, bounded memory |
+| `pygixml convert` | full DOM | converting between XML, JSON, YAML, and TOON, any direction |
+
+### `pygixml cat` — pretty-print and colorize
+
+```bash
+pygixml cat data.xml                    # pretty + colorized (auto: only
+                                         # on a real terminal, and only
+                                         # if colorama is installed)
+cat data.xml | pygixml cat -            # from stdin
+pygixml cat data.xml --color always     # force color even when piped
+pygixml cat data.xml --color never      # force plain, no color
+pygixml cat data.xml --indent 4         # 4-space indent instead of 2
+
+python -m pygixml cat data.xml
+```
+
+Colorizing is fully optional — install it with `pip install
+pygixml[all]` (pulls in `colorama`, along with YAML/TOON support for
+`pygixml convert`). Without it, `cat`
+still works exactly the same, just without color: plain, pretty-printed
+XML, same as `--color never`.
 
 ### `pygixml query`
 
@@ -444,6 +468,36 @@ is either `@attr` or a child path like `customer` / `items/item/sku`
 (same syntax as `StreamElement.findtext`).
 
 ---
+
+---
+
+### `pygixml convert` — XML, JSON, YAML, TOON, any direction
+
+```bash
+pygixml convert data.xml -o data.json         # format guessed from extensions
+pygixml convert data.xml -o data.yaml
+pygixml convert data.json -o data.xml -p      # pretty XML
+pygixml convert data.yaml --to toon           # stdout needs --to explicitly
+cat data.xml | pygixml convert - --from xml --to json   # stdin needs --from too
+
+python -m pygixml convert data.xml -o data.yaml
+```
+
+Built on :class:`pygixml.formats.FormatDocument` -- a small class
+wrapping a plain dict (the same `@attr`/`#text`/list shape
+`dictify.parse` produces), with `to_json`/`to_xml`/`to_yaml`/`to_toon`
+and matching `from_*` classmethods. JSON and XML always work (stdlib
+`json` + this package's own `dictify`); YAML needs `PyYAML` and TOON
+needs [`ctoon`](https://pypi.org/project/ctoon/) (also written by the
+author of pygixml) -- both are optional, and asking for one you don't
+have gives a clear `pip install ...` error instead of crashing:
+
+```bash
+pip install pygixml[all]   # colorama (for `cat`) + PyYAML + ctoon
+```
+
+Like `cat`/`query`, this loads the whole document — for XML too big to
+fit in memory, convert with `pygixml jsonify --stream` instead.
 
 ## Advanced Features
 
@@ -606,7 +660,7 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
 | `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_jsonl` |
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
-| `pygixml query`, `pygixml jsonify`, `pygixml stream` | CLI tools — see [Command Line Tools](#command-line-tools) |
+| `pygixml cat`, `pygixml query`, `pygixml jsonify`, `pygixml convert`, `pygixml stream` | CLI tools — see [Command Line Tools](#command-line-tools) |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 

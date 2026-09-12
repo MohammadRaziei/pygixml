@@ -93,6 +93,13 @@ def _compare(actual, op: str, expected: str) -> bool:
     return False
 
 
+def _non_negative_int(s: str) -> int:
+    n = int(s)
+    if n < 0:
+        raise argparse.ArgumentTypeError(f"must be >= 0, got {n}")
+    return n
+
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Stream matching elements out of a huge XML file as JSON, "
@@ -115,7 +122,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force-list", action="append", default=None,
                     dest="force_list", metavar="TAG",
                     help="Always serialize this child tag as a list. Repeatable.")
-    p.add_argument("--limit", "-n", type=int, default=None, metavar="N",
+    p.add_argument("--limit", "-n", type=_non_negative_int, default=None, metavar="N",
                     help="Stop after N matches.")
     p.add_argument("--count", "-c", action="store_true", default=False,
                     help="Print only the number of matches.")
@@ -154,6 +161,9 @@ def main(argv: list[str] | None = None) -> int:
                            for path, op, val in conditions):
                     continue
 
+                if args.limit is not None and count >= args.limit:
+                    break
+
                 exit_code = 0
                 count += 1
 
@@ -170,9 +180,6 @@ def main(argv: list[str] | None = None) -> int:
                     out.write(line)
                     if args.format == "jsonl":
                         out.write("\n")
-
-                if args.limit is not None and count >= args.limit:
-                    break
             finally:
                 elem.clear()
 

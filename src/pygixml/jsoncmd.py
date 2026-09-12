@@ -40,6 +40,13 @@ import tempfile
 STREAM_THRESHOLD_BYTES = 64 * 1024 * 1024  # 64MB
 
 
+def _non_negative_int(s: str) -> int:
+    n = int(s)
+    if n < 0:
+        raise argparse.ArgumentTypeError(f"must be >= 0, got {n}")
+    return n
+
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Convert an XML file to JSON.",
@@ -63,7 +70,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--indent",
-        type=int,
+        type=_non_negative_int,
         default=None,
         metavar="N",
         help="Pretty-print with N-space indent (implies --pretty).",

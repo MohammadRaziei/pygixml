@@ -7,6 +7,9 @@ Subcommands:
     stream          Stream matching elements from huge XML as JSON, one record
                     at a time (bounded memory) -- like a jq/xq filter for XML
                     too large to load as a whole
+    cat             Pretty-print (and colorize, if colorama is installed) an
+                    XML file for the terminal
+    convert         Convert a file between XML, JSON, YAML, and TOON
 """
 
 import sys
@@ -33,6 +36,14 @@ def main():
         from pygixml.streamcmd import main as stream_main
         sys.exit(stream_main())
 
+    elif subcommand == "cat":
+        from pygixml.catcmd import main as cat_main
+        sys.exit(cat_main())
+
+    elif subcommand == "convert":
+        from pygixml.convertcmd import main as convert_main
+        sys.exit(convert_main())
+
     elif subcommand in ("-h", "--help", "help"):
         sys.stdout.write(__doc__.strip() + "\n")
         sys.exit(0)
@@ -44,7 +55,7 @@ def main():
 
     else:
         sys.stderr.write(f"pygixml: unknown subcommand {subcommand!r}\n")
-        sys.stderr.write("Available subcommands: query, jsonify, stream\n")
+        sys.stderr.write("Available subcommands: query, jsonify, stream, cat, convert\n")
         sys.exit(1)
 
 

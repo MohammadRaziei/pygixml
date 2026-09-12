@@ -140,6 +140,26 @@ def test_stream_limit(orders_file):
     assert len(lines) == 1
 
 
+def test_stream_limit_zero_prints_nothing(orders_file):
+    # regression test: --limit 0 used to let one match through because
+    # the limit was checked *after* printing instead of before
+    r = run("stream", orders_file, "--tag", "order", "--limit", "0")
+    assert r.stdout == ""
+    assert r.returncode == 1
+
+
+def test_stream_negative_limit_rejected(orders_file):
+    r = run("stream", orders_file, "--tag", "order", "--limit", "-1")
+    assert r.returncode == 2
+    assert "must be >= 0" in r.stderr
+
+
+def test_jsonify_negative_indent_rejected(orders_file):
+    r = run("jsonify", orders_file, "--indent", "-1")
+    assert r.returncode == 2
+    assert "must be >= 0" in r.stderr
+
+
 def test_stream_from_stdin(orders_file):
     with open(orders_file) as f:
         content = f.read()
