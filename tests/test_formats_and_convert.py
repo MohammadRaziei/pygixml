@@ -209,3 +209,12 @@ def test_convert_yaml_roundtrip_via_cli(tmp_path):
     assert r.returncode == 0, r.stderr
     r2 = run(str(yf), "--to", "json")
     assert json.loads(r2.stdout) == EXPECTED_DICT
+
+
+# --- public API exposure -------------------------------------------------
+
+def test_formats_exposed_on_pygixml_package():
+    import pygixml
+    assert pygixml.formats is not None
+    assert pygixml.formats.FormatDocument is FormatDocument
+    assert "formats" in pygixml.__all__

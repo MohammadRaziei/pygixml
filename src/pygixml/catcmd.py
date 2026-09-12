@@ -17,6 +17,7 @@ Examples::
     pygixml cat data.xml --color always   # force color even when piped
     pygixml cat data.xml --color never    # force plain, no color
     pygixml cat data.xml --indent 4       # 4-space indent instead of 2
+    pygixml cat data.xml -o pretty.xml    # write to a file instead of stdout
 
 Loads the full document (like ``pygixml query``/``pygixml jsonify``'s
 DOM mode) -- this is a tool for looking at a file, not for giant
@@ -60,7 +61,16 @@ def _build_parser() -> argparse.ArgumentParser:
              "real terminal and only if colorama is installed; "
              "'always'/'never' force it on/off.",
     )
+    p.add_argument(
+        "--output", "-o", metavar="PATH", default=None,
+        help="Write the result here instead of stdout.",
+    )
     return p
+
+
+class _NeverATTY:
+    def isatty(self) -> bool:
+        return False
 
 
 _DECL_RE = re.compile(r"^\s*(<\?xml[^>]*\?>)")
@@ -88,12 +98,21 @@ def main(argv: list[str] | None = None) -> int:
     if decl_match and not pretty.startswith("<?xml"):
         pretty = decl_match.group(1) + "\n" + pretty
 
-    enabled = _xmlcolor.should_colorize(args.color, sys.stdout)
+    # A file is never a terminal, so 'auto' should never colorize into
+    # one -- only check sys.stdout's tty-ness when we're actually
+    # writing there.
+    tty_check_target = sys.stdout if not args.output else _NeverATTY()
+    enabled = _xmlcolor.should_colorize(args.color, tty_check_target)
     out = _xmlcolor.colorize_xml(pretty, enabled)
 
-    sys.stdout.write(out)
     if not out.endswith("\n"):
-        sys.stdout.write("\n")
+        out += "\n"
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(out)
+    else:
+        sys.stdout.write(out)
     return 0
 
 

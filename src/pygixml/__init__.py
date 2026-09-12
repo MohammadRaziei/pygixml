@@ -26,6 +26,7 @@ from .pygixml_cy import (
 from . import objectify
 from . import dictify
 from . import jsonify
+from . import formats
 
 __all__ = [
     "XMLDocument",
@@ -46,4 +47,5 @@ __all__ = [
     "objectify",
     "dictify",
     "jsonify",
+    "formats",
 ]

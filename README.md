@@ -378,6 +378,8 @@ cat data.xml | pygixml cat -            # from stdin
 pygixml cat data.xml --color always     # force color even when piped
 pygixml cat data.xml --color never      # force plain, no color
 pygixml cat data.xml --indent 4         # 4-space indent instead of 2
+pygixml cat data.xml -o pretty.xml      # write to a file (never colorized
+                                         # by 'auto' -- a file isn't a tty)
 
 python -m pygixml cat data.xml
 ```

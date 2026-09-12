@@ -123,6 +123,29 @@ def test_cat_from_stdin(xml_file):
     assert "<orders>" in r.stdout
 
 
+def test_cat_output_to_file(xml_file, tmp_path):
+    out = tmp_path / "pretty.xml"
+    r = run(xml_file, "--color", "never", "-o", str(out))
+    assert r.returncode == 0, r.stderr
+    assert r.stdout == ""  # nothing on stdout when writing to a file
+    assert "<orders>" in out.read_text()
+
+
+def test_cat_output_to_file_auto_color_is_off(xml_file, tmp_path):
+    # a file is never a terminal, so --color auto (the default) must
+    # not emit ANSI codes into it even if colorama is installed
+    out = tmp_path / "pretty.xml"
+    run(xml_file, "-o", str(out))
+    assert "\x1b[" not in out.read_text()
+
+
+def test_cat_output_to_file_color_always_still_colorizes(xml_file, tmp_path):
+    out = tmp_path / "pretty.xml"
+    run(xml_file, "-o", str(out), "--color", "always")
+    if _xmlcolor.HAVE_COLORAMA:
+        assert "\x1b[" in out.read_text()
+
+
 def test_cat_content_round_trips_ignoring_whitespace_and_color(xml_file):
     r = run(xml_file, "--color", "never")
     stripped = re.sub(r"\s+", "", r.stdout)
