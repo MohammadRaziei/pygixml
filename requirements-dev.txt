@@ -9,6 +9,11 @@ wheel
 # Testing and documentation dependencies
 pytest
 pytest-cov
+# Optional feature dependencies (so their tests run instead of being
+# skipped -- see pyproject.toml's [project.optional-dependencies].all)
+colorama
+PyYAML
+ctoon
 # Documentation dependencies
 sphinx 
 furo 

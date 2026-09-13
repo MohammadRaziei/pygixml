@@ -69,7 +69,7 @@ py-api = "cp310"
 [tool.cibuildwheel]
 build = ["cp38-*", "cp39-*", "cp310-*"]
 test-command = "pytest {project}/tests"
-test-extras = ["test"]
+test-extras = ["test", "all"]
 # Ensure CI/GITHUB_ACTIONS are visible inside the manylinux/musllinux build
 # containers so Optimize.cmake correctly disables -march=native/-mtune=native.
 # Without this, cibuildwheel's Linux builds run inside a Docker container that

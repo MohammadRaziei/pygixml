@@ -6,6 +6,82 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Added
+
+- `pygixml` CLI, with five subcommands (also runnable as
+  `python -m pygixml <subcommand>`):
+  - `pygixml cat` — pretty-print (and, with `colorama` installed,
+    colorize) an XML file for the terminal.
+  - `pygixml query` — XPath / dotted-path queries from the shell.
+  - `pygixml jsonify` (`json` alias) — convert XML to JSON; streams
+    automatically for files over 64MB.
+  - `pygixml stream` — filter matching elements out of a file too
+    large to load, in bounded (one-record) memory, with a simple
+    `--where` expression language.
+  - `pygixml convert` — convert between XML, JSON, YAML, and TOON in
+    any direction.
+- `pygixml.formats.FormatDocument` — a small class wrapping a plain
+  dict with `to_json`/`to_xml`/`to_yaml`/`to_toon` and matching
+  `from_*` classmethods; YAML/TOON deps (`PyYAML`/`ctoon`) are
+  imported lazily inside each method, with a clear
+  `pip install ...` error if missing.
+- New optional extra: `pip install pygixml[all]` (`colorama` +
+  `PyYAML` + `ctoon`).
+- `py.typed` marker, so type checkers pick up the shipped `.pyi` stubs.
+- `docs/source/cli.rst` documenting all five subcommands.
+- `benchmarks/adhoc/` scripts used to verify `stream_dump`'s memory
+  and time characteristics on record-shaped XML (~17MB peak RSS,
+  flat, from 5K to 640K records).
+
+### Fixed
+
+- `jsonify.stream_dump`: a reserved placeholder byte for
+  not-yet-known-to-be-a-list fields was left in the output verbatim
+  when a tag never repeated, producing an extra space in compact
+  output and a doubled space in pretty output.
+- `jsonify.stream_dump`: converting a field to an array patched only a
+  single byte (`[`) instead of the full `[` + newline + indent
+  sequence, so the first array item landed on the wrong line in
+  pretty mode, and — when that first item was itself a nested object —
+  its interior kept the wrong (too-shallow) indentation.
+- `jsonify.stream_dump`: a closed level's own indentation was computed
+  from the raw XML nesting-stack depth instead of the level's actual
+  recorded depth, which diverges for array items (one level deeper) —
+  causing misindented closing braces.
+- `jsonify.dumps_file`/`jsonify.dumps`: the root object's own indent in
+  pretty mode was hardcoded to two spaces regardless of the requested
+  `indent` string.
+- `pygixq` CLI: argparse already split `FILE`s from `QUERY` correctly,
+  but leftover manual re-splitting logic always rejected valid
+  invocations with "Must provide at least one FILE and a QUERY."
+- `pygixq` CLI: dotted queries (`.database.entry...`) always returned
+  nothing, because the first segment (naming the document root) was
+  treated as a real child-descent step instead of an anchor.
+- `pygixml stream --limit 0`: printed one match instead of none — the
+  limit was checked *after* emitting a match instead of before.
+- `--indent`/`--limit` accepted negative values silently instead of
+  rejecting them with a clear error.
+
+### Changed
+
+- Removed the standalone `pygixq` entry point — use `pygixml query`
+  (or `python -m pygixml query`) instead.
+- Removed the standalone `pygixml-json`/`pygixml-stream` entry points —
+  use `pygixml jsonify`/`pygixml stream` instead.
+- The `json` CLI subcommand is now `jsonify` (a verb, matching the
+  underlying `pygixml.jsonify` module); `json` remains as a short
+  alias.
+- CLI output now goes through `sys.stdout.write`/`sys.stderr.write`
+  instead of `print()`, and error prefixes use the parser's own
+  (invocation-dependent) `prog` name instead of a hardcoded string.
+- CI (`cibuildwheel` and the `cmake.yml` workflow) now installs the
+  optional `all` extra / `colorama`+`PyYAML`+`ctoon`, so the
+  color/YAML/TOON tests actually run instead of being silently
+  skipped via `pytest.importorskip`.
+
+
 ## [0.12.0] - 2026-05-31
 
 ### Added

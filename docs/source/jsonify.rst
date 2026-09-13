@@ -198,20 +198,40 @@ individual elements, and no ``json`` module anywhere in the call chain.
    buffer whole subtrees to be safe, the engine writes optimistically
    and *patches the output file in place* once it learns more:
 
-   * The first time a child tag is seen under some parent, one
-     placeholder byte is reserved right before its value, and the tag
-     is written as a plain (non-array) value.
-   * A second sibling with the same tag arrives → that placeholder byte
-     is overwritten with ``[`` (an O(1) patch), and the new value is
-     appended right after the first. This is the common case for
-     record-oriented XML (same-tag siblings adjacent in the source) and
-     never moves a single byte.
-   * A *different* child tag is interleaved between two same-tag
-     siblings → the engine splices: it shifts just the interleaved
-     bytes forward (in small fixed-size chunks) to open a gap for the
-     new sibling. Cost is proportional to how much was interleaved, not
-     to the file size — and it's the only case where any data movement
-     happens at all.
+   * The first time a child tag is seen under some parent, nothing
+     extra is written at all — just its value, as a plain (non-array)
+     field. No placeholder, no reserved byte; a tag that never repeats
+     costs nothing beyond its own content.
+   * A second sibling with the same tag arrives:
+
+     - If it's *adjacent* to the first (the common case for
+       record-oriented XML — same-tag siblings next to each other in
+       the source), the engine inserts the opening ``[`` and the new
+       value right where the first value ended — an O(1) operation,
+       and the only one this case ever needs.
+     - If a *different* child tag was interleaved in between, the
+       engine splices: it shifts the interleaved bytes forward (in
+       fixed-size chunks) to open room for ``[`` and the new value.
+       Cost is proportional to how much was interleaved *that one
+       time*, not to the file size.
+
+   **Time complexity in practice.** For the shape almost all
+   record-oriented giant XML actually has — one repeated tag per
+   nesting level, as in ``<orders><order>...</order>...</orders>`` —
+   every sibling after the first lands via the O(1) adjacent case
+   above, so the whole conversion is O(n). It degrades towards O(n²)
+   only in an adversarial shape: two or more *different* tags
+   repeating and interleaving at the *same* level for many iterations
+   (e.g. ``<a>1</a><b>1</b><a>2</a><b>2</b>...`` with no wrapping
+   element around each pair) — there, every catch-up splice for one
+   tag has to shift past the other tag's *entire, still-growing*
+   field, and that cost compounds across iterations. If that's
+   genuinely your data's shape, :func:`~pygixml.jsonify.stream_jsonl`
+   below sidesteps the problem entirely by not trying to preserve a
+   single JSON document at all. Memory stays O(1) — a small fixed
+   scratch buffer plus one bookkeeping entry per currently-open
+   distinct tag — regardless of which case applies; only the *time*
+   bound changes.
 
    .. code-block:: python
 

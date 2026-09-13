@@ -3,7 +3,8 @@ API Reference
 
 This page documents every public class, method, property, and function in
 pygixml.  For high-level usage guides see :doc:`quickstart`, :doc:`objectify`,
-and :doc:`dictify`.
+and :doc:`dictify`; for the command-line tools built on top of this API, see
+:doc:`cli`.
 
 ----
 
@@ -54,6 +55,16 @@ jsonify
 -------
 
 .. automodule:: pygixml.jsonify
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+----
+
+formats
+-------
+
+.. automodule:: pygixml.formats
    :members:
    :undoc-members:
    :show-inheritance:

@@ -20,6 +20,24 @@ Verify the installation:
    import pygixml
    print(f"pygixml version: {pygixml.__version__}")
 
+Optional Extras
+----------------
+
+Everything above works out of the box with zero dependencies. A few
+things in the :doc:`command-line tools <cli>` are opt-in, on top:
+
+.. code-block:: bash
+
+   pip install pygixml[all]
+
+This pulls in `colorama <https://pypi.org/project/colorama/>`_ (for
+``pygixml cat``'s syntax coloring), `PyYAML
+<https://pypi.org/project/PyYAML/>`_, and `ctoon
+<https://pypi.org/project/ctoon/>`_ (both for ``pygixml convert``'s
+YAML/TOON support). None of them are required for anything else —
+asking for a format or feature you don't have the package for gives a
+clear error telling you what to install, not a crash.
+
 For Developers
 --------------
 

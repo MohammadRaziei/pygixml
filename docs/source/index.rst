@@ -13,6 +13,9 @@ result is a faster, constant-memory alternative to
 `xmltodict <https://github.com/martinblech/xmltodict>`_ — everything
 they do, plus a streaming layer neither of them has, which is what
 makes pygixml the package to reach for once a dataset gets *massive*.
+It also ships a full set of :doc:`command-line tools <cli>` --
+``pygixml cat``/``query``/``jsonify``/``stream``/``convert`` -- so a
+lot of this is available without writing any Python at all.
 
 New to XML?  Start with :doc:`xml_basics` for a primer on the format, its
 structure, and real-world applications.
@@ -232,6 +235,7 @@ Documentation Contents
    jsonify
    streaming
    xpath
+   cli
    advanced
    examples
    performance
