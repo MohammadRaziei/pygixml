@@ -59,7 +59,7 @@ jobs:
           merge-multiple: true
 
       - name: Create or update release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.init.outputs.release_name }}
           name: ${{ needs.init.outputs.release_name }}
@@ -67,6 +67,7 @@ jobs:
           prerelease: ${{ needs.init.outputs.is_tag == 'false' }}
           files: dist/*
           token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
 
       - name: Publishing to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
