@@ -36,7 +36,7 @@ requires-python = ">=3.8"
 all = [
     "colorama",
     "PyYAML",
-    "ctoon",
+    "ctoon>=0.7.0; python_version >= '3.9'",
 ]
 test = [
     "pytest>=7.0.0",

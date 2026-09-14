@@ -13,7 +13,7 @@ pytest-cov
 # skipped -- see pyproject.toml's [project.optional-dependencies].all)
 colorama
 PyYAML
-ctoon
+ctoon>=0.7.0; python_version >= '3.9'
 # Documentation dependencies
 sphinx 
 furo 

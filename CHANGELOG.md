@@ -80,6 +80,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   optional `all` extra / `colorama`+`PyYAML`+`ctoon`, so the
   color/YAML/TOON tests actually run instead of being silently
   skipped via `pytest.importorskip`.
+- `ctoon` is now `ctoon>=0.7.0; python_version >= '3.9'`: ctoon has no
+  cp38 wheel, so pip was silently resolving to `ctoon==0.0.1` (an
+  unrelated placeholder release with no real API) on that interpreter
+  and failing at call time (`AttributeError: module 'ctoon' has no
+  attribute 'dumps'`) instead of just not installing it.
 
 
 ## [0.12.0] - 2026-05-31
