@@ -1,0 +1,9 @@
+# Competitors benchmarked against pygixml
+# (ElementTree needs no entry -- it's in the Python standard library)
+lxml
+xmltodict
+xmljson
+
+# Benchmark tooling
+pip-size            # github.com/MohammadRaziei/pip-size -- real install-size comparison
+jinja2               # renders the standalone HTML report
