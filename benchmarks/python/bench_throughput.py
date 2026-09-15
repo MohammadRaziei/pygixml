@@ -131,12 +131,16 @@ if __name__ == "__main__":
     import sys
 
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("manifest", help="JSON manifest from corpus.py (list of {genre,size,path,bytes})")
+    p.add_argument("manifests", nargs="+",
+                    help="one or more JSON manifests from corpus.py / real_corpus_manifest.py "
+                         "(each a list of {genre,size,path,bytes}); merged together")
     p.add_argument("output", help="path to write results JSON")
     args = p.parse_args()
 
-    with open(args.manifest, "r", encoding="utf-8") as f:
-        manifest = _json.load(f)
+    manifest = []
+    for m_path in args.manifests:
+        with open(m_path, "r", encoding="utf-8") as f:
+            manifest.extend(_json.load(f))
 
     result = run(manifest)
 

@@ -12,16 +12,29 @@ pip-size can meaningfully quantify.
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
 
 PACKAGES = ["pygixml", "lxml", "xmltodict", "xmljson"]
 
 
+def _pip_size_command():
+    """Resolve pip-size next to the current interpreter first (works
+    whether or not this venv's bin/ is on PATH -- CMake invokes the
+    venv's python directly, without activating it), falling back to
+    plain PATH lookup."""
+    bin_dir = os.path.dirname(os.path.abspath(sys.executable))
+    candidate = os.path.join(bin_dir, "pip-size.exe" if os.name == "nt" else "pip-size")
+    if os.path.exists(candidate):
+        return candidate
+    return "pip-size"
+
+
 def _pip_size(package):
     try:
         out = subprocess.run(
-            ["pip-size", package, "--json", "--quiet"],
+            [_pip_size_command(), package, "--json", "--quiet"],
             capture_output=True, text=True, timeout=60, check=True,
         )
         data = json.loads(out.stdout)

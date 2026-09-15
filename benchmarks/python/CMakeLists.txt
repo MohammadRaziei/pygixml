@@ -1,0 +1,193 @@
+set(PY_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(VENV_DIR "${CMAKE_CURRENT_BINARY_DIR}/venv")
+set(RESULTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/results")
+set(SCRATCH_DIR "${CMAKE_CURRENT_BINARY_DIR}/scratch")
+
+if(WIN32)
+  set(VENV_PYTHON "${VENV_DIR}/Scripts/python.exe")
+else()
+  set(VENV_PYTHON "${VENV_DIR}/bin/python")
+endif()
+
+file(MAKE_DIRECTORY "${RESULTS_DIR}")
+file(MAKE_DIRECTORY "${SCRATCH_DIR}")
+
+# ---------------------------------------------------------------- venv --
+# Self-contained: pygixml itself is installed from a fresh git
+# checkout (PYGIXML_BENCH_GITHUB_URL), not from the local ../../src --
+# this directory never imports anything from the parent project.
+
+set(VENV_STAMP "${CMAKE_CURRENT_BINARY_DIR}/.venv_ready")
+
+add_custom_command(
+  OUTPUT "${VENV_STAMP}"
+  COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
+  COMMAND "${VENV_PYTHON}" -m pip install --upgrade pip --quiet
+  COMMAND "${VENV_PYTHON}" -m pip install -r "${PY_DIR}/requirements.txt" --quiet
+  COMMAND "${VENV_PYTHON}" -m pip install --force-reinstall --no-deps "${PYGIXML_BENCH_GITHUB_URL}" --quiet
+  COMMAND ${CMAKE_COMMAND} -E touch "${VENV_STAMP}"
+  DEPENDS "${PY_DIR}/requirements.txt"
+  COMMENT "pygixml benchmarks: creating venv, installing competitors + pygixml from ${PYGIXML_BENCH_GITHUB_URL}"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_venv DEPENDS "${VENV_STAMP}")
+
+# -------------------------------------------------------------- corpus --
+
+set(CORPUS_DIR "${SCRATCH_DIR}/corpus")
+set(CORPUS_MANIFEST "${CORPUS_DIR}/manifest.json")
+
+add_custom_command(
+  OUTPUT "${CORPUS_MANIFEST}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/corpus.py" "${CORPUS_DIR}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/corpus.py"
+  COMMENT "pygixml benchmarks: generating the synthetic corpus"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_corpus DEPENDS "${CORPUS_MANIFEST}")
+
+# --------------------------------------------------------- real corpus --
+# PYGIXML_REAL_CORPUS_DIR comes from FetchRealCorpus.cmake (included by
+# the parent CMakeLists.txt before add_subdirectory(python)) -- empty
+# if the download failed, in which case this target is skipped and
+# bench_throughput just runs on the synthetic corpus alone.
+
+set(REAL_CORPUS_XML_DIR "${SCRATCH_DIR}/real_corpus")
+set(REAL_CORPUS_MANIFEST "${REAL_CORPUS_XML_DIR}/manifest.json")
+set(THROUGHPUT_MANIFESTS "${CORPUS_MANIFEST}")
+
+if(PYGIXML_REAL_CORPUS_DIR)
+  add_custom_command(
+    OUTPUT "${REAL_CORPUS_MANIFEST}"
+    COMMAND "${VENV_PYTHON}" "${PY_DIR}/real_corpus_manifest.py"
+            "${PYGIXML_REAL_CORPUS_DIR}" "${REAL_CORPUS_XML_DIR}" "${REAL_CORPUS_MANIFEST}"
+    DEPENDS "${VENV_STAMP}" "${PY_DIR}/real_corpus_manifest.py"
+    COMMENT "pygixml benchmarks: indexing the real-world corpus (Bootstrap Icons SVGs)"
+    USES_TERMINAL
+  )
+  add_custom_target(pygixml_bench_real_corpus DEPENDS "${REAL_CORPUS_MANIFEST}")
+  list(APPEND THROUGHPUT_MANIFESTS "${REAL_CORPUS_MANIFEST}")
+else()
+  add_custom_target(pygixml_bench_real_corpus
+    COMMENT "pygixml benchmarks: real corpus unavailable (download failed) -- skipping"
+  )
+endif()
+
+# ---------------------------------------------------------------- sizes --
+
+set(SIZES_JSON "${RESULTS_DIR}/sizes.json")
+
+add_custom_command(
+  OUTPUT "${SIZES_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_sizes.py" "${SIZES_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_sizes.py"
+  COMMENT "pygixml benchmarks: comparing install footprint (pip-size)"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_sizes DEPENDS "${SIZES_JSON}")
+
+# ----------------------------------------------------------- throughput --
+
+set(THROUGHPUT_JSON "${RESULTS_DIR}/throughput.json")
+
+add_custom_command(
+  OUTPUT "${THROUGHPUT_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_throughput.py" ${THROUGHPUT_MANIFESTS} "${THROUGHPUT_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_throughput.py" "${CORPUS_MANIFEST}"
+          "$<$<BOOL:${PYGIXML_REAL_CORPUS_DIR}>:${REAL_CORPUS_MANIFEST}>"
+  COMMENT "pygixml benchmarks: parse + xml-to-json throughput, all libraries"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_throughput DEPENDS "${THROUGHPUT_JSON}")
+add_dependencies(pygixml_bench_throughput pygixml_bench_corpus pygixml_bench_real_corpus)
+
+# -------------------------------------------------------------- scaling --
+
+set(SCALING_JSON "${RESULTS_DIR}/scaling.json")
+
+add_custom_command(
+  OUTPUT "${SCALING_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_scaling.py" "${SCALING_JSON}"
+          --tmp-dir "${SCRATCH_DIR}/scaling"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_scaling.py" "${PY_DIR}/corpus.py"
+  COMMENT "pygixml benchmarks: time vs N (records shape vs interleaved shape)"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_scaling DEPENDS "${SCALING_JSON}")
+
+# --------------------------------------------------------------- memory --
+# See bench_memory_gen.py's docstring for why this is three separate
+# steps (generate, then one fresh process per data point, then
+# aggregate) instead of one script with a loop: a long-running Python
+# driver's own memory growth contaminates ru_maxrss for anything it
+# later forks -- measurement processes must be spawned by something
+# that's never touched the corpus, i.e. CMake/the shell, not Python.
+
+set(MEMORY_SIZES 5000 20000 80000 320000)
+set(MEMORY_APPROACHES pygixml_stream_dump pygixml_dom lxml_plus_xmljson xmltodict)
+
+string(REPLACE ";" "," MEMORY_SIZES_CSV "${MEMORY_SIZES}")
+set(MEMORY_GEN_DIR "${SCRATCH_DIR}/memory_inputs")
+set(MEMORY_GEN_MANIFEST "${MEMORY_GEN_DIR}/manifest.json")
+
+add_custom_command(
+  OUTPUT "${MEMORY_GEN_MANIFEST}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_memory_gen.py" "${MEMORY_GEN_DIR}" --sizes "${MEMORY_SIZES_CSV}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_memory_gen.py" "${PY_DIR}/corpus.py"
+  COMMENT "pygixml benchmarks: writing memory-benchmark input files (${MEMORY_SIZES_CSV} records)"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_memory_gen DEPENDS "${MEMORY_GEN_MANIFEST}")
+
+set(MEMORY_POINTS_DIR "${SCRATCH_DIR}/memory_points")
+file(MAKE_DIRECTORY "${MEMORY_POINTS_DIR}")
+set(MEMORY_POINT_JSONS "")
+
+foreach(_n ${MEMORY_SIZES})
+  foreach(_approach ${MEMORY_APPROACHES})
+    set(_xml "${MEMORY_GEN_DIR}/records_${_n}.xml")
+    set(_scratch_out "${SCRATCH_DIR}/memory_scratch_${_approach}_${_n}.json")
+    set(_point_json "${MEMORY_POINTS_DIR}/${_approach}_${_n}.json")
+    add_custom_command(
+      OUTPUT "${_point_json}"
+      COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_memory_one.py"
+              "${_approach}" "${_xml}" "${_scratch_out}" "${_point_json}" --n "${_n}"
+      DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_memory_one.py" "${MEMORY_GEN_MANIFEST}"
+      COMMENT "pygixml benchmarks: memory, ${_approach}, n=${_n}"
+      USES_TERMINAL
+    )
+    list(APPEND MEMORY_POINT_JSONS "${_point_json}")
+  endforeach()
+endforeach()
+
+set(MEMORY_JSON "${RESULTS_DIR}/memory.json")
+
+add_custom_command(
+  OUTPUT "${MEMORY_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_memory_aggregate.py" "${MEMORY_POINTS_DIR}" "${MEMORY_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_memory_aggregate.py" ${MEMORY_POINT_JSONS}
+  COMMENT "pygixml benchmarks: combining memory data points"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_memory DEPENDS "${MEMORY_JSON}")
+
+# ------------------------------------------------------------- features --
+
+set(FEATURES_JSON "${RESULTS_DIR}/features.json")
+
+add_custom_command(
+  OUTPUT "${FEATURES_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/features.py" "${FEATURES_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/features.py"
+  COMMENT "pygixml benchmarks: writing the feature comparison matrix"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_features DEPENDS "${FEATURES_JSON}")
+
+# Expose to the parent scope (report/CMakeLists.txt needs these paths)
+set(PYGIXML_BENCH_RESULTS_SCRATCH_DIR "${RESULTS_DIR}" PARENT_SCOPE)
+set(PYGIXML_BENCH_VENV_PYTHON "${VENV_PYTHON}" PARENT_SCOPE)
+set(PYGIXML_BENCH_VENV_STAMP "${VENV_STAMP}" PARENT_SCOPE)
+set(PYGIXML_BENCH_ALL_RESULT_JSONS
+    "${THROUGHPUT_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${FEATURES_JSON}"
+    PARENT_SCOPE)

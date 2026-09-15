@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pygixml Benchmarks</title>
+<style>
+:root {
+  --bg: #0b0e14;
+  --bg-panel: #12161f;
+  --bg-panel-2: #171c28;
+  --border: #232938;
+  --text: #e6e9ef;
+  --text-dim: #8b93a7;
+  --accent: #5b8cff;
+  --accent-2: #35d0ba;
+  --warn: #ffb454;
+  --bad: #ff6b81;
+  --good: #35d0ba;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ---- Hero ---- */
+.hero {
+  padding: 90px 24px 70px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(91,140,255,0.20), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.hero .eyebrow {
+  font-size: 13px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.hero h1 {
+  font-size: clamp(28px, 4.4vw, 48px);
+  line-height: 1.18;
+  margin: 0 auto 20px;
+  max-width: 880px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.hero h1 .hl { color: var(--accent); }
+.hero p.sub {
+  color: var(--text-dim);
+  font-size: 17px;
+  max-width: 660px;
+  margin: 0 auto;
+}
+.hero .meta {
+  margin-top: 28px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* ---- Sections ---- */
+section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+section:last-of-type { border-bottom: none; }
+.kicker {
+  font-size: 12.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+h2 { font-size: 27px; margin: 0 0 12px; letter-spacing: -0.01em; }
+.lede { color: var(--text-dim); font-size: 16px; max-width: 740px; margin: 0 0 32px; }
+.lede strong { color: var(--text); font-weight: 650; }
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px;
+  margin-bottom: 22px;
+}
+.panel h3 { margin: 0 0 4px; font-size: 16px; }
+.panel .panel-note { color: var(--text-dim); font-size: 13.5px; margin: 0 0 18px; }
+.chart-box { position: relative; height: 340px; }
+.chart-box.tall { height: 420px; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.stat {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 20px;
+}
+.stat .num { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+.stat .num.good { color: var(--good); }
+.stat .num.bad { color: var(--bad); }
+.stat .label { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- Tables ---- */
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-dim); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; }
+td.num, th.num { text-align: right; font-family: var(--mono); }
+tr:last-child td { border-bottom: none; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 6px;
+}
+.badge.yes { background: rgba(53,208,186,0.15); color: var(--good); }
+.badge.no  { background: rgba(255,107,129,0.12); color: var(--bad); }
+.badge.partial { background: rgba(255,180,84,0.15); color: var(--warn); }
+
+.feature-table td:first-child { color: var(--text); font-weight: 550; white-space: nowrap; }
+.feature-table .fnote { display:block; color: var(--text-dim); font-weight: 400; font-size: 12px; margin-top: 2px; }
+.feature-table td, .feature-table th { text-align: center; }
+.feature-table td:first-child, .feature-table th:first-child { text-align: left; }
+
+/* ---- Methodology callout ---- */
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--bg-panel-2);
+  border-radius: 0 10px 10px 0;
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 20px 0;
+}
+.callout strong { color: var(--text); }
+.callout.warn { border-left-color: var(--warn); }
+
+/* ---- Downloads ---- */
+.downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.dl-btn:hover { border-color: var(--accent); background: #1a2030; }
+.dl-btn svg { width: 14px; height: 14px; flex: none; }
+
+footer {
+  padding: 40px 0 20px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+.legend-note { font-size: 12.5px; color: var(--text-dim); margin-top: 10px; }
+code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="eyebrow">pygixml benchmark report &middot; generated {{ generated_at }}</div>
+  <h1>{{ headline | safe }}</h1>
+  <p class="sub">{{ subhead | safe }}</p>
+  <div class="meta">{{ meta_line }}</div>
+</div>
+
+<div class="wrap">
+
+<!-- ========================= MEMORY STORY ========================= -->
+<section id="memory">
+  <div class="kicker">The headline number</div>
+  <h2>Peak memory: flat vs. proportional-to-file-size</h2>
+  <p class="lede">
+    Every library here that builds a DOM (or an equivalent in-memory dict/tree)
+    uses more RAM as the input file grows &mdash; that's unavoidable if you hold
+    the whole structure in memory. <strong>pygixml.jsonify.stream_dump</strong>
+    is the one exception: it converts XML straight to JSON without ever building
+    a tree, so its memory use doesn't move. Each point below was measured in a
+    fresh, isolated process (see methodology).
+  </p>
+
+  <div class="stat-grid">
+    {% for s in memory_stats %}
+    <div class="stat">
+      <div class="num {{ s.cls }}">{{ s.value }}</div>
+      <div class="label">{{ s.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="panel">
+    <h3>Peak RSS vs. input size</h3>
+    <p class="panel-note">Log scale on both axes &mdash; the gap is too large to read on a linear one.</p>
+    <div class="chart-box tall"><canvas id="chart-memory"></canvas></div>
+  </div>
+</section>
+
+<!-- ========================= SCALING STORY ========================= -->
+<section id="scaling">
+  <div class="kicker">Under the hood, honestly</div>
+  <h2>Time complexity: the case that flatters us, and the one that doesn't</h2>
+  <p class="lede">
+    <strong>stream_dump</strong> writes optimistically and patches the output
+    file in place once it learns a tag repeats. For the shape almost all real
+    giant XML actually has &mdash; one repeated tag per nesting level, like
+    <code>&lt;orders&gt;&lt;order&gt;...&lt;/order&gt;...&lt;/orders&gt;</code>
+    &mdash; that's O(n). We also generate the one shape where it isn't: two
+    different tags repeating and interleaving at the same level. We're
+    showing that curve here on purpose, not just citing it in the docs.
+  </p>
+
+  <div class="panel">
+    <h3>Time vs. N, by shape</h3>
+    <p class="panel-note">Same operation (<code>jsonify.stream_dump</code>), two different input shapes.</p>
+    <div class="chart-box tall"><canvas id="chart-scaling"></canvas></div>
+    <p class="legend-note">{{ scaling_note | safe }}</p>
+  </div>
+
+  {% if scaling_dom_available %}
+  <div class="panel">
+    <h3>Records-shape XML &rarr; JSON, DOM-based approaches</h3>
+    <p class="panel-note">For reference: everyone's roughly-linear time on the realistic shape, at moderate N.</p>
+    <div class="chart-box"><canvas id="chart-scaling-dom"></canvas></div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ========================= THROUGHPUT ========================= -->
+<section id="throughput">
+  <div class="kicker">Speed, at realistic sizes</div>
+  <h2>XML &rarr; JSON, string in to string out</h2>
+  <p class="lede">
+    The end-to-end operation most people actually want: an XML string in,
+    a JSON string out, however each library gets there internally.
+    <strong>ElementTree has no built-in dict/JSON conversion at all</strong>
+    &mdash; that's a real gap for it, not an oversight in this chart.
+  </p>
+
+  <div class="panel">
+    <h3>xml &rarr; json, best of {{ repeats }} runs</h3>
+    <p class="panel-note">Lower is better. One chart per corpus size; genres grouped within it.</p>
+    <div class="chart-box tall"><canvas id="chart-throughput"></canvas></div>
+  </div>
+
+  <div class="panel">
+    <h3>Parsing only (build a tree, discard it)</h3>
+    <p class="panel-note">xmltodict/xmljson have no separate "parse to a tree" step, so they don't appear here.</p>
+    <div class="chart-box"><canvas id="chart-parse"></canvas></div>
+  </div>
+</section>
+
+<!-- ========================= SIZE ========================= -->
+<section id="size">
+  <div class="kicker">Footprint</div>
+  <h2>What you actually download</h2>
+  <p class="lede">
+    Real wheel sizes for the current platform, via
+    <a href="https://github.com/MohammadRaziei/pip-size" style="color:var(--accent)">pip-size</a>
+    &mdash; no downloads, no installs, just resolving PyPI's index.
+    ElementTree needs nothing: it ships with Python itself.
+  </p>
+  <div class="panel">
+    <div class="chart-box"><canvas id="chart-size"></canvas></div>
+  </div>
+</section>
+
+<!-- ========================= FEATURES ========================= -->
+<section id="features">
+  <div class="kicker">Beyond speed</div>
+  <h2>What each library can actually do</h2>
+  <p class="lede">
+    Speed and memory aren't the whole story. This is a factual capability
+    comparison, not a benchmark &mdash; see <code>benchmarks/python/features.py</code>
+    for sourcing.
+  </p>
+  <div class="panel">
+    <table class="feature-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          {% for lib in libraries %}<th>{{ lib_labels[lib] }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in features %}
+        <tr>
+          <td>{{ row.feature }}{% if row.note %}<span class="fnote">{{ row.note }}</span>{% endif %}</td>
+          {% for lib in libraries %}
+          {% set cell = row['values'][lib] %}
+          <td>
+            <span class="badge {{ cell.value }}">{{ badge_symbol[cell.value] }}</span>
+            {% if cell.detail %}<span class="fnote">{{ cell.detail }}</span>{% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========================= METHODOLOGY / DOWNLOADS ========================= -->
+<section id="methodology">
+  <div class="kicker">Methodology</div>
+  <h2>How this was measured</h2>
+  <div class="callout">
+    <strong>Corpus:</strong> synthetic but realistic, generated deterministically
+    (seeded) across several genres &mdash; RSS-style feeds, product catalogs,
+    deep config trees, flat record lists &mdash; at several sizes, plus a wide
+    N-sweep for the scaling/memory story. Not fetched from a real-world dataset;
+    see <code>benchmarks/python/corpus.py</code> for exactly how and why.
+  </div>
+  <div class="callout">
+    <strong>Timing:</strong> best (minimum) wall-clock time over {{ repeats }} repeats per
+    (library, corpus entry) cell &mdash; standard practice for micro-benchmarks.
+  </div>
+  <div class="callout warn">
+    <strong>Memory:</strong> each data point is measured in a freshly-spawned,
+    isolated process. This mattered more than expected: on Linux, a forked
+    child's <code>ru_maxrss</code> is not reset by <code>execve()</code>, so
+    measuring several sizes from one long-running Python driver silently
+    reports the <em>driver's</em> memory growth, not the operation's. See
+    <code>benchmarks/python/bench_memory_gen.py</code>'s docstring for the full
+    story &mdash; we hit this bug building this exact report.
+  </div>
+
+  <h3 style="margin-top:32px;">Raw data</h3>
+  <p class="lede" style="margin-bottom:0;">Every chart above is built from these files, embedded in this page &mdash; nothing here required a server.</p>
+  <div class="downloads">
+    {% for name, _ in downloads %}
+    <button class="dl-btn" onclick="downloadJSON('{{ name }}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      {{ name }}.json
+    </button>
+    {% endfor %}
+  </div>
+</section>
+
+</div>
+
+<footer>
+  Generated by <code>benchmarks/report/generate_report.py</code> &middot;
+  <a href="https://github.com/MohammadRaziei/pygixml">github.com/MohammadRaziei/pygixml</a>
+</footer>
+
+<script>window.PYGIXML_CHART_LIB_LOADING = true;</script>
+<script>
+{{ chartjs_source | safe }}
+</script>
+
+<script id="pygixml-data" type="application/json">
+{{ embedded_json | safe }}
+</script>
+
+<script>
+const DATA = JSON.parse(document.getElementById('pygixml-data').textContent);
+
+function downloadJSON(name) {
+  const blob = new Blob([JSON.stringify(DATA[name], null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+const PALETTE = {
+  pygixml: '#5b8cff',
+  pygixml_stream_dump: '#5b8cff',
+  pygixml_dom: '#7aa2ff',
+  lxml: '#ff6b81',
+  lxml_plus_xmljson: '#ff6b81',
+  elementtree: '#ffb454',
+  xmltodict: '#35d0ba',
+  xmljson: '#b98bff',
+};
+Chart.defaults.color = '#8b93a7';
+Chart.defaults.borderColor = '#232938';
+Chart.defaults.font.family = "-apple-system, 'Segoe UI', sans-serif";
+
+{{ chart_scripts | safe }}
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ nothing inflated to inherit.
 """
 import argparse
 import json
+import os
 import resource
 import sys
 
@@ -80,6 +81,7 @@ def main():
     result = {
         "approach": args.approach,
         "n": args.n,
+        "bytes": os.path.getsize(args.xml_path),
         "available": True,
         "peak_rss_mb": peak_kb / 1024.0,
     }
