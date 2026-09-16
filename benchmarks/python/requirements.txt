@@ -7,3 +7,4 @@ xmljson
 # Benchmark tooling
 pip-size            # github.com/MohammadRaziei/pip-size -- real install-size comparison
 jinja2               # renders the standalone HTML report
+tqdm                 # progress bars for the longer-running sweeps (throughput, scaling)

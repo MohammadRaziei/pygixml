@@ -55,6 +55,12 @@ import gc
 import json
 import time
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(iterable, **kwargs):
+        return iterable
+
 REPEATS = 7
 
 
@@ -107,7 +113,7 @@ def run(manifest):
 
     results = []
 
-    for entry in manifest:
+    for entry in tqdm(manifest, desc="bench_throughput", unit="file"):
         with open(entry["path"], "r", encoding="utf-8") as f:
             xml_text = f.read()
         xml_bytes = xml_text.encode("utf-8")

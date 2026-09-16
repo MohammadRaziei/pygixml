@@ -31,6 +31,12 @@ import gc
 import json
 import time
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(iterable, **kwargs):
+        return iterable
+
 from corpus import gen_records, gen_interleaved
 
 RECORD_NS = [500, 2000, 8000, 32000, 128000]
@@ -67,9 +73,9 @@ def run(tmp_dir):
     xml_path = os.path.join(tmp_dir, "scaling_input.xml")
     json_path = os.path.join(tmp_dir, "scaling_output.json")
 
-    def stream_dump_curve(gen_fn, ns):
+    def stream_dump_curve(gen_fn, ns, desc):
         points = []
-        for n in ns:
+        for n in tqdm(ns, desc=desc, unit="size"):
             xml = gen_fn(n)
             with open(xml_path, "w", encoding="utf-8") as f:
                 f.write(xml)
@@ -79,14 +85,14 @@ def run(tmp_dir):
 
     result = {
         "pygixml_stream_dump": {
-            "records_shape": stream_dump_curve(gen_records, RECORD_NS),
-            "interleaved_shape": stream_dump_curve(gen_interleaved, INTERLEAVED_NS),
+            "records_shape": stream_dump_curve(gen_records, RECORD_NS, "scaling: records shape"),
+            "interleaved_shape": stream_dump_curve(gen_interleaved, INTERLEAVED_NS, "scaling: interleaved shape"),
         },
         "dom_competitors_records_shape": {},
     }
 
     # DOM competitors, records shape only (the realistic one), moderate N
-    for name, available, fn in [
+    for name, available, fn in tqdm([
         ("pygixml_dom", True, lambda xml: jsonify.dumps(xml)),
         ("lxml_plus_xmljson", have_lxml and have_xmljson,
          (lambda xml: json.dumps(__import__("xmljson").parker.data(
@@ -95,12 +101,12 @@ def run(tmp_dir):
         ("xmltodict", have_xmltodict,
          (lambda xml: json.dumps(__import__("xmltodict").parse(xml)))
          if have_xmltodict else None),
-    ]:
+    ], desc="scaling: DOM competitors", unit="lib"):
         if not available:
             result["dom_competitors_records_shape"][name] = {"available": False}
             continue
         points = []
-        for n in DOM_COMPETITOR_NS:
+        for n in tqdm(DOM_COMPETITOR_NS, desc=f"scaling: {name}", unit="size", leave=False):
             xml = gen_records(n)
             t = _time_once(lambda: fn(xml))
             points.append({"n": n, "bytes": len(xml.encode("utf-8")), "seconds": t})
