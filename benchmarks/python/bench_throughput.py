@@ -1,16 +1,38 @@
 """
-bench_throughput.py — parse and XML→JSON throughput, across every
+bench_throughput.py — parse and conversion throughput, across every
 genre/size in the corpus, for every library that's installed.
 
-Two operations, run independently (a library can be fast at one and
-slow at the other):
+pygixml is not "a JSON library" -- it's a set of independent
+conversion layers on top of the same pugixml-backed core (raw DOM,
+dict, lazy object, JSON, streaming). Each layer gets its own fair,
+apples-to-apples operation below instead of being collapsed into a
+single "xml_to_json" number, so dictify/objectify aren't invisible
+just because they don't happen to produce JSON.
+
+Four operations, run independently (a library can be fast at one and
+slow at another):
 
   parse        Build a tree from the XML string and discard it. Only
-               libraries with a real DOM concept participate: pygixml,
-               lxml, ElementTree. (xmltodict/xmljson don't expose a
-               separate "parse to a tree" step distinct from
-               "parse straight to dict" -- they're XML-to-dict
-               converters, not DOM libraries.)
+               libraries with a real DOM concept participate: pygixml
+               (raw pugixml tree), lxml, ElementTree.
+
+  dict_convert XML string in, plain dict out.
+                 - pygixml.dictify.parse   (matches xmltodict's own
+                                             convention -- @-prefixed
+                                             attrs, #text for mixed
+                                             content -- by design, so
+                                             the two are directly
+                                             comparable, not just
+                                             "both produce a dict")
+                 - xmltodict.parse          (its whole purpose)
+
+  to_object    XML string in, a lazy attribute-style object out
+               (root.child.grandchild, not a materialized dict/tree).
+                 - pygixml.objectify.from_string
+                 - lxml.objectify.fromstring (lxml ships a real
+                                               objectify submodule --
+                                               this is a genuine,
+                                               not improvised, match)
 
   xml_to_json  The end-to-end operation most people actually want: XML
                *string* in, JSON *string* out, however the library
@@ -58,13 +80,17 @@ def _try(label, fn):
 
 def run(manifest):
     import pygixml
-    from pygixml import jsonify
+    from pygixml import jsonify, dictify, objectify
 
     have_lxml = have_et = have_xmltodict = have_xmljson = True
     try:
         import lxml.etree as LET
     except ImportError:
         have_lxml = False
+    try:
+        import lxml.objectify as LOBJ
+    except ImportError:
+        LOBJ = None
     try:
         import xml.etree.ElementTree as ET
     except ImportError:
@@ -97,6 +123,25 @@ def run(manifest):
             parse["elementtree"] = _try("parse", lambda: ET.fromstring(xml_text))
         row["parse"] = parse
 
+        # ---- dict_convert ----
+        # Same convention on both sides (@attr, #text) -- a genuinely
+        # fair like-for-like, not "both happen to produce a dict".
+        d2d = {}
+        d2d["pygixml"] = _try("dict_convert", lambda: dictify.parse(xml_text))
+        if have_xmltodict:
+            d2d["xmltodict"] = _try("dict_convert", lambda: xmltodict.parse(xml_text))
+        row["dict_convert"] = d2d
+
+        # ---- to_object ----
+        # Lazy attribute-style access, not a materialized dict/tree --
+        # its own distinct approach, benchmarked against lxml's own
+        # objectify submodule (a real feature match, not an improvised one).
+        o2o = {}
+        o2o["pygixml"] = _try("to_object", lambda: objectify.from_string(xml_text))
+        if have_lxml and LOBJ is not None:
+            o2o["lxml"] = _try("to_object", lambda: LOBJ.fromstring(xml_bytes))
+        row["to_object"] = o2o
+
         # ---- xml_to_json ----
         x2j = {}
         x2j["pygixml"] = _try("xml_to_json", lambda: jsonify.dumps(xml_text))
@@ -117,6 +162,8 @@ def run(manifest):
     return {
         "operation_notes": {
             "parse": "build a tree from the XML string, discard it",
+            "dict_convert": "XML string in, plain dict out (same @attr/#text convention both sides)",
+            "to_object": "XML string in, lazy attribute-style object out",
             "xml_to_json": "XML string in, JSON string out, end to end",
         },
         "repeats": REPEATS,
@@ -147,7 +194,8 @@ if __name__ == "__main__":
     with open(args.output, "w", encoding="utf-8") as f:
         _json.dump(result, f, indent=2)
 
-    n_libs = len({lib for row in result["results"] for lib in row["parse"]} |
-                 {lib for row in result["results"] for lib in row["xml_to_json"]})
+    ops = ["parse", "dict_convert", "to_object", "xml_to_json"]
+    n_libs = len({lib for row in result["results"] for op in ops for lib in row[op]})
     print(f"bench_throughput: {len(result['results'])} corpus entries, "
-          f"{n_libs} libraries -> {args.output}", file=sys.stderr)
+          f"{n_libs} libraries, {len(ops)} operations -> {args.output}", file=sys.stderr)
+

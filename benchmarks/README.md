@@ -63,10 +63,15 @@ cmake -S . -B build -DPYGIXML_BENCH_RESULTS_DIR=/somewhere/else
 
 pygixml vs. [lxml](https://lxml.de/), the standard library's
 `xml.etree.ElementTree`, [xmltodict](https://github.com/martinblech/xmltodict),
-and [xmljson](https://github.com/sanand0/xmljson) — parsing, XML→JSON
-conversion, memory use at scale, install footprint, and a static
-feature matrix (XPath, XSLT, schema validation, streaming, CLI tools,
-and so on — things a speed number can't capture).
+and [xmljson](https://github.com/sanand0/xmljson) — across pygixml's
+actual conversion layers, not just JSON: raw DOM parse, dict
+conversion (`dictify`, matched fairly against `xmltodict` since both
+use the same `@attr`/`#text` convention), lazy-object access
+(`objectify`, matched against lxml's own `objectify` submodule), and
+end-to-end XML→JSON (`jsonify`) — plus memory use at scale, install
+footprint, and a static feature matrix (XPath, XSLT, schema
+validation, streaming, CLI tools, and so on — things a speed number
+can't capture).
 
 ### Corpus
 
