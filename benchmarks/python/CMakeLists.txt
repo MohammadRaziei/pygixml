@@ -16,21 +16,64 @@ file(MAKE_DIRECTORY "${SCRATCH_DIR}")
 # Self-contained: pygixml itself is installed from a fresh git
 # checkout (PYGIXML_BENCH_GITHUB_URL), not from the local ../../src --
 # this directory never imports anything from the parent project.
+#
+# This runs at CONFIGURE time (execute_process, right here while
+# CMakeLists.txt is being processed), not at build time -- so
+# `cmake -S . -B build` alone leaves you with a ready venv, and
+# `cmake --build build --target pygixml_benchmark` only has to run
+# the actual benchmarks. The venv itself still lives under the build
+# directory (${CMAKE_CURRENT_BINARY_DIR}/venv), it's just populated
+# earlier than before.
+#
+# Guarded by a stamp file: reconfiguring (cmake -S . -B build again)
+# does NOT reinstall unless the venv is missing. To force a rebuild
+# (e.g. after changing requirements.txt or PYGIXML_BENCH_GITHUB_URL),
+# delete the stamp file or the whole build directory.
 
 set(VENV_STAMP "${CMAKE_CURRENT_BINARY_DIR}/.venv_ready")
 
-add_custom_command(
-  OUTPUT "${VENV_STAMP}"
-  COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
-  COMMAND "${VENV_PYTHON}" -m pip install --upgrade pip --quiet
-  COMMAND "${VENV_PYTHON}" -m pip install -r "${PY_DIR}/requirements.txt" --quiet
-  COMMAND "${VENV_PYTHON}" -m pip install --force-reinstall --no-deps "${PYGIXML_BENCH_GITHUB_URL}" --quiet
-  COMMAND ${CMAKE_COMMAND} -E touch "${VENV_STAMP}"
-  DEPENDS "${PY_DIR}/requirements.txt"
-  COMMENT "pygixml benchmarks: creating venv, installing competitors + pygixml from ${PYGIXML_BENCH_GITHUB_URL}"
-  USES_TERMINAL
-)
-add_custom_target(pygixml_bench_venv DEPENDS "${VENV_STAMP}")
+if(NOT EXISTS "${VENV_STAMP}")
+  message(STATUS "pygixml benchmarks: creating venv at ${VENV_DIR} (configure time)...")
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
+    RESULT_VARIABLE _pygixml_venv_rc
+  )
+  if(NOT _pygixml_venv_rc EQUAL 0)
+    message(FATAL_ERROR "pygixml benchmarks: failed to create venv at ${VENV_DIR}")
+  endif()
+
+  message(STATUS "pygixml benchmarks: installing competitors + pygixml from ${PYGIXML_BENCH_GITHUB_URL} (configure time)...")
+  execute_process(
+    COMMAND "${VENV_PYTHON}" -m pip install --upgrade pip --quiet
+    RESULT_VARIABLE _pygixml_pip_upgrade_rc
+  )
+  if(NOT _pygixml_pip_upgrade_rc EQUAL 0)
+    message(FATAL_ERROR "pygixml benchmarks: failed to upgrade pip in ${VENV_DIR}")
+  endif()
+
+  execute_process(
+    COMMAND "${VENV_PYTHON}" -m pip install -r "${PY_DIR}/requirements.txt" --quiet
+    RESULT_VARIABLE _pygixml_pip_req_rc
+  )
+  if(NOT _pygixml_pip_req_rc EQUAL 0)
+    message(FATAL_ERROR "pygixml benchmarks: failed to install ${PY_DIR}/requirements.txt")
+  endif()
+
+  execute_process(
+    COMMAND "${VENV_PYTHON}" -m pip install --force-reinstall --no-deps "${PYGIXML_BENCH_GITHUB_URL}" --quiet
+    RESULT_VARIABLE _pygixml_pip_pkg_rc
+  )
+  if(NOT _pygixml_pip_pkg_rc EQUAL 0)
+    message(FATAL_ERROR "pygixml benchmarks: failed to install pygixml from ${PYGIXML_BENCH_GITHUB_URL}")
+  endif()
+
+  file(TOUCH "${VENV_STAMP}")
+else()
+  message(STATUS "pygixml benchmarks: venv already present at ${VENV_DIR} -- skipping "
+                  "(delete ${VENV_STAMP} to force recreation)")
+endif()
+
+add_custom_target(pygixml_bench_venv)
 
 # -------------------------------------------------------------- corpus --
 

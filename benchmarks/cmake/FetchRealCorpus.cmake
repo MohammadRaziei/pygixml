@@ -5,19 +5,15 @@
 # benchmark) via plain file(DOWNLOAD), no FetchContent needed since
 # we just want the raw files, not to build anything from them.
 #
-# Where the extracted files end up depends on their total size:
-#   - below PYGIXML_BENCH_CORPUS_SIZE_THRESHOLD_BYTES: the build
-#     directory (ephemeral -- gone on a clean build, which is fine,
-#     it's small enough to re-fetch quickly).
-#   - at or above the threshold: benchmarks/corpus/ in the SOURCE
-#     tree (persistent across clean builds, so it isn't re-downloaded
-#     every time) -- but with a .gitignore containing `*` written
-#     into it, so the actual downloaded files are never committed.
+# Always lands in benchmarks/corpus/ in the SOURCE tree (persistent
+# across clean `build/` wipes, so it isn't re-downloaded every time)
+# -- with a .gitignore containing `*` written into it, so the actual
+# downloaded files are never committed, only the folder structure.
+# This runs at CONFIGURE time (this file is include()'d directly by
+# the top-level CMakeLists.txt, before add_subdirectory()), so
+# `cmake -S . -B build` alone is enough to have the corpus ready.
 #
 # Defines PYGIXML_REAL_CORPUS_DIR for the caller to use.
-
-set(PYGIXML_BENCH_CORPUS_SIZE_THRESHOLD_BYTES 2000000 CACHE STRING
-    "Real corpus total size (bytes) at/above which it's cached in a persistent, gitignored benchmarks/corpus/ instead of the build directory")
 
 set(_pygixml_corpus_url "https://codeload.github.com/twbs/icons/tar.gz/refs/heads/main")
 set(_pygixml_corpus_dl_dir "${CMAKE_CURRENT_BINARY_DIR}/_corpus_download")
@@ -65,18 +61,11 @@ if(EXISTS "${_pygixml_corpus_archive}")
   message(STATUS "pygixml benchmarks: real corpus has ${_pygixml_svg_count} SVG files, "
                   "${_pygixml_total_bytes} bytes total")
 
-  if(_pygixml_total_bytes GREATER_EQUAL PYGIXML_BENCH_CORPUS_SIZE_THRESHOLD_BYTES)
-    set(PYGIXML_REAL_CORPUS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
-    file(MAKE_DIRECTORY "${PYGIXML_REAL_CORPUS_DIR}")
-    file(WRITE "${PYGIXML_REAL_CORPUS_DIR}/.gitignore" "*\n!.gitignore\n")
-    message(STATUS "pygixml benchmarks: corpus is ${_pygixml_total_bytes} bytes (>= threshold) "
-                    "-> caching persistently in ${PYGIXML_REAL_CORPUS_DIR} (gitignored)")
-  else()
-    set(PYGIXML_REAL_CORPUS_DIR "${CMAKE_CURRENT_BINARY_DIR}/corpus")
-    file(MAKE_DIRECTORY "${PYGIXML_REAL_CORPUS_DIR}")
-    message(STATUS "pygixml benchmarks: corpus is ${_pygixml_total_bytes} bytes (< threshold) "
-                    "-> using ephemeral build-dir cache ${PYGIXML_REAL_CORPUS_DIR}")
-  endif()
+  set(PYGIXML_REAL_CORPUS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
+  file(MAKE_DIRECTORY "${PYGIXML_REAL_CORPUS_DIR}")
+  file(WRITE "${PYGIXML_REAL_CORPUS_DIR}/.gitignore" "*\n!.gitignore\n")
+  message(STATUS "pygixml benchmarks: caching real corpus persistently in "
+                  "${PYGIXML_REAL_CORPUS_DIR} (gitignored, not re-downloaded on a clean build/ wipe)")
 
   if(_pygixml_svg_files)
     file(COPY ${_pygixml_svg_files} DESTINATION "${PYGIXML_REAL_CORPUS_DIR}")
