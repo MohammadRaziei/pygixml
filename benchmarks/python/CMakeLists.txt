@@ -57,12 +57,19 @@ set(REAL_CORPUS_MANIFEST "${REAL_CORPUS_XML_DIR}/manifest.json")
 set(THROUGHPUT_MANIFESTS "${CORPUS_MANIFEST}")
 
 if(PYGIXML_REAL_CORPUS_DIR)
+  set(_giant_xml_arg "")
+  set(_giant_xml_depend "")
+  if(PYGIXML_REAL_GIANT_XML)
+    set(_giant_xml_arg --giant-xml "${PYGIXML_REAL_GIANT_XML}")
+    set(_giant_xml_depend "${PYGIXML_REAL_GIANT_XML}")
+  endif()
   add_custom_command(
     OUTPUT "${REAL_CORPUS_MANIFEST}"
     COMMAND "${VENV_PYTHON}" "${PY_DIR}/real_corpus_manifest.py"
             "${PYGIXML_REAL_CORPUS_DIR}" "${REAL_CORPUS_XML_DIR}" "${REAL_CORPUS_MANIFEST}"
-    DEPENDS "${VENV_STAMP}" "${PY_DIR}/real_corpus_manifest.py"
-    COMMENT "pygixml benchmarks: indexing the real-world corpus (Bootstrap Icons SVGs)"
+            ${_giant_xml_arg}
+    DEPENDS "${VENV_STAMP}" "${PY_DIR}/real_corpus_manifest.py" ${_giant_xml_depend}
+    COMMENT "pygixml benchmarks: indexing the real-world corpus (icons + Wikipedia, if available)"
     USES_TERMINAL
   )
   add_custom_target(pygixml_bench_real_corpus DEPENDS "${REAL_CORPUS_MANIFEST}")

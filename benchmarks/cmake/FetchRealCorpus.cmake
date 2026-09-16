@@ -82,3 +82,66 @@ if(EXISTS "${_pygixml_corpus_archive}")
     file(COPY ${_pygixml_svg_files} DESTINATION "${PYGIXML_REAL_CORPUS_DIR}")
   endif()
 endif()
+
+# ----------------------------------------------------- a genuinely giant --
+# ----------------------------------------- real-world XML, best-effort --
+#
+# The icon set above is real XML, but it's still small (a few MB). This
+# is the corpus that actually matches pygixml's headline use case: one
+# real, giant, XML document. Simple English Wikipedia's "abstracts"
+# dump (a stable, non-dated "latest" URL) is a real, public, tens-of-MB
+# XML file. Best-effort only: some networks (sandboxed CI, corporate
+# proxies) can't reach dumps.wikimedia.org at all, so a failure here is
+# a warning, not a build error -- the rest of the corpus (and the whole
+# benchmark suite) works fine without it. This part was not testable
+# from the environment this benchmark suite was originally built in
+# (a network allowlist that doesn't include dumps.wikimedia.org) --
+# verify it fetches successfully in your own environment before relying
+# on it; if it doesn't, everything downstream degrades gracefully to
+# the icon corpus alone.
+
+set(PYGIXML_BENCH_WIKIPEDIA_URL
+    "https://dumps.wikimedia.org/simplewiki/latest/simplewiki-latest-abstract.xml.gz"
+    CACHE STRING "A real, giant XML document to add to the corpus (best-effort; set to an empty string to skip entirely)")
+
+set(PYGIXML_REAL_GIANT_XML "")
+
+if(PYGIXML_BENCH_WIKIPEDIA_URL)
+  set(_wiki_dl_dir "${CMAKE_CURRENT_BINARY_DIR}/_corpus_download")
+  set(_wiki_gz "${_wiki_dl_dir}/wikipedia-abstracts.xml.gz")
+  set(_wiki_xml "${_wiki_dl_dir}/wikipedia-abstracts.xml")
+
+  if(NOT EXISTS "${_wiki_gz}" AND NOT EXISTS "${_wiki_xml}")
+    message(STATUS "pygixml benchmarks: attempting to download a real giant XML "
+                    "(Simple English Wikipedia abstracts) -- best-effort, see FetchRealCorpus.cmake")
+    file(DOWNLOAD "${PYGIXML_BENCH_WIKIPEDIA_URL}" "${_wiki_gz}"
+         STATUS _wiki_dl_status TIMEOUT 120)
+    list(GET _wiki_dl_status 0 _wiki_dl_code)
+    if(NOT _wiki_dl_code EQUAL 0)
+      list(GET _wiki_dl_status 1 _wiki_dl_msg)
+      message(WARNING "pygixml benchmarks: could not download the Wikipedia XML corpus "
+                       "(${_wiki_dl_msg}) -- this is expected on a restricted network; "
+                       "throughput benchmarks will run on the icon corpus + synthetic corpus only.")
+      file(REMOVE "${_wiki_gz}")
+    endif()
+  endif()
+
+  if(EXISTS "${_wiki_gz}" AND NOT EXISTS "${_wiki_xml}")
+    file(ARCHIVE_EXTRACT INPUT "${_wiki_gz}" DESTINATION "${_wiki_dl_dir}")
+    # a plain .gz (not .tar.gz) extracts to a file named after the
+    # archive minus its .gz suffix, inside DESTINATION
+    if(NOT EXISTS "${_wiki_xml}")
+      file(GLOB _wiki_extracted_candidates "${_wiki_dl_dir}/*.xml")
+      if(_wiki_extracted_candidates)
+        list(GET _wiki_extracted_candidates 0 _wiki_extracted_first)
+        file(RENAME "${_wiki_extracted_first}" "${_wiki_xml}")
+      endif()
+    endif()
+  endif()
+
+  if(EXISTS "${_wiki_xml}")
+    file(SIZE "${_wiki_xml}" _wiki_bytes)
+    message(STATUS "pygixml benchmarks: real giant XML available, ${_wiki_bytes} bytes -> ${_wiki_xml}")
+    set(PYGIXML_REAL_GIANT_XML "${_wiki_xml}")
+  endif()
+endif()
