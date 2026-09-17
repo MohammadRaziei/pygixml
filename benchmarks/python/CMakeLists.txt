@@ -234,10 +234,25 @@ add_custom_command(
 )
 add_custom_target(pygixml_bench_features DEPENDS "${FEATURES_JSON}")
 
+# --------------------------------------------------------- system info --
+# What machine this actually ran on -- reported plainly in the report
+# footer, not folded into any of the other JSON files above.
+
+set(SYSTEM_INFO_JSON "${RESULTS_DIR}/system_info.json")
+
+add_custom_command(
+  OUTPUT "${SYSTEM_INFO_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/system_info.py" "${SYSTEM_INFO_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/system_info.py"
+  COMMENT "pygixml benchmarks: recording machine specs (CPU/RAM/OS)"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_system_info DEPENDS "${SYSTEM_INFO_JSON}")
+
 # Expose to the parent scope (report/CMakeLists.txt needs these paths)
 set(PYGIXML_BENCH_RESULTS_SCRATCH_DIR "${RESULTS_DIR}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_PYTHON "${VENV_PYTHON}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_STAMP "${VENV_STAMP}" PARENT_SCOPE)
 set(PYGIXML_BENCH_ALL_RESULT_JSONS
-    "${THROUGHPUT_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${FEATURES_JSON}"
+    "${THROUGHPUT_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${FEATURES_JSON}" "${SYSTEM_INFO_JSON}"
     PARENT_SCOPE)

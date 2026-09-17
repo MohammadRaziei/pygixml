@@ -43,6 +43,7 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_scaling` | Time vs. N — the O(n) vs. O(n²) story |
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
 | `pygixml_bench_features` | The feature comparison matrix (static, hand-curated) |
+| `pygixml_bench_system_info` | Record the machine's OS, CPU model, core count, and RAM |
 | `pygixml_bench_report` | Render everything above into `results/report.html` |
 
 `cmake --build build --target help` lists all of these plus CMake's
@@ -87,15 +88,25 @@ manifest shape so every benchmark script treats them identically:
   not just size — a corpus that can't control shape can't tell that
   story.
 - **Real-world** (Bootstrap Icons SVGs, github.com/twbs/icons — SVG is
-  XML) — downloaded by CMake itself
+  XML) — downloaded by CMake itself at configure time
   (`cmake/FetchRealCorpus.cmake`, plain `file(DOWNLOAD)`, no Python
-  involved in the fetch). Routed automatically: below
-  `PYGIXML_BENCH_CORPUS_SIZE_THRESHOLD_BYTES` (default 2MB) it's cached
-  in the build directory; at or above it, it's cached in a **persistent**
-  `benchmarks/corpus/` folder in the source tree instead (so it isn't
-  re-downloaded on every clean build) — with a `.gitignore` containing
-  `*` written into that folder, so the actual downloaded files are
-  never committed, only the folder structure.
+  involved in the fetch), always cached in a **persistent**
+  `benchmarks/corpus/` folder in the source tree (so it isn't
+  re-downloaded on every clean `build/` wipe) — with a `.gitignore`
+  containing `*` written into that folder, so the actual downloaded
+  files are never committed, only the folder structure.
+
+### Timing
+
+Best (minimum) wall-clock time over 7 repeats per (library, corpus
+entry, operation) cell — standard practice for micro-benchmarks, since
+it's the closest a single run gets to "no other process happened to
+interrupt this one." Every one of pygixml's conversion layers gets its
+own operation, measured against its real direct competitor, rather
+than being collapsed into a single "XML to JSON" number: raw parse,
+`dictify` (vs. `xmltodict`), `objectify` (vs. `lxml.objectify`), and
+`jsonify` (vs. the field). See `bench_throughput.py`'s module
+docstring for exactly why each pairing is fair.
 
 ### The memory benchmark's one real gotcha
 
@@ -122,3 +133,26 @@ of a Python loop doing it.
 - Internet access (competitors + pygixml from PyPI/GitHub, the real
   corpus, and Chart.js are all fetched at build time — nothing is
   vendored in this repository)
+
+## On fairness
+
+pygixml's memory and scaling advantage over the DOM-building
+competitors isn't a fixed multiplier — it's a different complexity
+class. `jsonify.stream_dump` never builds a tree, so its memory use is
+O(1) in input size; every DOM-based competitor is O(n). That means any
+single "pygixml uses N× less memory" figure is only true at the one
+input size it was computed from, and understates the gap at every
+larger size and overstates it at every smaller one. The report
+therefore doesn't print a ratio anywhere — it shows the actual curves
+(log-log, both axes) so the growth rate speaks for itself instead of
+one cherry-pickable number.
+
+## What the report doesn't say (on purpose)
+
+`results/report.html` is the results, not the write-up: it doesn't
+explain how the corpus was built, why timing uses best-of-N, or what
+went wrong along the way — that's this file. The one exception is the
+machine it ran on (CPU model, core count, RAM, OS, Python version),
+which appears in the report's footer via `system_info.py`, since
+that's a fact about the specific numbers in that specific report, not
+about the methodology in general.

@@ -80,8 +80,11 @@ section:last-of-type { border-bottom: none; }
   margin-bottom: 10px;
 }
 h2 { font-size: 27px; margin: 0 0 12px; letter-spacing: -0.01em; }
+h3.op-title { font-size: 18px; margin: 44px 0 6px; }
+h3.op-title:first-of-type { margin-top: 8px; }
 .lede { color: var(--text-dim); font-size: 16px; max-width: 740px; margin: 0 0 32px; }
 .lede strong { color: var(--text); font-weight: 650; }
+.op-note { color: var(--text-dim); font-size: 13.5px; max-width: 740px; margin: 0 0 16px; }
 
 .panel {
   background: var(--bg-panel);
@@ -90,27 +93,11 @@ h2 { font-size: 27px; margin: 0 0 12px; letter-spacing: -0.01em; }
   padding: 26px;
   margin-bottom: 22px;
 }
-.panel h3 { margin: 0 0 4px; font-size: 16px; }
-.panel .panel-note { color: var(--text-dim); font-size: 13.5px; margin: 0 0 18px; }
-.chart-box { position: relative; height: 340px; }
+.panel h4 { margin: 0 0 4px; font-size: 14px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.chart-box { position: relative; height: 320px; }
 .chart-box.tall { height: 420px; }
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 28px;
-}
-.stat {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px 20px;
-}
-.stat .num { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
-.stat .num.good { color: var(--good); }
-.stat .num.bad { color: var(--bad); }
-.stat .label { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+.chart-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 780px) { .chart-pair { grid-template-columns: 1fr; } }
 
 /* ---- Tables ---- */
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -139,21 +126,8 @@ tr:last-child td { border-bottom: none; }
 .feature-table td, .feature-table th { text-align: center; }
 .feature-table td:first-child, .feature-table th:first-child { text-align: left; }
 
-/* ---- Methodology callout ---- */
-.callout {
-  border-left: 3px solid var(--accent);
-  background: var(--bg-panel-2);
-  border-radius: 0 10px 10px 0;
-  padding: 16px 20px;
-  font-size: 14px;
-  color: var(--text-dim);
-  margin: 20px 0;
-}
-.callout strong { color: var(--text); }
-.callout.warn { border-left-color: var(--warn); }
-
-/* ---- Downloads ---- */
-.downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+/* ---- Section-local download ---- */
+.section-download { margin-top: 22px; }
 .dl-btn {
   display: inline-flex;
   align-items: center;
@@ -177,6 +151,7 @@ footer {
   font-size: 13px;
   text-align: center;
 }
+footer .sysline { font-family: var(--mono); font-size: 12px; margin-bottom: 10px; }
 footer a { color: var(--accent); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 
@@ -195,39 +170,41 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 
 <div class="wrap">
 
-<!-- ========================= MEMORY STORY ========================= -->
+{% if has_memory %}
+<!-- ========================= MEMORY ========================= -->
 <section id="memory">
-  <div class="kicker">The headline number</div>
-  <h2>Peak memory: flat vs. proportional-to-file-size</h2>
+  <div class="kicker">Memory</div>
+  <h2>Peak RSS vs. input size</h2>
   <p class="lede">
     Every library here that builds a DOM (or an equivalent in-memory dict/tree)
-    uses more RAM as the input file grows &mdash; that's unavoidable if you hold
-    the whole structure in memory. <strong>pygixml.jsonify.stream_dump</strong>
-    is the one exception: it converts XML straight to JSON without ever building
-    a tree, so its memory use doesn't move. Each point below was measured in a
-    fresh, isolated process (see methodology).
+    uses more RAM as the input file grows. <strong>pygixml.jsonify.stream_dump</strong>
+    is the one approach that doesn't: it converts XML straight to JSON without ever
+    holding the whole tree in memory, so its curve is flat &mdash; O(1) against the
+    others' O(n). That's a difference in <em>growth rate</em>, not a fixed multiplier:
+    the gap widens as input grows, so no single "N&times; less memory" number at one
+    input size represents it fairly &mdash; the chart does.{{ memory_lede_extra }}
   </p>
 
-  <div class="stat-grid">
-    {% for s in memory_stats %}
-    <div class="stat">
-      <div class="num {{ s.cls }}">{{ s.value }}</div>
-      <div class="label">{{ s.label }}</div>
-    </div>
-    {% endfor %}
-  </div>
-
   <div class="panel">
-    <h3>Peak RSS vs. input size</h3>
-    <p class="panel-note">Log scale on both axes &mdash; the gap is too large to read on a linear one.</p>
+    <h4>Peak RSS vs. input size</h4>
+    <p class="op-note">Log scale on both axes &mdash; a flat line here means constant memory; a line with the same slope as the others means it scales with input, same as everyone else.</p>
     <div class="chart-box tall"><canvas id="chart-memory"></canvas></div>
   </div>
-</section>
 
-<!-- ========================= SCALING STORY ========================= -->
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('memory')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      memory.json
+    </button>
+  </div>
+</section>
+{% endif %}
+
+{% if has_scaling %}
+<!-- ========================= SCALING ========================= -->
 <section id="scaling">
-  <div class="kicker">Under the hood, honestly</div>
-  <h2>Time complexity: the case that flatters us, and the one that doesn't</h2>
+  <div class="kicker">Time complexity</div>
+  <h2>The shape that flatters us, and the one that doesn't</h2>
   <p class="lede">
     <strong>stream_dump</strong> writes optimistically and patches the output
     file in place once it learns a tag repeats. For the shape almost all real
@@ -239,68 +216,105 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   </p>
 
   <div class="panel">
-    <h3>Time vs. N, by shape</h3>
-    <p class="panel-note">Same operation (<code>jsonify.stream_dump</code>), two different input shapes.</p>
+    <h4>Time vs. N, by shape</h4>
+    <p class="op-note">Same operation (<code>jsonify.stream_dump</code>), two different input shapes. Log-log, so a straight line means a power-law relationship &mdash; the slope tells you which power.</p>
     <div class="chart-box tall"><canvas id="chart-scaling"></canvas></div>
     <p class="legend-note">{{ scaling_note | safe }}</p>
   </div>
 
   {% if scaling_dom_available %}
   <div class="panel">
-    <h3>Records-shape XML &rarr; JSON, DOM-based approaches</h3>
-    <p class="panel-note">For reference: everyone's roughly-linear time on the realistic shape, at moderate N.</p>
+    <h4>Records-shape XML &rarr; JSON, DOM-based approaches</h4>
+    <p class="op-note">For reference: everyone's roughly-linear time on the realistic shape, at moderate N.</p>
     <div class="chart-box"><canvas id="chart-scaling-dom"></canvas></div>
   </div>
   {% endif %}
-</section>
 
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('scaling')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      scaling.json
+    </button>
+  </div>
+</section>
+{% endif %}
+
+{% if has_throughput %}
 <!-- ========================= THROUGHPUT ========================= -->
 <section id="throughput">
   <div class="kicker">Speed, at realistic sizes</div>
-  <h2>XML &rarr; JSON, string in to string out</h2>
+  <h2>Every conversion layer, not just JSON</h2>
   <p class="lede">
-    The end-to-end operation most people actually want: an XML string in,
-    a JSON string out, however each library gets there internally.
-    <strong>ElementTree has no built-in dict/JSON conversion at all</strong>
-    &mdash; that's a real gap for it, not an oversight in this chart.
+    pygixml is a set of independent layers on the same pugixml-backed core &mdash;
+    raw DOM, dict (<code>dictify</code>), lazy object (<code>objectify</code>), and
+    JSON (<code>jsonify</code>). Each gets its own panel below, measured against its
+    real, direct competitor rather than being folded into a single "XML to JSON"
+    number. Each panel has two charts: <strong>time</strong> per corpus entry (best
+    of {{ repeats }} runs), and <strong>throughput</strong> (MB/s) vs. input size,
+    to see whether the rate holds up as files grow.
   </p>
 
-  <div class="panel">
-    <h3>xml &rarr; json, best of {{ repeats }} runs</h3>
-    <p class="panel-note">Lower is better. One chart per corpus size; genres grouped within it.</p>
-    <div class="chart-box tall"><canvas id="chart-throughput"></canvas></div>
+  {% for op in throughput_ops %}
+  <h3 class="op-title">{{ op.title }}</h3>
+  <p class="op-note">{{ op.note }}</p>
+  <div class="chart-pair">
+    <div class="panel">
+      <h4>Time (ms, lower is better) &mdash; dot plot, log scale</h4>
+      <div class="chart-box tall"><canvas id="chart-time-{{ op.key }}"></canvas></div>
+    </div>
+    {% if op.has_tp_chart %}
+    <div class="panel">
+      <h4>Throughput (MB/s, higher is better)</h4>
+      <div class="chart-box"><canvas id="chart-tp-{{ op.key }}"></canvas></div>
+    </div>
+    {% endif %}
   </div>
+  {% endfor %}
 
-  <div class="panel">
-    <h3>Parsing only (build a tree, discard it)</h3>
-    <p class="panel-note">xmltodict/xmljson have no separate "parse to a tree" step, so they don't appear here.</p>
-    <div class="chart-box"><canvas id="chart-parse"></canvas></div>
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('throughput')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      throughput.json
+    </button>
   </div>
 </section>
+{% endif %}
 
+{% if has_sizes %}
 <!-- ========================= SIZE ========================= -->
 <section id="size">
   <div class="kicker">Footprint</div>
   <h2>What you actually download</h2>
   <p class="lede">
-    Real wheel sizes for the current platform, via
-    <a href="https://github.com/MohammadRaziei/pip-size" style="color:var(--accent)">pip-size</a>
-    &mdash; no downloads, no installs, just resolving PyPI's index.
+    Real wheel sizes for the current platform, resolved directly through
+    <a href="https://github.com/MohammadRaziei/pip-size" style="color:var(--accent)">pip-size</a>'s
+    Python API (not its CLI) &mdash; no downloads, no installs, just querying PyPI's index.
     ElementTree needs nothing: it ships with Python itself.
   </p>
   <div class="panel">
     <div class="chart-box"><canvas id="chart-size"></canvas></div>
   </div>
-</section>
 
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('sizes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      sizes.json
+    </button>
+  </div>
+</section>
+{% endif %}
+
+{% if has_features %}
 <!-- ========================= FEATURES ========================= -->
 <section id="features">
   <div class="kicker">Beyond speed</div>
   <h2>What each library can actually do</h2>
   <p class="lede">
-    Speed and memory aren't the whole story. This is a factual capability
-    comparison, not a benchmark &mdash; see <code>benchmarks/python/features.py</code>
-    for sourcing.
+    Speed and memory aren't the whole story, and pygixml's scope isn't either
+    (pygixml = <strong>py</strong>thon <strong>gi</strong>ant <strong>xml</strong>,
+    built on pugixml plus a streaming yxml layer for the oversized case). This is
+    a factual capability comparison, not a benchmark &mdash; see
+    <code>benchmarks/python/features.py</code> for sourcing.
   </p>
   <div class="panel">
     <table class="feature-table">
@@ -326,48 +340,30 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
       </tbody>
     </table>
   </div>
-</section>
 
-<!-- ========================= METHODOLOGY / DOWNLOADS ========================= -->
-<section id="methodology">
-  <div class="kicker">Methodology</div>
-  <h2>How this was measured</h2>
-  <div class="callout">
-    <strong>Corpus:</strong> synthetic but realistic, generated deterministically
-    (seeded) across several genres &mdash; RSS-style feeds, product catalogs,
-    deep config trees, flat record lists &mdash; at several sizes, plus a wide
-    N-sweep for the scaling/memory story. Not fetched from a real-world dataset;
-    see <code>benchmarks/python/corpus.py</code> for exactly how and why.
-  </div>
-  <div class="callout">
-    <strong>Timing:</strong> best (minimum) wall-clock time over {{ repeats }} repeats per
-    (library, corpus entry) cell &mdash; standard practice for micro-benchmarks.
-  </div>
-  <div class="callout warn">
-    <strong>Memory:</strong> each data point is measured in a freshly-spawned,
-    isolated process. This mattered more than expected: on Linux, a forked
-    child's <code>ru_maxrss</code> is not reset by <code>execve()</code>, so
-    measuring several sizes from one long-running Python driver silently
-    reports the <em>driver's</em> memory growth, not the operation's. See
-    <code>benchmarks/python/bench_memory_gen.py</code>'s docstring for the full
-    story &mdash; we hit this bug building this exact report.
-  </div>
-
-  <h3 style="margin-top:32px;">Raw data</h3>
-  <p class="lede" style="margin-bottom:0;">Every chart above is built from these files, embedded in this page &mdash; nothing here required a server.</p>
-  <div class="downloads">
-    {% for name, _ in downloads %}
-    <button class="dl-btn" onclick="downloadJSON('{{ name }}')">
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('features')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
-      {{ name }}.json
+      features.json
     </button>
-    {% endfor %}
   </div>
 </section>
+{% endif %}
 
 </div>
 
 <footer>
+  {% if system_info %}
+  <div class="sysline">
+    Run on {{ system_info.cpu_model }} &middot; {{ system_info.logical_cores }} logical cores
+    {% if system_info.ram_gib %}&middot; {{ system_info.ram_gib }} GiB RAM{% endif %}
+    &middot; {{ system_info.os }} &middot; {{ system_info.python_implementation }} {{ system_info.python_version }}
+  </div>
+  {% endif %}
+  For how the corpus was built, why timing uses best-of-N, and the memory-measurement
+  gotcha this report ran into, see
+  <a href="https://github.com/MohammadRaziei/pygixml/blob/main/benchmarks/README.md">benchmarks/README.md</a>.
+  <br>
   Generated by <code>benchmarks/report/generate_report.py</code> &middot;
   <a href="https://github.com/MohammadRaziei/pygixml">github.com/MohammadRaziei/pygixml</a>
 </footer>
@@ -393,16 +389,6 @@ function downloadJSON(name) {
   URL.revokeObjectURL(url);
 }
 
-const PALETTE = {
-  pygixml: '#5b8cff',
-  pygixml_stream_dump: '#5b8cff',
-  pygixml_dom: '#7aa2ff',
-  lxml: '#ff6b81',
-  lxml_plus_xmljson: '#ff6b81',
-  elementtree: '#ffb454',
-  xmltodict: '#35d0ba',
-  xmljson: '#b98bff',
-};
 Chart.defaults.color = '#8b93a7';
 Chart.defaults.borderColor = '#232938';
 Chart.defaults.font.family = "-apple-system, 'Segoe UI', sans-serif";
