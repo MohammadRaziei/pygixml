@@ -84,7 +84,36 @@ h3.op-title { font-size: 18px; margin: 44px 0 6px; }
 h3.op-title:first-of-type { margin-top: 8px; }
 .lede { color: var(--text-dim); font-size: 16px; max-width: 740px; margin: 0 0 32px; }
 .lede strong { color: var(--text); font-weight: 650; }
-.op-note { color: var(--text-dim); font-size: 13.5px; max-width: 740px; margin: 0 0 16px; }
+.op-note { color: var(--text-dim); font-size: 13.5px; max-width: 740px; margin: 0 0 12px; }
+.op-winner { font-size: 15px; margin: 0 0 20px; color: var(--text); }
+.op-winner strong { color: var(--accent-2); font-weight: 700; }
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.mini-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 14px 16px;
+}
+.mini-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.mini-chart-box { position: relative; height: 96px; }
+.mini-values {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  line-height: 1.5;
+}
 
 .panel {
   background: var(--bg-panel);
@@ -154,6 +183,11 @@ footer {
 footer .sysline { font-family: var(--mono); font-size: 12px; margin-bottom: 10px; }
 footer a { color: var(--accent); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
+
+.env-table { max-width: 480px; margin: 0 auto; }
+.env-table td:first-child { color: var(--text-dim); width: 40%; }
+.env-table td:last-child { font-family: var(--mono); color: var(--text); text-align: right; }
+.env-table tr:last-child td { border-bottom: none; }
 
 .legend-note { font-size: 12.5px; color: var(--text-dim); margin-top: 10px; }
 code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
@@ -257,18 +291,24 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   {% for op in throughput_ops %}
   <h3 class="op-title">{{ op.title }}</h3>
   <p class="op-note">{{ op.note }}</p>
-  <div class="chart-pair">
-    <div class="panel">
-      <h4>Time (ms, lower is better) &mdash; dot plot, log scale</h4>
-      <div class="chart-box tall"><canvas id="chart-time-{{ op.key }}"></canvas></div>
+  {% if op.winner_summary %}<p class="op-winner">{{ op.winner_summary | safe }}</p>{% endif %}
+
+  <div class="mini-grid">
+    {% for entry in op.entries %}
+    <div class="mini-panel">
+      <div class="mini-label">{{ entry.label }}</div>
+      <div class="mini-chart-box"><canvas id="{{ entry.id }}"></canvas></div>
+      <div class="mini-values">{{ entry.values_text }}</div>
     </div>
-    {% if op.has_tp_chart %}
-    <div class="panel">
-      <h4>Throughput (MB/s, higher is better)</h4>
-      <div class="chart-box"><canvas id="chart-tp-{{ op.key }}"></canvas></div>
-    </div>
-    {% endif %}
+    {% endfor %}
   </div>
+
+  {% if op.has_tp_chart %}
+  <div class="panel" style="margin-top:18px;">
+    <h4>Throughput vs. input size (MB/s, higher is better)</h4>
+    <div class="chart-box"><canvas id="chart-tp-{{ op.key }}"></canvas></div>
+  </div>
+  {% endif %}
   {% endfor %}
 
   <div class="section-download">
@@ -350,16 +390,39 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 </section>
 {% endif %}
 
+{% if system_info %}
+<!-- ========================= ENVIRONMENT ========================= -->
+<section id="environment">
+  <div class="kicker">Environment</div>
+  <h2>What this ran on</h2>
+  <p class="lede">
+    Every number above came from this one machine. Recorded automatically by
+    <code>system_info.py</code> at run time &mdash; not filled in by hand.
+  </p>
+  <div class="panel">
+    <table class="env-table">
+      <tbody>
+        <tr><td>CPU</td><td>{{ system_info.cpu_model }}</td></tr>
+        <tr><td>Logical cores</td><td>{{ system_info.logical_cores }}</td></tr>
+        {% if system_info.ram_gib %}<tr><td>RAM</td><td>{{ system_info.ram_gib }} GiB</td></tr>{% endif %}
+        <tr><td>Architecture</td><td>{{ system_info.architecture }}</td></tr>
+        <tr><td>OS</td><td>{{ system_info.os }}</td></tr>
+        <tr><td>Python</td><td>{{ system_info.python_implementation }} {{ system_info.python_version }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('system_info')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      system_info.json
+    </button>
+  </div>
+</section>
+{% endif %}
+
 </div>
 
 <footer>
-  {% if system_info %}
-  <div class="sysline">
-    Run on {{ system_info.cpu_model }} &middot; {{ system_info.logical_cores }} logical cores
-    {% if system_info.ram_gib %}&middot; {{ system_info.ram_gib }} GiB RAM{% endif %}
-    &middot; {{ system_info.os }} &middot; {{ system_info.python_implementation }} {{ system_info.python_version }}
-  </div>
-  {% endif %}
   For how the corpus was built, why timing uses best-of-N, and the memory-measurement
   gotcha this report ran into, see
   <a href="https://github.com/MohammadRaziei/pygixml/blob/main/benchmarks/README.md">benchmarks/README.md</a>.
@@ -380,11 +443,35 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 <script>
 const DATA = JSON.parse(document.getElementById('pygixml-data').textContent);
 
-function downloadJSON(name) {
-  const blob = new Blob([JSON.stringify(DATA[name], null, 2)], {type: 'application/json'});
+// Two runtimes can load this exact HTML file: a published Artifact page
+// (window.claude.use('downloads') handles saves, and a plain anchor+Blob
+// click is inert there) or a plain browser tab -- opened straight from
+// disk, or the chat's own artifact preview -- where window.claude.use
+// doesn't exist and the classic anchor+Blob trick is what actually works.
+// Feature-detect once and use whichever applies.
+let _downloadsApi = undefined; // undefined = not checked yet, null = checked, unavailable
+(async () => {
+  if (window.claude && typeof window.claude.use === 'function') {
+    try { _downloadsApi = await window.claude.use('downloads'); }
+    catch (e) { _downloadsApi = null; }
+  } else {
+    _downloadsApi = null;
+  }
+})();
+
+async function downloadJSON(name) {
+  const text = JSON.stringify(DATA[name], null, 2);
+  const filename = name + '.json';
+  if (_downloadsApi) {
+    try {
+      await _downloadsApi.save({ filename, data: new Blob([text], { type: 'application/json' }) });
+    } catch (e) { /* viewer declined, or a transient error -- no-op */ }
+    return;
+  }
+  const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = name + '.json';
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }

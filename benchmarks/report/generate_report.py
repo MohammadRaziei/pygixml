@@ -259,6 +259,14 @@ OP_META = [
 ]
 
 
+def _fmt_ms(x):
+    if x < 1:
+        return f"{x:.3f}ms"
+    if x < 10:
+        return f"{x:.2f}ms"
+    return f"{x:.1f}ms"
+
+
 def _build_throughput_section(throughput):
     if not throughput:
         return {"ops": [], "repeats": "?"}
@@ -274,64 +282,103 @@ def _build_throughput_section(throughput):
         if not libs:
             continue
 
-        # Dot plot (Cleveland-style), not a bar chart: times here span
-        # multiple orders of magnitude (a few ms for a small file to
-        # hundreds of ms for a large one), and a bar's LENGTH only means
-        # anything on a linear, zero-based scale. Force that same data
-        # into a log-scaled bar and the bar lengths stop being
-        # comparable to each other -- exactly the "non-zero baseline /
-        # distorted length" anti-pattern. A dot plot encodes each value
-        # as a POSITION instead, so a log x-axis stays honest: position
-        # is the single most perceptually accurate encoding there is
-        # (Cleveland & McGill, 1984), and works at any scale.
-        dot_datasets = []
-        tp_datasets = []
-        for lib in libs:
-            dot_points = []
-            tp_points = []
-            for label, r in zip(labels, rows):
-                cell = r.get(key, {}).get(lib)
-                if cell and cell.get("available"):
-                    secs = cell["seconds"]
-                    dot_points.append({"x": round(secs * 1000, 4), "y": label})
-                    mb = r["bytes"] / (1024 * 1024)
-                    tp_points.append({"x": round(mb, 4), "y": round(mb / secs, 2) if secs > 0 else None})
-            color = LIB_COLORS.get(lib, "#8b93a7")
-            style = LIB_POINT_STYLES.get(lib, "circle")
-            if dot_points:
-                dot_datasets.append({
-                    "label": LIB_LABELS.get(lib, lib), "data": dot_points,
-                    "backgroundColor": color, "borderColor": color,
-                    "pointStyle": style, "pointRadius": 7, "pointHoverRadius": 9,
-                    "showLine": False,
-                })
-            if tp_points:
-                tp_datasets.append({
-                    "label": LIB_LABELS.get(lib, lib), "data": tp_points,
-                    "borderColor": color, "backgroundColor": color,
-                    "pointStyle": style, "showLine": False,
-                    "pointRadius": 6, "pointHoverRadius": 8,
-                })
+        # One small, honest bar chart PER CORPUS ENTRY, not one chart
+        # trying to hold all of them at once. Within a single entry, the
+        # 2-3 competing libraries' times are within the same order of
+        # magnitude, so a plain LINEAR, zero-baseline bar chart is
+        # accurate (no log-scale trick needed) *and* instantly readable:
+        # the shortest bar just wins, full stop -- no axis-reading
+        # required. Small multiples, not one overloaded chart, is how
+        # you compare many groups at once without hiding anything.
+        entries = []
+        wins = {lib: 0 for lib in libs}
+        all_times = {lib: [] for lib in libs}
+        n_comparisons = 0
 
-        dot_chart_js = f"""
-new Chart(document.getElementById('chart-time-{key}'), {{
-  type: 'scatter',
-  data: {{ datasets: {json.dumps(dot_datasets)} }},
+        for i, (label, r) in enumerate(zip(labels, rows)):
+            cells = [(lib, r.get(key, {}).get(lib)) for lib in libs]
+            cells = [(lib, c) for lib, c in cells if c and c.get("available")]
+            if not cells:
+                continue
+            cells.sort(key=lambda lc: lc[1]["seconds"])  # fastest first
+            n_comparisons += 1
+            winner_lib = cells[0][0]
+            wins[winner_lib] += 1
+            for lib, c in cells:
+                all_times[lib].append(c["seconds"])
+
+            bar_labels = [LIB_LABELS.get(lib, lib) for lib, _ in cells]
+            bar_ms = [round(c["seconds"] * 1000, 4) for _, c in cells]
+            bar_colors = [LIB_COLORS.get(lib, "#8b93a7") for lib, _ in cells]
+            values_text = "  \u00b7  ".join(
+                f"{LIB_LABELS.get(lib, lib)} {_fmt_ms(c['seconds'] * 1000)}" for lib, c in cells
+            )
+
+            chart_js = f"""
+new Chart(document.getElementById('chart-time-{key}-{i}'), {{
+  type: 'bar',
+  data: {{ labels: {json.dumps(bar_labels)}, datasets: [{{
+    data: {json.dumps(bar_ms)}, backgroundColor: {json.dumps(bar_colors)}
+  }}] }},
   options: {{
     indexAxis: 'y',
     responsive: true, maintainAspectRatio: false,
     scales: {{
-      x: {{ type: 'logarithmic', title: {{ display: true, text: 'Time (ms, log scale, lower is better)' }} }},
-      y: {{ type: 'category', labels: {json.dumps(labels)}, offset: true,
-            grid: {{ color: 'rgba(255,255,255,0.04)' }} }}
+      x: {{ title: {{ display: true, text: 'ms' }} }},
+      y: {{ grid: {{ display: false }} }}
     }},
-    plugins: {{ legend: {{ position: 'bottom' }} }}
+    plugins: {{ legend: {{ display: false }} }}
   }}
 }});
 """
+            entries.append({"id": f"chart-time-{key}-{i}", "label": label,
+                             "chart_js": chart_js, "values_text": values_text})
+
+        winner_summary = ""
+        if n_comparisons:
+            medians = {}
+            import statistics
+            for lib in libs:
+                if all_times[lib]:
+                    medians[lib] = statistics.median(all_times[lib])
+            ranked = sorted(medians.items(), key=lambda kv: kv[1])
+            top_lib, top_median = ranked[0]
+            rest = ", ".join(f"{LIB_LABELS.get(lib, lib)} {_fmt_ms(m * 1000)}" for lib, m in ranked[1:])
+            winner_summary = (
+                f"Fastest on {wins[top_lib]} of {n_comparisons} corpus entries: "
+                f"<strong>{LIB_LABELS.get(top_lib, top_lib)}</strong> "
+                f"(median {_fmt_ms(top_median * 1000)})"
+                + (f" \u2014 {rest} median" if rest else "") + "."
+            )
+
+        # Throughput (MB/s) vs input size: same treatment as the
+        # memory/scaling charts above -- connected lines, not bare dots,
+        # so both the TREND per library (does the rate rise, fall, or
+        # hold flat as files grow) and the comparison BETWEEN libraries
+        # (whose line sits on top) read at a glance from the same plot.
+        tp_datasets = []
+        for lib in libs:
+            tp_points = []
+            for r in rows:
+                cell = r.get(key, {}).get(lib)
+                if cell and cell.get("available") and cell["seconds"] > 0:
+                    mb = r["bytes"] / (1024 * 1024)
+                    tp_points.append({"x": round(mb, 4), "y": round(mb / cell["seconds"], 2)})
+            tp_points.sort(key=lambda p: p["x"])
+            if tp_points:
+                color = LIB_COLORS.get(lib, "#8b93a7")
+                tp_datasets.append({
+                    "label": LIB_LABELS.get(lib, lib), "data": tp_points,
+                    "borderColor": color, "backgroundColor": color,
+                    "pointStyle": LIB_POINT_STYLES.get(lib, "circle"),
+                    "borderDash": LIB_DASH.get(lib, []),
+                    "showLine": True, "tension": 0.25,
+                    "pointRadius": 5, "pointHoverRadius": 8,
+                })
+
         tp_chart_js = f"""
 new Chart(document.getElementById('chart-tp-{key}'), {{
-  type: 'scatter',
+  type: 'line',
   data: {{ datasets: {json.dumps(tp_datasets)} }},
   options: {{
     responsive: true, maintainAspectRatio: false,
@@ -346,7 +393,9 @@ new Chart(document.getElementById('chart-tp-{key}'), {{
 
         ops_out.append({
             "key": key, "title": meta["title"], "note": meta["note"],
-            "time_chart_js": dot_chart_js, "tp_chart_js": tp_chart_js,
+            "winner_summary": winner_summary,
+            "entries": entries,
+            "tp_chart_js": tp_chart_js,
             "has_tp_chart": bool(tp_datasets),
         })
 
@@ -420,7 +469,8 @@ def build(results_dir, output_path, chartjs_path):
 
     chart_scripts = [mem["chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"]]
     for op in thr["ops"]:
-        chart_scripts.append(op["time_chart_js"])
+        for entry in op["entries"]:
+            chart_scripts.append(entry["chart_js"])
         chart_scripts.append(op["tp_chart_js"])
 
     env = Environment(loader=FileSystemLoader(HERE), autoescape=False)
