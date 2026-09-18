@@ -2,168 +2,51 @@ Performance
 ===========
 
 pygixml is designed for high-performance XML processing, leveraging the power
-of pugixml's C++ implementation through Cython.
+of pugixml's C++ implementation (and a streaming yxml layer for oversized
+documents) through Cython.
 
 Benchmarks
 ----------
 
-All numbers below come from the included benchmark suite
-(``benchmarks/full_benchmark.py``) comparing **pygixml**, **lxml**, and
-**xml.etree.ElementTree** on the same machine.
+The numbers below come from the full benchmark suite in ``benchmarks/`` --
+parsing, ``dictify``, ``objectify``, and ``jsonify`` measured against lxml,
+ElementTree, xmltodict, and xmljson, plus memory-at-scale and install
+footprint. It's embedded live below rather than copied in as a table, so it
+never goes stale relative to the code it measured.
 
-Parsing Performance
-~~~~~~~~~~~~~~~~~~~
+.. raw:: html
 
-.. list-table:: XML Parsing Performance (warmed-up, 50 iterations)
-   :header-rows: 1
-   :widths: 20 25 20 20
+   <div class="benchmark-embed-card">
+     <div class="benchmark-embed-toolbar">
+       <span>Live benchmark report</span>
+       <a href="_static/benchmark-report.html" target="_blank" rel="noopener">Open full report &#8599;</a>
+     </div>
+     <iframe id="pygixml-benchmark-iframe" class="benchmark-embed-frame"
+             src="_static/benchmark-report.html" title="pygixml benchmark report"
+             loading="lazy"></iframe>
+   </div>
+   <script>
+   (function () {
+     var frame = document.getElementById('pygixml-benchmark-iframe');
+     function fit() {
+       try {
+         var doc = frame.contentWindow.document;
+         var h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
+         if (h > 0) { frame.style.height = h + 'px'; }
+       } catch (e) { /* cross-origin fallback: keep the CSS default height */ }
+     }
+     frame.addEventListener('load', function () {
+       fit();
+       setTimeout(fit, 300);   // charts finish laying out a beat after load
+     });
+     window.addEventListener('resize', fit);
+   })();
+   </script>
 
-   * - Size
-     - pygixml (best of default/minimal)
-     - lxml
-     - ElementTree
-   * - 100
-     - 0.000008 s
-     - 0.000081 s
-     - 0.000105 s
-   * - 500
-     - 0.000096 s
-     - 0.000442 s
-     - 0.000643 s
-   * - 1 000
-     - 0.000152 s
-     - 0.000764 s
-     - 0.001282 s
-   * - 2 500
-     - 0.000440 s
-     - 0.001944 s
-     - 0.003395 s
-   * - 5 000
-     - 0.000899 s
-     - 0.004096 s
-     - 0.008256 s
-   * - 10 000
-     - 0.001880 s
-     - 0.009338 s
-     - 0.016710 s
-
-Measured with ``ParseFlags.MINIMAL`` (``pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)``).
-Skips escape processing, EOL normalization, and attribute whitespace conversion
-for maximum throughput.  Use the default (``ParseFlags.DEFAULT``) when you need
-full XML compliance.
-
-Speedup vs ElementTree
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. list-table:: Parsing Speedup (how many times faster than ElementTree)
-   :header-rows: 1
-   :widths: 20 20
-
-   * - Size
-     - pygixml
-   * - 100
-     - **13.6×**
-   * - 500
-     - **6.7×**
-   * - 1 000
-     - **8.5×**
-   * - 2 500
-     - **7.7×**
-   * - 5 000
-     - **9.2×**
-   * - 10 000
-     - **8.9×**
-
-pygixml consistently outperforms lxml by ~2× and ElementTree by **7–14×**
-depending on document size.  Each row shows the faster of
-``ParseFlags.DEFAULT`` and ``ParseFlags.MINIMAL``.
-
-Traversal Performance
-~~~~~~~~~~~~~~~~~~~~~
-
-Traversal is measured as walking each top-level child, reading two sub-elements
-and extracting their text content.
-
-.. list-table:: Traversal (seconds)
-   :header-rows: 1
-   :widths: 20 20 20 20
-
-   * - Size
-     - pygixml
-     - lxml
-     - ElementTree
-   * - 100
-     - 0.000026 s
-     - 0.000207 s
-     - 0.000009 s
-   * - 500
-     - 0.000108 s
-     - 0.001002 s
-     - 0.000042 s
-   * - 1 000
-     - 0.000213 s
-     - 0.002014 s
-     - 0.000085 s
-   * - 5 000
-     - 0.001063 s
-     - 0.010307 s
-     - 0.000421 s
-   * - 10 000
-     - 0.002168 s
-     - 0.020971 s
-     - 0.000859 s
-
-pygixml traversal is ~10× faster than lxml but slower than ElementTree in
-absolute terms.  This is because every ``.child()`` and ``.child_value()``
-call crosses the Python↔Cython boundary.  **Best practice:** use XPath for
-bulk selection (which stays in C++) rather than walking nodes manually.
-
-Memory Usage
-------------
-
-Peak memory during parsing, measured via ``tracemalloc``:
-
-.. list-table:: Peak Memory (MB)
-   :header-rows: 1
-   :widths: 25 25 25 25
-
-   * - Size
-     - pygixml
-     - lxml
-     - ElementTree
-   * - 1 000
-     - **0.13 MB**
-     - 0.13 MB
-     - 1.01 MB
-   * - 5 000
-     - **0.67 MB**
-     - 0.67 MB
-     - 4.84 MB
-   * - 10 000
-     - **1.34 MB**
-     - 1.34 MB
-     - 9.68 MB
-
-pygixml and lxml have nearly identical memory footprints (both backed by
-C/C++ parsers), while ElementTree uses **~7× more memory** due to creating
-full Python objects for every node and attribute.
-
-Package Size
-------------
-
-.. list-table:: Installed Package Size
-   :header-rows: 1
-   :widths: 25 25
-
-   * - Package
-     - Size
-   * - **pygixml**
-     - **0.43 MB**
-   * - lxml
-     - 5.48 MB
-
-pygixml is **12.7× smaller** than lxml in installed size according to
-`pip-size <https://github.com/MohammadRaziei/pip-size>`_ package.
+Reproducing or updating these numbers is one CMake build away -- see
+`benchmarks/README.md <https://github.com/MohammadRaziei/pygixml/blob/master/benchmarks/README.md>`_
+for the full methodology (corpus generation, why timing uses best-of-N, and a
+real memory-measurement gotcha we hit building this exact report).
 
 Performance Tips
 ----------------
@@ -217,7 +100,7 @@ Limit Result Sets
    first_10 = all_books[:10]
 
 Memory Management
------------------
+------------------
 
 Automatic Cleanup
 ~~~~~~~~~~~~~~~~~
@@ -246,29 +129,14 @@ Document Reset
        # ... process ...
 
 Optimization Checklist
-----------------------
+-----------------------
 
-* [ ] Use ``XPathQuery`` for repeated queries
-* [ ] Prefer attribute filtering over text filtering
-* [ ] Be specific in XPath expressions (avoid ``//``)
-* [ ] Limit result sets with positional predicates
-* [ ] Reuse ``XMLDocument`` objects with ``reset()``
-* [ ] Use XPath for bulk selection, iterate results in Python
-* [ ] Avoid unnecessary string conversions
-
-Running Benchmarks
-------------------
-
-Reproduce the numbers on your own machine:
-
-.. code-block:: bash
-
-   # Full suite: parsing, memory, package size across 6 XML sizes
-   python benchmarks/full_benchmark.py
-
-   # Legacy parsing-only benchmark
-   python benchmarks/benchmark_parsing.py
-
-The full suite tests 100 – 10 000 element documents over 5 iterations,
-measures peak memory at 1 000 / 5 000 / 10 000 elements, and reports
-installed package sizes.
+* Use ``XPathQuery`` for repeated queries
+* Prefer attribute filtering over text filtering
+* Be specific in XPath expressions (avoid ``//``)
+* Limit result sets with positional predicates
+* Reuse ``XMLDocument`` objects with ``reset()``
+* Use XPath for bulk selection, iterate results in Python
+* Avoid unnecessary string conversions
+* For giant documents, prefer ``jsonify.stream_dump`` over building a full
+  DOM -- see the memory panel above for what that trades away and gains

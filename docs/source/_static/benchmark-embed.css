@@ -1,0 +1,49 @@
+/* Benchmark report embed: a deliberately-styled "dashboard card", not an
+ * attempt to make the report's own dark theme match Furo's light/dark
+ * toggle. Two different, intentional looks side by side reads as a
+ * designed embed (like dropping a Grafana panel into a doc); a report
+ * that half-matches the page around it reads as broken. */
+
+.benchmark-embed-card {
+  border: 1px solid var(--color-background-border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  background: #0b0e14; /* matches the report's own --bg, so the card's
+                           edges never flash light before the iframe loads */
+}
+
+.benchmark-embed-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #12161f;
+  border-bottom: 1px solid #232938;
+  font-size: 13px;
+  color: #8b93a7;
+}
+
+.benchmark-embed-toolbar a {
+  color: #5b8cff;
+  text-decoration: none;
+  font-weight: 600;
+}
+.benchmark-embed-toolbar a:hover { text-decoration: underline; }
+
+.benchmark-embed-frame {
+  display: block;
+  width: 100%;
+  border: none;
+  background: #0b0e14;
+  /* JS sets the real height once the iframe (same-origin) reports its
+     content height; this is just a sane first paint before that runs. */
+  height: 900px;
+}
+
+.benchmark-embed-fallback {
+  padding: 2rem;
+  color: #8b93a7;
+  text-align: center;
+}
