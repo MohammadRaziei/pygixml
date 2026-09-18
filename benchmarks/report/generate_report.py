@@ -53,17 +53,17 @@ LIB_COLORS = {
 LIB_POINT_STYLES = {
     "pygixml": "circle",
     "pygixml_stream_dump": "circle",
-    "pygixml_dom": "circle",
+    "pygixml_dom": "rectRot",
     "lxml": "triangle",
     "lxml_plus_xmljson": "triangle",
     "elementtree": "rect",
-    "xmltodict": "rectRot",
-    "xmljson": "star",
+    "xmltodict": "star",
+    "xmljson": "crossRot",
 }
 LIB_DASH = {
     "pygixml": [],
     "pygixml_stream_dump": [],
-    "pygixml_dom": [],
+    "pygixml_dom": [4, 2],
     "lxml": [6, 3],
     "lxml_plus_xmljson": [6, 3],
     "elementtree": [2, 2],
@@ -91,9 +91,10 @@ def _load(path):
 
 def _build_memory_section(memory):
     if not memory:
-        return {"chart_js": "", "lede_extra": ""}
+        return {"chart_js": "", "speed_chart_js": "", "lede_extra": "", "has_speed": False}
 
     datasets_js = []
+    speed_datasets_js = []
     max_n_bytes = 0
 
     for approach, data in memory.items():
@@ -116,6 +117,19 @@ def _build_memory_section(memory):
         })
         max_n_bytes = max(max_n_bytes, max(p["bytes"] for p in points))
 
+        # Same isolated-process runs, same input files -- so the timing
+        # they also recorded is a fair speed comparison for stream_dump
+        # specifically (not the DOM-based xml_to_json operation in the
+        # throughput section, which is a different code path).
+        if all("seconds" in p and p["seconds"] is not None for p in points):
+            sxy = [{"x": p["bytes"] / (1024 * 1024), "y": p["seconds"]} for p in points]
+            speed_datasets_js.append({
+                "label": label, "data": sxy, "borderColor": color,
+                "backgroundColor": color, "tension": 0.25, "pointRadius": 5,
+                "pointStyle": LIB_POINT_STYLES.get(approach, "circle"),
+                "borderDash": LIB_DASH.get(approach, []),
+            })
+
     chart_js = f"""
 new Chart(document.getElementById('chart-memory'), {{
   type: 'line',
@@ -130,11 +144,30 @@ new Chart(document.getElementById('chart-memory'), {{
   }}
 }});
 """
+
+    speed_chart_js = ""
+    if speed_datasets_js:
+        speed_chart_js = f"""
+new Chart(document.getElementById('chart-memory-speed'), {{
+  type: 'line',
+  data: {{ datasets: {json.dumps(speed_datasets_js)} }},
+  options: {{
+    responsive: true, maintainAspectRatio: false,
+    scales: {{
+      x: {{ type: 'logarithmic', title: {{ display: true, text: 'Input file size (MB, log scale)' }} }},
+      y: {{ type: 'logarithmic', title: {{ display: true, text: 'Time (seconds, log scale, lower is better)' }} }}
+    }},
+    plugins: {{ legend: {{ position: 'bottom' }} }}
+  }}
+}});
+"""
+
     lede_extra = (
         f" Largest file in this comparison: {_fmt_bytes(max_n_bytes)}."
         if max_n_bytes else ""
     )
-    return {"chart_js": chart_js, "lede_extra": lede_extra}
+    return {"chart_js": chart_js, "speed_chart_js": speed_chart_js,
+            "lede_extra": lede_extra, "has_speed": bool(speed_datasets_js)}
 
 
 # --------------------------------------------------------------- scaling --
@@ -267,13 +300,14 @@ def _fmt_ms(x):
     return f"{x:.1f}ms"
 
 
-def _build_throughput_section(throughput):
+def _build_throughput_section(throughput, throughput_memory):
     if not throughput:
         return {"ops": [], "repeats": "?"}
 
     rows = throughput["results"]
     repeats = throughput.get("repeats", "?")
     labels = [f"{r['genre']}/{r['size']}" for r in rows]
+    throughput_memory = throughput_memory or {}
 
     ops_out = []
     for meta in OP_META:
@@ -281,6 +315,12 @@ def _build_throughput_section(throughput):
         libs = sorted({lib for r in rows for lib in r.get(key, {})})
         if not libs:
             continue
+
+        # Index this operation's memory rows by (genre, size) so they
+        # line up with throughput.json's rows regardless of ordering.
+        mem_by_entry = {}
+        for mrow in throughput_memory.get(key, []):
+            mem_by_entry[(mrow["genre"], mrow["size"])] = mrow.get("libraries", {})
 
         # One small, honest bar chart PER CORPUS ENTRY, not one chart
         # trying to hold all of them at once. Within a single entry, the
@@ -293,7 +333,12 @@ def _build_throughput_section(throughput):
         entries = []
         wins = {lib: 0 for lib in libs}
         all_times = {lib: [] for lib in libs}
+        all_mem = {lib: [] for lib in libs}
+        mem_wins = {lib: 0 for lib in libs}
+        time_trend_points = {lib: [] for lib in libs}
+        mem_trend_points = {lib: [] for lib in libs}
         n_comparisons = 0
+        n_mem_comparisons = 0
 
         for i, (label, r) in enumerate(zip(labels, rows)):
             cells = [(lib, r.get(key, {}).get(lib)) for lib in libs]
@@ -306,6 +351,8 @@ def _build_throughput_section(throughput):
             wins[winner_lib] += 1
             for lib, c in cells:
                 all_times[lib].append(c["seconds"])
+                time_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
+                                                "y": round(c["seconds"] * 1000, 4)})
 
             bar_labels = [LIB_LABELS.get(lib, lib) for lib, _ in cells]
             bar_ms = [round(c["seconds"] * 1000, 4) for _, c in cells]
@@ -313,6 +360,22 @@ def _build_throughput_section(throughput):
             values_text = "  \u00b7  ".join(
                 f"{LIB_LABELS.get(lib, lib)} {_fmt_ms(c['seconds'] * 1000)}" for lib, c in cells
             )
+
+            entry_mem = mem_by_entry.get((r["genre"], r["size"]), {})
+            mem_cells = [(lib, entry_mem.get(lib)) for lib, _ in cells]
+            mem_cells = [(lib, m) for lib, m in mem_cells if m and m.get("available")]
+            mem_text = ""
+            if mem_cells:
+                mem_cells_sorted = sorted(mem_cells, key=lambda lm: lm[1]["peak_rss_mb"])
+                n_mem_comparisons += 1
+                mem_wins[mem_cells_sorted[0][0]] += 1
+                for lib, m in mem_cells:
+                    all_mem[lib].append(m["peak_rss_mb"])
+                    mem_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
+                                                   "y": round(m["peak_rss_mb"], 2)})
+                mem_text = "  \u00b7  ".join(
+                    f"{LIB_LABELS.get(lib, lib)} {m['peak_rss_mb']:.1f}MB" for lib, m in mem_cells_sorted
+                )
 
             chart_js = f"""
 new Chart(document.getElementById('chart-time-{key}-{i}'), {{
@@ -331,8 +394,32 @@ new Chart(document.getElementById('chart-time-{key}-{i}'), {{
   }}
 }});
 """
+            mem_chart_js = ""
+            if mem_cells:
+                mem_bar_labels = [LIB_LABELS.get(lib, lib) for lib, _ in mem_cells_sorted]
+                mem_bar_vals = [round(m["peak_rss_mb"], 2) for _, m in mem_cells_sorted]
+                mem_bar_colors = [LIB_COLORS.get(lib, "#8b93a7") for lib, _ in mem_cells_sorted]
+                mem_chart_js = f"""
+new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
+  type: 'bar',
+  data: {{ labels: {json.dumps(mem_bar_labels)}, datasets: [{{
+    data: {json.dumps(mem_bar_vals)}, backgroundColor: {json.dumps(mem_bar_colors)}
+  }}] }},
+  options: {{
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    scales: {{
+      x: {{ title: {{ display: true, text: 'MB' }} }},
+      y: {{ grid: {{ display: false }} }}
+    }},
+    plugins: {{ legend: {{ display: false }} }}
+  }}
+}});
+"""
             entries.append({"id": f"chart-time-{key}-{i}", "label": label,
-                             "chart_js": chart_js, "values_text": values_text})
+                             "chart_js": chart_js, "values_text": values_text,
+                             "mem_id": f"chart-mem-{key}-{i}" if mem_cells else None,
+                             "mem_chart_js": mem_chart_js, "mem_text": mem_text})
 
         winner_summary = ""
         if n_comparisons:
@@ -350,6 +437,65 @@ new Chart(document.getElementById('chart-time-{key}-{i}'), {{
                 f"(median {_fmt_ms(top_median * 1000)})"
                 + (f" \u2014 {rest} median" if rest else "") + "."
             )
+
+        memory_summary = ""
+        if n_mem_comparisons:
+            import statistics
+            mem_medians = {lib: statistics.median(vals) for lib, vals in all_mem.items() if vals}
+            ranked_mem = sorted(mem_medians.items(), key=lambda kv: kv[1])
+            top_mem_lib, top_mem_median = ranked_mem[0]
+            rest_mem = ", ".join(f"{LIB_LABELS.get(lib, lib)} {m:.1f}MB" for lib, m in ranked_mem[1:])
+            memory_summary = (
+                f"Lowest peak memory on {mem_wins[top_mem_lib]} of {n_mem_comparisons} corpus entries: "
+                f"<strong>{LIB_LABELS.get(top_mem_lib, top_mem_lib)}</strong> "
+                f"(median {top_mem_median:.1f}MB)"
+                + (f" \u2014 {rest_mem} median" if rest_mem else "") + "."
+            )
+
+        # Time-vs-size and memory-vs-size: the same "does the trend hold
+        # as files grow" question the throughput chart answers, just for
+        # the two other metrics -- same treatment (connected lines, log
+        # x, one line per library) for consistency.
+        def _trend_chart(canvas_id, points_by_lib, y_title, y_log):
+            datasets = []
+            for lib in libs:
+                pts = sorted(points_by_lib.get(lib, []), key=lambda p: p["x"])
+                if not pts:
+                    continue
+                color = LIB_COLORS.get(lib, "#8b93a7")
+                datasets.append({
+                    "label": LIB_LABELS.get(lib, lib), "data": pts,
+                    "borderColor": color, "backgroundColor": color,
+                    "pointStyle": LIB_POINT_STYLES.get(lib, "circle"),
+                    "borderDash": LIB_DASH.get(lib, []),
+                    "showLine": True, "tension": 0.25,
+                    "pointRadius": 5, "pointHoverRadius": 8,
+                })
+            if not datasets:
+                return "", False
+            y_scale = "'logarithmic'" if y_log else "'linear'"
+            js = f"""
+new Chart(document.getElementById('{canvas_id}'), {{
+  type: 'line',
+  data: {{ datasets: {json.dumps(datasets)} }},
+  options: {{
+    responsive: true, maintainAspectRatio: false,
+    scales: {{
+      x: {{ type: 'logarithmic', title: {{ display: true, text: 'Input size (MB, log scale)' }} }},
+      y: {{ type: {y_scale}, title: {{ display: true, text: '{y_title}' }} }}
+    }},
+    plugins: {{ legend: {{ position: 'bottom' }} }}
+  }}
+}});
+"""
+            return js, True
+
+        time_trend_chart_js, has_time_trend = _trend_chart(
+            f"chart-time-trend-{key}", time_trend_points,
+            "Time (ms, log scale, lower is better)", True)
+        mem_trend_chart_js, has_mem_trend = _trend_chart(
+            f"chart-mem-trend-{key}", mem_trend_points,
+            "Peak memory (MB, lower is better)", False)
 
         # Throughput (MB/s) vs input size: same treatment as the
         # memory/scaling charts above -- connected lines, not bare dots,
@@ -394,7 +540,10 @@ new Chart(document.getElementById('chart-tp-{key}'), {{
         ops_out.append({
             "key": key, "title": meta["title"], "note": meta["note"],
             "winner_summary": winner_summary,
+            "memory_summary": memory_summary,
             "entries": entries,
+            "time_trend_chart_js": time_trend_chart_js, "has_time_trend": has_time_trend,
+            "mem_trend_chart_js": mem_trend_chart_js, "has_mem_trend": has_mem_trend,
             "tp_chart_js": tp_chart_js,
             "has_tp_chart": bool(tp_datasets),
         })
@@ -441,6 +590,7 @@ new Chart(document.getElementById('chart-size'), {{
 
 def build(results_dir, output_path, chartjs_path):
     throughput = _load(os.path.join(results_dir, "throughput.json"))
+    throughput_memory = _load(os.path.join(results_dir, "throughput_memory.json"))
     scaling = _load(os.path.join(results_dir, "scaling.json"))
     memory = _load(os.path.join(results_dir, "memory.json"))
     sizes = _load(os.path.join(results_dir, "sizes.json"))
@@ -449,15 +599,15 @@ def build(results_dir, output_path, chartjs_path):
 
     mem = _build_memory_section(memory)
     scl = _build_scaling_section(scaling)
-    thr = _build_throughput_section(throughput)
+    thr = _build_throughput_section(throughput, throughput_memory)
     siz = _build_size_section(sizes)
 
     with open(chartjs_path, "r", encoding="utf-8") as f:
         chartjs_source = f.read()
 
     embedded = {
-        "throughput": throughput, "scaling": scaling, "memory": memory,
-        "sizes": sizes, "features": features, "system_info": system_info,
+        "throughput": throughput, "throughput_memory": throughput_memory, "scaling": scaling,
+        "memory": memory, "sizes": sizes, "features": features, "system_info": system_info,
     }
 
     headline = "pygixml, measured honestly"
@@ -467,10 +617,13 @@ def build(results_dir, output_path, chartjs_path):
         "and xmljson, on the same corpus, with the same methodology throughout."
     )
 
-    chart_scripts = [mem["chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"]]
+    chart_scripts = [mem["chart_js"], mem["speed_chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"]]
     for op in thr["ops"]:
         for entry in op["entries"]:
             chart_scripts.append(entry["chart_js"])
+            chart_scripts.append(entry["mem_chart_js"])
+        chart_scripts.append(op["time_trend_chart_js"])
+        chart_scripts.append(op["mem_trend_chart_js"])
         chart_scripts.append(op["tp_chart_js"])
 
     env = Environment(loader=FileSystemLoader(HERE), autoescape=False)
@@ -484,6 +637,7 @@ def build(results_dir, output_path, chartjs_path):
                    f"{thr['repeats']} repeats per cell",
         memory_available=bool(memory),
         memory_lede_extra=mem["lede_extra"],
+        memory_has_speed=mem["has_speed"],
         scaling_note=scl["note"],
         scaling_dom_available=scl["dom_available"],
         throughput_ops=thr["ops"],
@@ -493,6 +647,7 @@ def build(results_dir, output_path, chartjs_path):
         features=features["features"] if features else [],
         badge_symbol=BADGE_SYMBOL,
         has_memory=bool(memory), has_scaling=bool(scaling), has_throughput=bool(throughput),
+        has_throughput_memory=bool(throughput_memory),
         has_sizes=bool(sizes), has_features=bool(features),
         system_info=system_info,
         chartjs_source=chartjs_source,

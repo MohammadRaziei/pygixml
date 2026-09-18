@@ -1,18 +1,32 @@
 """
-bench_memory_one.py — measure ONE (approach, input file) memory data
-point, in THIS process, and write ONE small result JSON.
+bench_memory_one.py — measure ONE (approach, input file) memory AND
+speed data point, in THIS process, and write ONE small result JSON.
 
 Deliberately does not loop over sizes or spawn subprocesses itself --
 see bench_memory_gen.py's docstring for why. CMake invokes this fresh,
 once per (size, approach) combination; every invocation's parent is a
 CMake/shell process that has never touched any corpus data, so there's
 nothing inflated to inherit.
+
+Timing rides along with the memory measurement rather than living in
+bench_throughput.py because the comparison only makes sense at all
+using this exact runner set: bench_throughput.py's xml_to_json
+operation uses pygixml.jsonify.dumps (the DOM path), but the whole
+point of stream_dump is that it's a DIFFERENT, non-DOM approach -- so
+its speed needs to be measured against the field using these same
+four approaches (pygixml_stream_dump, pygixml_dom, lxml_plus_xmljson,
+xmltodict), not folded into the DOM-only throughput comparison.
+REPEATS>1 for a best-of-N time (same reasoning as bench_throughput.py);
+ru_maxrss is a whole-process high-water mark, so repeating the call
+before reading it only ever reports the same or a higher peak, never
+an artificially low one.
 """
 import argparse
 import json
 import os
 import resource
 import sys
+import time
 
 APPROACHES = (
     "pygixml_stream_dump",
@@ -20,6 +34,8 @@ APPROACHES = (
     "lxml_plus_xmljson",
     "xmltodict",
 )
+
+REPEATS = 3
 
 
 def _run_pygixml_stream_dump(xml_path, scratch_json_path):
@@ -68,7 +84,14 @@ def main():
     runner = _RUNNERS[args.approach]
 
     try:
-        runner(args.xml_path, args.scratch_json_path)
+        runner(args.xml_path, args.scratch_json_path)  # warm-up / import cost, not timed
+        best_seconds = None
+        for _ in range(REPEATS):
+            t0 = time.perf_counter()
+            runner(args.xml_path, args.scratch_json_path)
+            dt = time.perf_counter() - t0
+            if best_seconds is None or dt < best_seconds:
+                best_seconds = dt
     except ImportError as e:
         result = {"approach": args.approach, "n": args.n, "available": False,
                    "error": f"{type(e).__name__}: {e}"}
@@ -84,10 +107,12 @@ def main():
         "bytes": os.path.getsize(args.xml_path),
         "available": True,
         "peak_rss_mb": peak_kb / 1024.0,
+        "seconds": best_seconds,
     }
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
-    print(f"bench_memory_one: {args.approach} n={args.n} peak={result['peak_rss_mb']:.2f}MB", file=sys.stderr)
+    print(f"bench_memory_one: {args.approach} n={args.n} peak={result['peak_rss_mb']:.2f}MB "
+          f"best_of_{REPEATS}={best_seconds*1000:.2f}ms", file=sys.stderr)
 
 
 if __name__ == "__main__":

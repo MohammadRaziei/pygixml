@@ -151,6 +151,30 @@ add_custom_command(
 add_custom_target(pygixml_bench_throughput DEPENDS "${THROUGHPUT_JSON}")
 add_dependencies(pygixml_bench_throughput pygixml_bench_corpus pygixml_bench_real_corpus)
 
+# ------------------------------------------------------- throughput memory --
+# Memory alongside speed for the SAME four throughput.json operations
+# (parse, dict_convert, to_object, xml_to_json) -- not just the
+# separate stream_dump-vs-DOM story below. One driver script, not one
+# CMake target per (entry, operation, library): the driver never opens
+# the corpus files itself (only reads the manifest's metadata and hands
+# each *path* to a freshly spawned child), so it's exempt from the
+# ru_maxrss/execve gotcha explained below -- see
+# bench_op_memory_driver.py's docstring for exactly why that's still
+# safe.
+
+set(THROUGHPUT_MEMORY_JSON "${RESULTS_DIR}/throughput_memory.json")
+
+add_custom_command(
+  OUTPUT "${THROUGHPUT_MEMORY_JSON}"
+  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_op_memory_driver.py" ${THROUGHPUT_MANIFESTS} "${THROUGHPUT_MEMORY_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_op_memory_driver.py" "${PY_DIR}/bench_op_memory_one.py" "${CORPUS_MANIFEST}"
+          "$<$<BOOL:${PYGIXML_REAL_CORPUS_DIR}>:${REAL_CORPUS_MANIFEST}>"
+  COMMENT "pygixml benchmarks: peak memory for parse/dictify/objectify/jsonify, all libraries"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_throughput_memory DEPENDS "${THROUGHPUT_MEMORY_JSON}")
+add_dependencies(pygixml_bench_throughput_memory pygixml_bench_corpus pygixml_bench_real_corpus)
+
 # -------------------------------------------------------------- scaling --
 
 set(SCALING_JSON "${RESULTS_DIR}/scaling.json")
@@ -254,5 +278,5 @@ set(PYGIXML_BENCH_RESULTS_SCRATCH_DIR "${RESULTS_DIR}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_PYTHON "${VENV_PYTHON}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_STAMP "${VENV_STAMP}" PARENT_SCOPE)
 set(PYGIXML_BENCH_ALL_RESULT_JSONS
-    "${THROUGHPUT_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${FEATURES_JSON}" "${SYSTEM_INFO_JSON}"
+    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${FEATURES_JSON}" "${SYSTEM_INFO_JSON}"
     PARENT_SCOPE)

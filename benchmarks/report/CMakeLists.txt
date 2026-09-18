@@ -48,6 +48,7 @@ add_custom_command(
 add_custom_target(pygixml_bench_report DEPENDS "${REPORT_HTML}")
 add_dependencies(pygixml_bench_report
   pygixml_bench_throughput
+  pygixml_bench_throughput_memory
   pygixml_bench_scaling
   pygixml_bench_memory
   pygixml_bench_sizes

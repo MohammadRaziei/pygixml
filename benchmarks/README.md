@@ -39,7 +39,8 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_corpus` | Generate the synthetic multi-genre corpus |
 | `pygixml_bench_real_corpus` | Index the real-world corpus (see below) into the same manifest shape |
 | `pygixml_bench_sizes` | Compare install footprint via [pip-size](https://github.com/MohammadRaziei/pip-size) |
-| `pygixml_bench_throughput` | Parse + XML→JSON speed, every library, every corpus entry |
+| `pygixml_bench_throughput` | Speed for every conversion layer (parse/dictify/objectify/jsonify), every library, every corpus entry |
+| `pygixml_bench_throughput_memory` | Peak memory for the same operations/libraries/entries, one isolated process per (entry, op, library) |
 | `pygixml_bench_scaling` | Time vs. N — the O(n) vs. O(n²) story |
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
 | `pygixml_bench_features` | The feature comparison matrix (static, hand-curated) |
