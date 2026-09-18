@@ -2,16 +2,27 @@
 """
 update_benchmark_report.py — copy the standalone benchmark report into
 docs/source/_static/ so performance.rst's embedded iframe has something
-to show, and run it BEFORE sphinx-build (CI does this as a build step;
-locally, run it after `cmake --build build --target pygixml_bench_report`
-in benchmarks/).
+to show.
 
-The report itself is never committed (see .gitignore) -- same reasoning
-as benchmarks/corpus/: it's generated build output, not source, and it
-goes stale the moment the code it measured changes. If it isn't there
-yet (a fresh checkout, a contributor who hasn't run the benchmark
-suite), this writes a small honest placeholder instead of leaving a
-broken iframe or failing the docs build.
+IMPORTANT: this is NOT part of the regular docs build (cmake.yml's
+build_docs job, which runs on every PR on shared/noisy CI runners --
+exactly where you don't want a performance benchmark running). This
+script only runs in two places:
+
+  1. Locally, by a contributor, after running the benchmark suite
+     themselves (see benchmarks/README.md), to preview their changes.
+  2. In .github/workflows/benchmark.yml -- a SEPARATE, infrequent
+     workflow (manual dispatch or a weekly schedule, not on every PR)
+     that runs the real benchmark once and commits the refreshed
+     docs/source/_static/benchmark-report.html straight into the repo.
+
+Either way, the file this script produces is committed to git (it is
+NOT gitignored) -- the regular PR/deploy docs build just uses whatever
+was last committed, so the frequent path never runs a benchmark, never
+depends on the runner it happens to land on, and docs builds stay fast
+and reproducible. The trade-off, stated plainly: the embedded numbers
+can be up to a week stale (or however often benchmark.yml runs), not
+live-per-commit. See performance.rst for how that's disclosed to readers.
 """
 import shutil
 import sys
@@ -41,10 +52,17 @@ def main():
     if SOURCE.exists():
         shutil.copyfile(SOURCE, DEST)
         print(f"update_benchmark_report: copied {SOURCE} -> {DEST}")
-    else:
+    elif not DEST.exists():
+        # Only write the placeholder if nothing is committed yet (a
+        # fresh clone, before benchmark.yml has ever run) -- never
+        # clobber an already-committed real report just because this
+        # particular checkout hasn't run the benchmark locally.
         DEST.write_text(PLACEHOLDER, encoding="utf-8")
-        print(f"update_benchmark_report: {SOURCE} not found, wrote placeholder to {DEST}",
-              file=sys.stderr)
+        print(f"update_benchmark_report: {SOURCE} not found and nothing committed yet, "
+              f"wrote placeholder to {DEST}", file=sys.stderr)
+    else:
+        print(f"update_benchmark_report: {SOURCE} not found; leaving the already-committed "
+              f"{DEST} as-is", file=sys.stderr)
 
 
 if __name__ == "__main__":

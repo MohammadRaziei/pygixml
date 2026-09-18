@@ -11,8 +11,17 @@ Benchmarks
 The numbers below come from the full benchmark suite in ``benchmarks/`` --
 parsing, ``dictify``, ``objectify``, and ``jsonify`` measured against lxml,
 ElementTree, xmltodict, and xmljson, plus memory-at-scale and install
-footprint. It's embedded live below rather than copied in as a table, so it
-never goes stale relative to the code it measured.
+footprint. It's embedded below as the real interactive report rather than
+copied in as a static table, so nothing here was manually transcribed or
+rounded off.
+
+The report itself is refreshed on a schedule
+(``.github/workflows/benchmark.yml``, weekly, plus on-demand), not on every
+commit -- benchmark timing needs a stable, quiet machine to mean anything,
+which a shared per-PR CI runner isn't. So this can lag the very latest commit
+by up to a week; it won't ever be wildly out of date, but if you changed
+something performance-sensitive today, don't expect to see it reflected here
+yet.
 
 .. raw:: html
 
