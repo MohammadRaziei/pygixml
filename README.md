@@ -27,35 +27,32 @@ and big-data pipelines.
 
 ## Why pygixml?
 
-**Speed, memory, and size.**  pygixml brings pugixml's battle-tested C++
-parser directly to Python — with numbers that speak for themselves.
+**Speed, memory, and size.** pygixml brings pugixml's battle-tested C++
+parser directly to Python.
 
-### Parsing Performance (5 000 elements, 50 iterations)
+Every parsing/conversion layer pygixml ships — raw DOM, `dictify`,
+`objectify`, `jsonify` — is measured against lxml, ElementTree,
+xmltodict, and xmljson in a full, reproducible benchmark suite (see
+[`benchmarks/`](benchmarks/)), not summarized here as a handful of
+numbers that inevitably go stale the moment the code changes. The
+live, interactive report — refreshed on a schedule, not hand-edited —
+is on the
+**[Performance page](https://mohammadraziei.github.io/pygixml/performance.html)**.
 
-| Library         | Avg Time | Speedup vs ElementTree |
-|-----------------|----------|------------------------|
-| **pygixml**     | 0.0009 s | **9.2× faster**        |
-| **lxml**        | 0.0041 s | 2.0× faster            |
-| **ElementTree** | 0.0083 s | 1.0× (baseline)        |
+Two things worth knowing going in, because they're structural (true
+regardless of which exact numbers the report shows this week), not a
+one-time measurement:
 
-### Memory Usage (5 000 elements, peak)
-
-| Library         | Peak Memory | vs ElementTree |
-|-----------------|-------------|----------------|
-| **pygixml**     | **0.67 MB** | **7.2× less**  |
-| **lxml**        | 0.67 MB     | 7.2× less      |
-| **ElementTree** | 4.84 MB     | 1.0×           |
-
-### Package Size
-
-| Library     | Installed Size | vs lxml   |
-|-------------|----------------|-----------|
-| **pygixml** | **0.43 MB**    | **12.7× smaller** |
-| lxml        | 5.48 MB        | 1.0×      |
-
-*All numbers from `benchmarks/full_benchmark.py`.  See the
-[Performance](https://mohammadraziei.github.io/pygixml/performance) page for
-the full comparison across 6 XML sizes.*
+* **`jsonify.stream_dump` holds memory flat as input grows.** Every
+  DOM-based approach — pygixml's own DOM path included, lxml,
+  xmltodict — allocates roughly in proportion to the input, so its
+  memory use grows with file size. `stream_dump` never builds a tree
+  at all, so it doesn't: this is a different complexity class (O(1)
+  vs O(n)), not a fixed "X times less" you'd see at only one input
+  size. It costs something in return — see the report's own memory
+  panel for the honest trade-off, not just the part that flatters it.
+* **Package size**: pygixml installs in well under a megabyte, without
+  vendoring a build of libxml2/libxslt the way lxml does.
 
 ### Built for big XML
 
@@ -110,9 +107,13 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 
 ### Features
 
-* **Blazing-fast parsing** — up to 14× faster than ElementTree
-* **Low memory** — 7× less than ElementTree, on par with lxml
-* **Tiny footprint** — 0.43 MB installed (12.7× smaller than lxml)
+* **Fast parsing** — pugixml's C++ DOM parser, consistently at or near
+  the front across the benchmark suite (see the
+  [Performance page](https://mohammadraziei.github.io/pygixml/performance.html))
+* **Constant-memory streaming** — `jsonify.stream_dump` holds flat
+  regardless of input size; nothing else compared here does
+* **Small footprint** — well under a megabyte installed, no bundled
+  libxml2/libxslt
 * **Full XPath 1.0** — complete query engine with all standard functions
 * **Pythonic API** — intuitive properties and methods, not a direct C++ mirror
 * **`objectify`** — lxml.objectify-style dotted navigation
@@ -671,13 +672,17 @@ Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 ## Benchmarks
 
 ```bash
-python benchmarks/full_benchmark.py
-python benchmarks/benchmark_parsing.py
+cmake -S benchmarks -B benchmarks/build
+cmake --build benchmarks/build --target pygixml_bench_report
 ```
 
-Compares pygixml against **lxml** and **xml.etree.ElementTree**.
-Results are printed as tables and saved to
-`benchmarks/results/benchmark_full.json`.
+Compares pygixml's parse/`dictify`/`objectify`/`jsonify` against
+**lxml**, **ElementTree**, **xmltodict**, and **xmljson** — speed,
+memory at scale, and install size. Writes a standalone, interactive
+`benchmarks/results/report.html`; see
+[`benchmarks/README.md`](benchmarks/README.md) for the full
+methodology, or the live copy on the
+[Performance page](https://mohammadraziei.github.io/pygixml/performance.html).
 
 ---
 

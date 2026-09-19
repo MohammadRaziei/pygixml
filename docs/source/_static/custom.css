@@ -1,0 +1,48 @@
+/* pygixml brand customization for Furo.
+ * Ties the docs site's accent color to the same blue used throughout
+ * the benchmark report (#5b8cff family), so "the pygixml site" reads
+ * as one coherent thing instead of stock-Furo-blue next to a
+ * dark custom report with a different blue. */
+
+:root {
+  --color-brand-primary: #3b5bdb;
+  --color-brand-content: #3457d5;
+  --color-brand-visited: #7048c4;
+  --pygixml-accent-soft: #edf0fd;
+}
+
+body[data-theme="dark"] {
+  --color-brand-primary: #5b8cff;
+  --color-brand-content: #7aa2ff;
+  --color-brand-visited: #b98bff;
+  --pygixml-accent-soft: rgba(91, 140, 255, 0.10);
+}
+
+@media (prefers-color-scheme: dark) {
+  body[data-theme="auto"] {
+    --color-brand-primary: #5b8cff;
+    --color-brand-content: #7aa2ff;
+    --color-brand-visited: #b98bff;
+    --pygixml-accent-soft: rgba(91, 140, 255, 0.10);
+  }
+}
+
+/* Slightly warmer, less boxy code blocks -- matches the report's own
+   rounded, low-contrast panels instead of Furo's sharper default. */
+.highlight {
+  border-radius: 10px;
+}
+
+/* Sidebar: give the current page a filled pill instead of a bare
+   underline, using the brand color -- easier to scan at a glance. */
+.sidebar-tree .current-page > .reference {
+  background: var(--pygixml-accent-soft);
+  border-radius: 6px;
+}
+
+/* h2 gets a thin brand-colored rule instead of Furo's plain border --
+   a small, consistent visual anchor as you scroll through a long page. */
+h2 {
+  border-bottom: 2px solid var(--color-brand-primary);
+  padding-bottom: 0.3em;
+}
