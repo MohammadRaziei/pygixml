@@ -38,12 +38,12 @@ LIB_LABELS = {
     "xmljson": "xmljson",
 }
 LIB_COLORS = {
-    "pygixml": "#5b8cff",
-    "pygixml_stream_dump": "#5b8cff",
-    "pygixml_dom": "#7aa2ff",
+    "pygixml": "#e67225",
+    "pygixml_stream_dump": "#e67225",
+    "pygixml_dom": "#f2954f",
     "lxml": "#ff6b81",
     "lxml_plus_xmljson": "#ff6b81",
-    "elementtree": "#ffb454",
+    "elementtree": "#5b8cff",
     "xmltodict": "#35d0ba",
     "xmljson": "#b98bff",
 }

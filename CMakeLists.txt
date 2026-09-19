@@ -174,3 +174,48 @@ add_custom_target(sphinx_docs
     USES_TERMINAL
     DEPENDS build_python
 )
+
+# --------------------------------------------------------------- landing --
+# The single public entry point: mohammadraziei.github.io/pygixml/ --
+# hero, "why pygixml", quick examples, and cards straight into the two
+# things that already exist (Sphinx docs, the benchmark report), the
+# same way ctoon's docs/index.html.in routes into its per-language
+# references. configure_file() substitutes @PROJECT_VERSION@; the CSS
+# just gets copied alongside it.
+
+set(SITE_OUT ${CMAKE_CURRENT_BINARY_DIR}/site)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/docs/landing/index.html.in
+    ${SITE_OUT}/index.html
+    @ONLY
+)
+
+add_custom_command(
+    OUTPUT ${SITE_OUT}/landing.css
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/landing/landing.css
+        ${SITE_OUT}/landing.css
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/docs/landing/landing.css
+    COMMENT "Copying landing page styles"
+)
+
+add_custom_target(pygixml_landing DEPENDS ${SITE_OUT}/index.html ${SITE_OUT}/landing.css)
+
+# Assembles the full public site tree: site/{index.html, docs/, benchmarks/}.
+# Depends on sphinx_docs (Sphinx's own output) and expects
+# docs/source/_static/benchmark-report.html to already exist (see
+# docs/update_benchmark_report.py -- it's a committed file, refreshed by
+# the separate benchmark.yml workflow, not regenerated here).
+add_custom_target(pygixml_site
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${SITE_OUT}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/docs ${SITE_OUT}/docs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${SITE_OUT}/benchmarks
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/source/_static/benchmark-report.html
+        ${SITE_OUT}/benchmarks/index.html
+    COMMENT "Assembling pygixml site: landing + docs + benchmarks -> ${SITE_OUT}"
+    VERBATIM
+)
+add_dependencies(pygixml_site pygixml_landing sphinx_docs)
+

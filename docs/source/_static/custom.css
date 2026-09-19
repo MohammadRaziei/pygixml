@@ -1,29 +1,30 @@
 /* pygixml brand customization for Furo.
- * Ties the docs site's accent color to the same blue used throughout
- * the benchmark report (#5b8cff family), so "the pygixml site" reads
- * as one coherent thing instead of stock-Furo-blue next to a
- * dark custom report with a different blue. */
+ * Ties the docs site's accent color to the ACTUAL logo color
+ * (docs/images/pygixml.svg, #e67225 "pygixml orange") -- the same
+ * brand used by the landing page (docs/landing/) and the benchmark
+ * report (benchmarks/report/), so all three read as one coherent
+ * site instead of three different accent colors bolted together. */
 
 :root {
-  --color-brand-primary: #3b5bdb;
-  --color-brand-content: #3457d5;
+  --color-brand-primary: #c85a12;
+  --color-brand-content: #b34f10;
   --color-brand-visited: #7048c4;
-  --pygixml-accent-soft: #edf0fd;
+  --pygixml-accent-soft: #fdf0e7;
 }
 
 body[data-theme="dark"] {
-  --color-brand-primary: #5b8cff;
-  --color-brand-content: #7aa2ff;
+  --color-brand-primary: #e67225;
+  --color-brand-content: #f2954f;
   --color-brand-visited: #b98bff;
-  --pygixml-accent-soft: rgba(91, 140, 255, 0.10);
+  --pygixml-accent-soft: rgba(230, 114, 37, 0.10);
 }
 
 @media (prefers-color-scheme: dark) {
   body[data-theme="auto"] {
-    --color-brand-primary: #5b8cff;
-    --color-brand-content: #7aa2ff;
+    --color-brand-primary: #e67225;
+    --color-brand-content: #f2954f;
     --color-brand-visited: #b98bff;
-    --pygixml-accent-soft: rgba(91, 140, 255, 0.10);
+    --pygixml-accent-soft: rgba(230, 114, 37, 0.10);
   }
 }
 

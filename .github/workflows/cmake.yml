@@ -64,11 +64,11 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build documentation
-        run: cmake --build build --target sphinx_docs
+        run: cmake --build build --target pygixml_site
 
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v4
         with:
           name: cmake-documentation
-          path: build/docs
+          path: build/site
           retention-days: 5
