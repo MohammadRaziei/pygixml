@@ -10,15 +10,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
           brand: { DEFAULT: '#e67225', dark: '#c85a12', light: '#f2954f' },
-          ink: '#020617',
-          card: '#0E1223',
-          muted: '#1A1E2F',
+          ink: '#0b0e14',
+          card: '#12161f',
+          muted: '#171c28',
+          fg: '#e6e9ef',
+          dim: '#8b93a7',
+          hairline: '#232938',
         },
         fontFamily: {
           mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
@@ -35,8 +40,7 @@
 
   .hero-glow {
     background:
-      radial-gradient(60% 50% at 50% 0%, rgba(230,114,37,0.22) 0%, transparent 70%),
-      radial-gradient(40% 35% at 85% 15%, rgba(167,139,250,0.10) 0%, transparent 70%);
+      radial-gradient(60% 50% at 50% 0%, rgba(230,114,37,0.22) 0%, transparent 70%);
   }
   .text-gradient {
     background: linear-gradient(90deg, #e67225 0%, #f2954f 50%, #e67225 100%);
@@ -58,25 +62,26 @@
   }
   .grad-border {
     position: relative;
-    background: linear-gradient(#0E1223, #0E1223) padding-box,
-                linear-gradient(135deg, rgba(230,114,37,0.5), rgba(167,139,250,0.3)) border-box;
+    background: linear-gradient(#12161f, #12161f) padding-box,
+                linear-gradient(135deg, rgba(230,114,37,0.55), rgba(242,149,79,0.25)) border-box;
     border: 1px solid transparent;
   }
+  .hljs { background: transparent !important; padding: 0 !important; }
 </style>
 </head>
-<body class="bg-ink text-slate-50 antialiased">
+<body class="bg-ink text-fg antialiased">
 
-<header class="sticky top-0 z-20 backdrop-blur-md bg-ink/85 border-b border-white/10">
+<header class="sticky top-0 z-20 backdrop-blur-md bg-ink/85 border-b border-hairline">
   <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
     <a href="#" class="flex items-center gap-2.5">
       <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml" class="h-6 w-auto">
-      <span class="font-mono text-xs text-slate-400 border border-white/15 rounded-full px-2.5 py-0.5">v@PROJECT_VERSION@</span>
+      <span class="font-mono text-xs text-dim border border-hairline rounded-full px-2.5 py-0.5">v@PROJECT_VERSION@</span>
     </a>
     <div class="flex items-center gap-5">
-      <a href="docs/index.html" class="text-sm text-slate-400 hover:text-white transition-colors">Docs</a>
-      <a href="benchmarks/index.html" class="text-sm text-slate-400 hover:text-white transition-colors">Benchmarks</a>
+      <a href="docs/index.html" class="text-sm text-dim hover:text-fg transition-colors">Docs</a>
+      <a href="benchmarks/index.html" class="text-sm text-dim hover:text-fg transition-colors">Benchmarks</a>
       <a href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener"
-         class="inline-flex items-center gap-1.5 btn-gradient text-white text-[13px] font-semibold px-3.5 py-1.5 rounded-lg transition-all">
+         class="inline-flex items-center gap-1.5 bg-brand hover:opacity-85 text-white text-[13px] font-semibold px-3.5 py-1.5 rounded-lg transition-all">
         <svg viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.1.83-.27.83-.58v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.72.08-.72 1.2.09 1.84 1.24 1.84 1.24 1.07 1.82 2.8 1.3 3.49 1 .1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3Z"/></svg>
         GitHub
       </a>
@@ -84,7 +89,7 @@
   </div>
 </header>
 
-<section class="hero-glow text-center px-6 pt-24 pb-16 border-b border-white/10">
+<section class="hero-glow text-center px-6 pt-24 pb-16 border-b border-hairline">
   <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml" class="h-12 w-auto mx-auto mb-8 drop-shadow-[0_0_30px_rgba(230,114,37,0.35)]">
   <div class="inline-flex items-center gap-2 font-mono text-[13px] text-brand border border-brand/30 bg-brand/10 rounded-full px-4 py-1.5 mb-7">
     python &middot; giant &middot; xml &middot; framework
@@ -92,7 +97,7 @@
   <h1 class="text-4xl sm:text-5xl font-bold tracking-tight max-w-3xl mx-auto leading-[1.15] mb-5">
     The <span class="text-gradient">Python Giant XML</span> framework
   </h1>
-  <p class="text-slate-400 text-lg max-w-xl mx-auto mb-9">
+  <p class="text-dim text-lg max-w-xl mx-auto mb-9">
     pugixml's C++ DOM, an inlined <a href="https://dev.yorhel.nl/yxml" target="_blank" rel="noopener" class="text-brand hover:underline">yxml</a> streaming parser, and Cython
     holding them together &mdash; <code class="font-mono bg-muted rounded px-1.5 py-0.5 text-[0.9em]">dictify</code>,
     <code class="font-mono bg-muted rounded px-1.5 py-0.5 text-[0.9em]">objectify</code>,
@@ -103,73 +108,73 @@
       Get started
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
-    <a href="benchmarks/index.html" class="inline-flex items-center gap-2 bg-card border border-white/15 text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:border-brand/50 hover:-translate-y-0.5">
+    <a href="benchmarks/index.html" class="inline-flex items-center gap-2 bg-card border border-hairline text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:border-brand/50 hover:-translate-y-0.5">
       See the benchmarks
     </a>
   </div>
   <div class="grad-border max-w-md mx-auto rounded-xl px-5 py-3.5 flex items-center justify-between gap-3">
     <code class="font-mono text-[15px]">pip install pygixml</code>
-    <button onclick="copyText(this, 'pip install pygixml')" class="text-slate-400 hover:text-brand transition-colors" aria-label="Copy">
+    <button onclick="copyText(this, 'pip install pygixml')" class="text-dim hover:text-brand transition-colors" aria-label="Copy">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     </button>
   </div>
 </section>
 
-<div class="flex flex-wrap border-b border-white/10">
-  <div class="flex-1 min-w-[150px] text-center py-7 border-r border-white/10 last:border-r-0">
+<div class="flex flex-wrap border-b border-hairline">
+  <div class="flex-1 min-w-[150px] text-center py-7 border-r border-hairline last:border-r-0">
     <div class="font-mono text-xl font-bold text-brand">Fastest</div>
-    <div class="text-xs text-slate-400 mt-1">wins most of the benchmark suite</div>
+    <div class="text-xs text-dim mt-1">wins most of the benchmark suite</div>
   </div>
-  <div class="flex-1 min-w-[150px] text-center py-7 border-r border-white/10 last:border-r-0">
+  <div class="flex-1 min-w-[150px] text-center py-7 border-r border-hairline last:border-r-0">
     <div class="font-mono text-xl font-bold text-brand">Most efficient</div>
-    <div class="text-xs text-slate-400 mt-1">lowest peak memory, streaming</div>
+    <div class="text-xs text-dim mt-1">lowest peak memory, streaming</div>
   </div>
-  <div class="flex-1 min-w-[150px] text-center py-7 border-r border-white/10 last:border-r-0">
+  <div class="flex-1 min-w-[150px] text-center py-7 border-r border-hairline last:border-r-0">
     <div class="font-mono text-xl font-bold text-brand">&lt;0.5&nbsp;MB</div>
-    <div class="text-xs text-slate-400 mt-1">installed, lightweight</div>
+    <div class="text-xs text-dim mt-1">installed, lightweight</div>
   </div>
   <div class="flex-1 min-w-[150px] text-center py-7">
     <div class="font-mono text-xl font-bold text-brand">MIT</div>
-    <div class="text-xs text-slate-400 mt-1">License</div>
+    <div class="text-xs text-dim mt-1">License</div>
   </div>
 </div>
 
 <div class="max-w-6xl mx-auto px-6">
 
-<section class="py-16 border-b border-white/10">
+<section class="py-16 border-b border-hairline">
   <div class="font-mono text-xs uppercase tracking-wider text-brand mb-2.5">Explore</div>
   <h2 class="text-[28px] font-bold mb-3.5">Everything about pygixml, in two places</h2>
-  <p class="text-slate-400 text-[15px] max-w-xl mb-10">
+  <p class="text-dim text-[15px] max-w-xl mb-10">
     API reference and guides on one side, honest performance numbers &mdash;
     refreshed on a schedule, not hand-edited &mdash; on the other.
   </p>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-    <a href="docs/index.html" class="card-hover block bg-card border border-white/10 rounded-xl p-6">
+    <a href="docs/index.html" class="card-hover block bg-card border border-hairline rounded-xl p-6">
       <div class="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-brand mb-4">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
       </div>
       <div class="font-mono font-semibold mb-2">Documentation</div>
-      <div class="text-sm text-slate-400 mb-4">Quickstart, XML basics, XPath, streaming, dictify/objectify/jsonify, CLI reference, and full API docs.</div>
+      <div class="text-sm text-dim mb-4">Quickstart, XML basics, XPath, streaming, dictify/objectify/jsonify, CLI reference, and full API docs.</div>
       <div class="text-sm font-semibold text-brand flex items-center gap-1.5">Read the docs
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </div>
     </a>
-    <a href="benchmarks/index.html" class="card-hover block bg-card border border-white/10 rounded-xl p-6">
+    <a href="benchmarks/index.html" class="card-hover block bg-card border border-hairline rounded-xl p-6">
       <div class="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-brand mb-4">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 5-8"/></svg>
       </div>
       <div class="font-mono font-semibold mb-2">Benchmarks</div>
-      <div class="text-sm text-slate-400 mb-4">Speed, memory, and install size against lxml, ElementTree, xmltodict, and xmljson &mdash; interactive, raw data one click away.</div>
+      <div class="text-sm text-dim mb-4">Speed, memory, and install size against lxml, ElementTree, xmltodict, and xmljson &mdash; interactive, raw data one click away.</div>
       <div class="text-sm font-semibold text-brand flex items-center gap-1.5">See the numbers
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </div>
     </a>
-    <a href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener" class="card-hover block bg-card border border-white/10 rounded-xl p-6">
+    <a href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener" class="card-hover block bg-card border border-hairline rounded-xl p-6">
       <div class="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-brand mb-4">
         <svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.1.83-.27.83-.58v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.72.08-.72 1.2.09 1.84 1.24 1.84 1.24 1.07 1.82 2.8 1.3 3.49 1 .1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3Z"/></svg>
       </div>
       <div class="font-mono font-semibold mb-2">Source code</div>
-      <div class="text-sm text-slate-400 mb-4">MIT-licensed, on GitHub. Issues, PRs, and the full build (CMake + Cython) welcome.</div>
+      <div class="text-sm text-dim mb-4">MIT-licensed, on GitHub. Issues, PRs, and the full build (CMake + Cython) welcome.</div>
       <div class="text-sm font-semibold text-brand flex items-center gap-1.5">Open on GitHub
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </div>
@@ -177,58 +182,58 @@
   </div>
 </section>
 
-<section class="py-16 border-b border-white/10">
+<section class="py-16 border-b border-hairline">
   <div class="font-mono text-xs uppercase tracking-wider text-brand mb-2.5">Why pygixml</div>
   <h2 class="text-[28px] font-bold mb-3.5">One package, every way to read XML</h2>
-  <p class="text-slate-400 text-[15px] max-w-xl mb-10">Pick the layer that matches what you're actually doing with the file, not one generic tree API forced onto every use case.</p>
+  <p class="text-dim text-[15px] max-w-xl mb-10">Pick the layer that matches what you're actually doing with the file, not one generic tree API forced onto every use case.</p>
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><path d="M12 2 2 7l10 5 10-5-10-5ZM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">Raw DOM</div>
-      <div class="text-sm text-slate-400 leading-relaxed">pugixml's tree, directly &mdash; XPath 1.0, attributes, namespaces, the whole surface.</div>
+      <div class="text-sm text-dim leading-relaxed">pugixml's tree, directly &mdash; XPath 1.0, attributes, namespaces, the whole surface.</div>
     </div>
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">dictify</div>
-      <div class="text-sm text-slate-400 leading-relaxed">XML &rarr; plain dict, same convention as <code>xmltodict</code> &mdash; drop-in, not a rewrite.</div>
+      <div class="text-sm text-dim leading-relaxed">XML &rarr; plain dict, same convention as <code>xmltodict</code> &mdash; drop-in, not a rewrite.</div>
     </div>
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><circle cx="12" cy="12" r="9"/><path d="M9 12h6M12 9v6"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">objectify</div>
-      <div class="text-sm text-slate-400 leading-relaxed">Lazy attribute-style access &mdash; <code>root.child.grandchild</code> &mdash; nothing materialized until touched.</div>
+      <div class="text-sm text-dim leading-relaxed">Lazy attribute-style access &mdash; <code>root.child.grandchild</code> &mdash; nothing materialized until touched.</div>
     </div>
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">jsonify</div>
-      <div class="text-sm text-slate-400 leading-relaxed">Direct XML&rarr;JSON, including <code>stream_dump</code> &mdash; flat memory, however big the file gets.</div>
+      <div class="text-sm text-dim leading-relaxed">Direct XML&rarr;JSON, including <code>stream_dump</code> &mdash; flat memory, however big the file gets.</div>
     </div>
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><path d="M12 2v20M2 12h20"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">Streaming</div>
-      <div class="text-sm text-slate-400 leading-relaxed"><code>iterparse</code> / <code>iterfind</code> over yxml &mdash; process a file too big to ever load whole, one element at a time.</div>
+      <div class="text-sm text-dim leading-relaxed"><code>iterparse</code> / <code>iterfind</code> over yxml &mdash; process a file too big to ever load whole, one element at a time.</div>
     </div>
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">CLI</div>
-      <div class="text-sm text-slate-400 leading-relaxed"><code>pygixml cat</code>, <code>query</code>, <code>stream</code>, <code>convert</code> &mdash; XML from a shell pipeline.</div>
+      <div class="text-sm text-dim leading-relaxed"><code>pygixml cat</code>, <code>query</code>, <code>stream</code>, <code>convert</code> &mdash; XML from a shell pipeline.</div>
     </div>
   </div>
 </section>
 
-<section class="py-16 border-b border-white/10">
+<section class="py-16 border-b border-hairline">
   <div class="font-mono text-xs uppercase tracking-wider text-brand mb-2.5">Beyond speed</div>
   <h2 class="text-[28px] font-bold mb-3.5">What each library can actually do</h2>
-  <p class="text-slate-400 text-[15px] max-w-xl mb-10">
+  <p class="text-dim text-[15px] max-w-xl mb-10">
     Speed and memory aren't the whole story, and pygixml's scope isn't either
-    &mdash; it's a <strong class="text-slate-200">Python Giant XML</strong> framework,
+    &mdash; it's a <strong class="text-fg">Python Giant XML</strong> framework,
     built on pugixml plus a streaming yxml layer for the oversized case. A
     factual capability comparison, not a benchmark; static, so it lives here
     rather than in the generated report.
   </p>
-  <div class="bg-card border border-white/10 rounded-xl p-2 overflow-x-auto">
+  <div class="bg-card border border-hairline rounded-xl p-2 overflow-x-auto">
     <table class="w-full text-sm min-w-[640px]">
       <thead>
-        <tr class="text-slate-400 text-xs uppercase tracking-wide">
+        <tr class="text-dim text-xs uppercase tracking-wide">
           <th class="text-left font-mono font-medium px-4 py-3">Feature</th>
           <th class="font-mono font-medium px-3 py-3">pygixml</th>
           <th class="font-mono font-medium px-3 py-3">lxml</th>
@@ -238,116 +243,116 @@
         </tr>
       </thead>
       <tbody class="text-center">
-        <tr class="border-t border-white/10">
+        <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
-            <div class="text-slate-100 font-medium">XPath queries</div>
-            <div class="text-xs text-slate-500 mt-0.5">Selecting nodes with an XPath expression.</div>
+            <div class="text-fg font-medium">XPath queries</div>
+            <div class="text-xs text-fg0 mt-0.5">Selecting nodes with an XPath expression.</div>
           </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">Full XPath 1.0 (via pugixml)</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">Full XPath 1.0, plus EXSLT extensions</div></td>
-          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-slate-500 mt-0.5">Small subset: no position(), limited axes</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">Full XPath 1.0 (via pugixml)</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">Full XPath 1.0, plus EXSLT extensions</div></td>
+          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-fg0 mt-0.5">Small subset: no position(), limited axes</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">XSLT transforms</div></td>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">XSLT transforms</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">via libxslt</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-        </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">XML Schema (XSD) / DTD validation</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">via libxml2</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">via libxslt</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
-        <tr class="border-t border-white/10">
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">XML Schema (XSD) / DTD validation</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">via libxml2</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
-            <div class="text-slate-100 font-medium">Streaming, item-by-item parse</div>
-            <div class="text-xs text-slate-500 mt-0.5">Process one element at a time without holding the whole tree.</div>
+            <div class="text-fg font-medium">Streaming, item-by-item parse</div>
+            <div class="text-xs text-fg0 mt-0.5">Process one element at a time without holding the whole tree.</div>
           </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">iterparse/iterfind (yxml-based)</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">iterparse</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">iterparse</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">item_depth + item_callback</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">needs an already-built tree</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">iterparse/iterfind (yxml-based)</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">iterparse</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">iterparse</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">item_depth + item_callback</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">needs an already-built tree</div></td>
         </tr>
-        <tr class="border-t border-white/10">
+        <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
-            <div class="text-slate-100 font-medium">Constant-memory XML &rarr; single JSON</div>
-            <div class="text-xs text-slate-500 mt-0.5">Converting a file too large for RAM into one valid JSON document.</div>
+            <div class="text-fg font-medium">Constant-memory XML &rarr; single JSON</div>
+            <div class="text-xs text-fg0 mt-0.5">Converting a file too large for RAM into one valid JSON document.</div>
           </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">jsonify.stream_dump</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">jsonify.stream_dump</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">streams dicts to a callback, not one JSON doc</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-        </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Built-in XML &harr; dict/JSON conversion</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">dictify (xmltodict-compatible) + jsonify</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">needs xmljson</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">its entire purpose</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">needs lxml/ElementTree to parse first</div></td>
-        </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">YAML / TOON conversion</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">pygixml convert (optional deps)</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">streams dicts to a callback, not one JSON doc</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
-        <tr class="border-t border-white/10">
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">Built-in XML &harr; dict/JSON conversion</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">dictify (xmltodict-compatible) + jsonify</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">needs xmljson</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">its entire purpose</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">needs lxml/ElementTree to parse first</div></td>
+        </tr>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">YAML / TOON conversion</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">pygixml convert (optional deps)</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
-            <div class="text-slate-100 font-medium">Dotted / attribute-style navigation</div>
-            <div class="text-xs text-slate-500 mt-0.5">doc.root.child.grandchild instead of find()/XPath.</div>
+            <div class="text-fg font-medium">Dotted / attribute-style navigation</div>
+            <div class="text-xs text-fg0 mt-0.5">doc.root.child.grandchild instead of find()/XPath.</div>
           </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">objectify</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">lxml.objectify</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">objectify</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">lxml.objectify</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">plain dict access only</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-        </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Command-line tools</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">cat, query, jsonify, stream, convert</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">plain dict access only</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Backend</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">C++ (pugixml + inlined yxml) via Cython</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">C (libxml2 / libxslt)</div></td>
-          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-slate-500 mt-0.5">C accelerator, pure-Python fallback</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">pure Python, over stdlib expat</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">pure Python</div></td>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">Command-line tools</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">cat, query, jsonify, stream, convert</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
-        <tr class="border-t border-white/10">
-          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Standard library (zero install)</div></td>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">Backend</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">C++ (pugixml + inlined yxml) via Cython</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">C (libxml2 / libxslt)</div></td>
+          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-fg0 mt-0.5">C accelerator, pure-Python fallback</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">pure Python, over stdlib expat</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">pure Python</div></td>
+        </tr>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3"><div class="text-fg font-medium">Standard library (zero install)</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
-        <tr class="border-t border-white/10">
+        <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
-            <div class="text-slate-100 font-medium">abi3 / stable-ABI wheels</div>
-            <div class="text-xs text-slate-500 mt-0.5">One compiled wheel across Python minor versions.</div>
+            <div class="text-fg font-medium">abi3 / stable-ABI wheels</div>
+            <div class="text-xs text-fg0 mt-0.5">One compiled wheel across Python minor versions.</div>
           </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">cp310-abi3, covers 3.10+</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">per-Python-version wheels</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">n/a &mdash; ships with the interpreter</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">n/a &mdash; pure Python</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">n/a &mdash; pure Python</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">cp310-abi3, covers 3.10+</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">per-Python-version wheels</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">n/a &mdash; ships with the interpreter</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">n/a &mdash; pure Python</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">n/a &mdash; pure Python</div></td>
         </tr>
       </tbody>
     </table>
@@ -357,21 +362,21 @@
 <section class="py-16">
   <div class="font-mono text-xs uppercase tracking-wider text-brand mb-2.5">Usage</div>
   <h2 class="text-[28px] font-bold mb-3.5">Quick example</h2>
-  <p class="text-slate-400 text-[15px] max-w-xl mb-8">The same document, four ways.</p>
+  <p class="text-dim text-[15px] max-w-xl mb-8">The same document, four ways.</p>
 
-  <div class="flex gap-1 border-b border-white/10 overflow-x-auto" id="ex-tabs">
+  <div class="flex gap-1 border-b border-hairline overflow-x-auto" id="ex-tabs">
     <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-brand text-brand whitespace-nowrap" data-tab="dom" onclick="switchTab('dom')">Raw DOM</button>
-    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap" data-tab="dictify" onclick="switchTab('dictify')">dictify</button>
-    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap" data-tab="objectify" onclick="switchTab('objectify')">objectify</button>
-    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap" data-tab="jsonify" onclick="switchTab('jsonify')">jsonify</button>
-    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap" data-tab="stream" onclick="switchTab('stream')">Streaming</button>
-    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap" data-tab="cli" onclick="switchTab('cli')">CLI</button>
+    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-dim hover:text-fg whitespace-nowrap" data-tab="dictify" onclick="switchTab('dictify')">dictify</button>
+    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-dim hover:text-fg whitespace-nowrap" data-tab="objectify" onclick="switchTab('objectify')">objectify</button>
+    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-dim hover:text-fg whitespace-nowrap" data-tab="jsonify" onclick="switchTab('jsonify')">jsonify</button>
+    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-dim hover:text-fg whitespace-nowrap" data-tab="stream" onclick="switchTab('stream')">Streaming</button>
+    <button class="tab-btn font-mono text-[13px] font-medium px-4 py-2.5 border-b-2 border-transparent text-dim hover:text-fg whitespace-nowrap" data-tab="cli" onclick="switchTab('cli')">CLI</button>
   </div>
 
   <div class="tab-content mt-4.5" id="ex-dom">
-    <div class="relative bg-muted border border-white/10 rounded-xl p-5 pt-11">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <pre class="font-mono text-sm overflow-x-auto"><code>import pygixml
+    <div class="relative bg-muted border border-hairline rounded-xl p-5 pt-11">
+      <button class="absolute top-3 right-3 text-dim hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <pre class="font-mono text-sm overflow-x-auto"><code class="language-python">import pygixml
 
 doc = pygixml.parse_string("&lt;root&gt;&lt;item id='1'&gt;a&lt;/item&gt;&lt;/root&gt;")
 root = doc.root()
@@ -379,27 +384,27 @@ print(root.child("item").attribute("id").value())  # 1</code></pre>
     </div>
   </div>
   <div class="tab-content hidden mt-4.5" id="ex-dictify">
-    <div class="relative bg-muted border border-white/10 rounded-xl p-5 pt-11">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <pre class="font-mono text-sm overflow-x-auto"><code>from pygixml import dictify
+    <div class="relative bg-muted border border-hairline rounded-xl p-5 pt-11">
+      <button class="absolute top-3 right-3 text-dim hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <pre class="font-mono text-sm overflow-x-auto"><code class="language-python">from pygixml import dictify
 
 data = dictify.parse("&lt;root id='1'&gt;&lt;item&gt;a&lt;/item&gt;&lt;/root&gt;")
 # {'root': {'@id': '1', 'item': 'a'}} -- same convention as xmltodict</code></pre>
     </div>
   </div>
   <div class="tab-content hidden mt-4.5" id="ex-objectify">
-    <div class="relative bg-muted border border-white/10 rounded-xl p-5 pt-11">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <pre class="font-mono text-sm overflow-x-auto"><code>from pygixml import objectify
+    <div class="relative bg-muted border border-hairline rounded-xl p-5 pt-11">
+      <button class="absolute top-3 right-3 text-dim hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <pre class="font-mono text-sm overflow-x-auto"><code class="language-python">from pygixml import objectify
 
 root = objectify.from_string("&lt;root&gt;&lt;item&gt;a&lt;/item&gt;&lt;/root&gt;")
 print(root.item)  # lazy -- nothing parsed until accessed</code></pre>
     </div>
   </div>
   <div class="tab-content hidden mt-4.5" id="ex-jsonify">
-    <div class="relative bg-muted border border-white/10 rounded-xl p-5 pt-11">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <pre class="font-mono text-sm overflow-x-auto"><code>from pygixml import jsonify
+    <div class="relative bg-muted border border-hairline rounded-xl p-5 pt-11">
+      <button class="absolute top-3 right-3 text-dim hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <pre class="font-mono text-sm overflow-x-auto"><code class="language-python">from pygixml import jsonify
 
 json_str = jsonify.dumps("&lt;root&gt;&lt;item&gt;a&lt;/item&gt;&lt;/root&gt;")
 
@@ -408,9 +413,9 @@ jsonify.stream_dump("huge.xml", "huge.json")  # flat memory, any size</code></pr
     </div>
   </div>
   <div class="tab-content hidden mt-4.5" id="ex-stream">
-    <div class="relative bg-muted border border-white/10 rounded-xl p-5 pt-11">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <pre class="font-mono text-sm overflow-x-auto"><code>import pygixml
+    <div class="relative bg-muted border border-hairline rounded-xl p-5 pt-11">
+      <button class="absolute top-3 right-3 text-dim hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <pre class="font-mono text-sm overflow-x-auto"><code class="language-python">import pygixml
 
 # yxml push parser under the hood -- never holds the full document
 for record in pygixml.iterfind("huge.xml", "record"):
@@ -419,9 +424,9 @@ for record in pygixml.iterfind("huge.xml", "record"):
     </div>
   </div>
   <div class="tab-content hidden mt-4.5" id="ex-cli">
-    <div class="relative bg-muted border border-white/10 rounded-xl p-5 pt-11">
-      <button class="absolute top-3 right-3 text-slate-400 hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <pre class="font-mono text-sm overflow-x-auto"><code># pretty-print + colorize
+    <div class="relative bg-muted border border-hairline rounded-xl p-5 pt-11">
+      <button class="absolute top-3 right-3 text-dim hover:text-brand" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <pre class="font-mono text-sm overflow-x-auto"><code class="language-bash"># pretty-print + colorize
 pygixml cat data.xml
 
 # ad-hoc XPath from a shell pipeline
@@ -435,9 +440,9 @@ pygixml convert data.xml data.json</code></pre>
 
 </div>
 
-<section class="text-center py-16 px-6 bg-card border-y border-white/10 hero-glow">
+<section class="text-center py-16 px-6 bg-card border-y border-hairline hero-glow">
   <h2 class="text-2xl font-bold mb-3">Ready to try it?</h2>
-  <p class="text-slate-400 mb-7">One <code class="font-mono bg-muted rounded px-1.5 py-0.5">pip install</code>, no compiler needed on the common platforms.</p>
+  <p class="text-dim mb-7">One <code class="font-mono bg-muted rounded px-1.5 py-0.5">pip install</code>, no compiler needed on the common platforms.</p>
   <a href="docs/installation.html" class="inline-flex btn-gradient text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:-translate-y-0.5">Installation guide</a>
 </section>
 
@@ -446,19 +451,19 @@ pygixml convert data.xml data.json</code></pre>
     <div class="mb-2.5">
       <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml" class="h-5 w-auto">
     </div>
-    <div class="text-slate-400 text-sm max-w-xs">
+    <div class="text-dim text-sm max-w-xs">
       A giant-XML framework for Python: pugixml's C++ DOM, an inlined yxml
       streaming parser, and Cython &mdash; with dictify, objectify, jsonify,
       and a CLI on top.
     </div>
-    <div class="text-slate-500 text-xs mt-4">
+    <div class="text-fg0 text-xs mt-4">
       &copy; 2025 <a href="https://github.com/mohammadraziei" target="_blank" rel="noopener" class="hover:text-brand">Mohammad Raziei</a>
       &middot; <a href="https://github.com/MohammadRaziei/pygixml/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-brand">MIT License</a>
       &middot; v@PROJECT_VERSION@
     </div>
   </div>
   <div>
-    <div class="font-mono text-xs uppercase tracking-wider text-slate-500 mb-3">Resources</div>
+    <div class="font-mono text-xs uppercase tracking-wider text-fg0 mb-3">Resources</div>
     <div class="flex flex-col gap-2.5 text-sm">
       <a href="docs/index.html" class="flex items-center gap-2 hover:text-brand transition-colors">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
@@ -487,7 +492,7 @@ function switchTab(name) {
     b.classList.toggle('border-brand', active);
     b.classList.toggle('text-brand', active);
     b.classList.toggle('border-transparent', !active);
-    b.classList.toggle('text-slate-400', !active);
+    b.classList.toggle('text-dim', !active);
   });
   document.querySelectorAll('.tab-content').forEach(p => p.classList.toggle('hidden', p.id !== 'ex-' + name));
 }
@@ -504,6 +509,7 @@ function copyCode(btn) {
     setTimeout(() => btn.classList.remove('text-brand'), 1500);
   });
 }
+if (window.hljs) { hljs.highlightAll(); }
 </script>
 </body>
 </html>
