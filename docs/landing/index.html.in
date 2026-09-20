@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>pygixml — a giant-XML framework for Python</title>
-<meta name="description" content="pugixml's C++ DOM, plus a streaming layer for oversized documents. dictify, objectify, jsonify, and a CLI, all in one Cython extension.">
+<title>pygixml — the Python Giant XML framework</title>
+<meta name="description" content="pugixml's C++ DOM, an inlined yxml streaming parser, and Cython. dictify, objectify, jsonify, and a CLI, all in one extension.">
 <link rel="icon" href="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml-ico.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,7 +90,7 @@
     python &middot; giant &middot; xml &middot; framework
   </div>
   <h1 class="text-4xl sm:text-5xl font-bold tracking-tight max-w-3xl mx-auto leading-[1.15] mb-5">
-    Giant XML, handled <span class="text-gradient">without the giant memory bill</span>
+    The <span class="text-gradient">Python Giant XML</span> framework
   </h1>
   <p class="text-slate-400 text-lg max-w-xl mx-auto mb-9">
     pugixml's C++ DOM, an inlined <a href="https://dev.yorhel.nl/yxml" target="_blank" rel="noopener" class="text-brand hover:underline">yxml</a> streaming parser, and Cython
