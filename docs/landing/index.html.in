@@ -215,6 +215,145 @@
   </div>
 </section>
 
+<section class="py-16 border-b border-white/10">
+  <div class="font-mono text-xs uppercase tracking-wider text-brand mb-2.5">Beyond speed</div>
+  <h2 class="text-[28px] font-bold mb-3.5">What each library can actually do</h2>
+  <p class="text-slate-400 text-[15px] max-w-xl mb-10">
+    Speed and memory aren't the whole story, and pygixml's scope isn't either
+    &mdash; it's a <strong class="text-slate-200">Python Giant XML</strong> framework,
+    built on pugixml plus a streaming yxml layer for the oversized case. A
+    factual capability comparison, not a benchmark; static, so it lives here
+    rather than in the generated report.
+  </p>
+  <div class="bg-card border border-white/10 rounded-xl p-2 overflow-x-auto">
+    <table class="w-full text-sm min-w-[640px]">
+      <thead>
+        <tr class="text-slate-400 text-xs uppercase tracking-wide">
+          <th class="text-left font-mono font-medium px-4 py-3">Feature</th>
+          <th class="font-mono font-medium px-3 py-3">pygixml</th>
+          <th class="font-mono font-medium px-3 py-3">lxml</th>
+          <th class="font-mono font-medium px-3 py-3">ElementTree</th>
+          <th class="font-mono font-medium px-3 py-3">xmltodict</th>
+          <th class="font-mono font-medium px-3 py-3">xmljson</th>
+        </tr>
+      </thead>
+      <tbody class="text-center">
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3">
+            <div class="text-slate-100 font-medium">XPath queries</div>
+            <div class="text-xs text-slate-500 mt-0.5">Selecting nodes with an XPath expression.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">Full XPath 1.0 (via pugixml)</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">Full XPath 1.0, plus EXSLT extensions</div></td>
+          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-slate-500 mt-0.5">Small subset: no position(), limited axes</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">XSLT transforms</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">via libxslt</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">XML Schema (XSD) / DTD validation</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">via libxml2</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3">
+            <div class="text-slate-100 font-medium">Streaming, item-by-item parse</div>
+            <div class="text-xs text-slate-500 mt-0.5">Process one element at a time without holding the whole tree.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">iterparse/iterfind (yxml-based)</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">iterparse</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">iterparse</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">item_depth + item_callback</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">needs an already-built tree</div></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3">
+            <div class="text-slate-100 font-medium">Constant-memory XML &rarr; single JSON</div>
+            <div class="text-xs text-slate-500 mt-0.5">Converting a file too large for RAM into one valid JSON document.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">jsonify.stream_dump</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">streams dicts to a callback, not one JSON doc</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Built-in XML &harr; dict/JSON conversion</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">dictify (xmltodict-compatible) + jsonify</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">needs xmljson</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">its entire purpose</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">needs lxml/ElementTree to parse first</div></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">YAML / TOON conversion</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">pygixml convert (optional deps)</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3">
+            <div class="text-slate-100 font-medium">Dotted / attribute-style navigation</div>
+            <div class="text-xs text-slate-500 mt-0.5">doc.root.child.grandchild instead of find()/XPath.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">objectify</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">lxml.objectify</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">plain dict access only</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Command-line tools</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">cat, query, jsonify, stream, convert</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Backend</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">C++ (pugixml + inlined yxml) via Cython</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">C (libxml2 / libxslt)</div></td>
+          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-slate-500 mt-0.5">C accelerator, pure-Python fallback</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">pure Python, over stdlib expat</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">pure Python</div></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3"><div class="text-slate-100 font-medium">Standard library (zero install)</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-white/10">
+          <td class="text-left px-4 py-3">
+            <div class="text-slate-100 font-medium">abi3 / stable-ABI wheels</div>
+            <div class="text-xs text-slate-500 mt-0.5">One compiled wheel across Python minor versions.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">cp310-abi3, covers 3.10+</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-slate-500 mt-0.5">per-Python-version wheels</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">n/a &mdash; ships with the interpreter</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">n/a &mdash; pure Python</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-slate-500 mt-0.5">n/a &mdash; pure Python</div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <section class="py-16">
   <div class="font-mono text-xs uppercase tracking-wider text-brand mb-2.5">Usage</div>
   <h2 class="text-[28px] font-bold mb-3.5">Quick example</h2>

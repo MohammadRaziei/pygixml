@@ -29,7 +29,6 @@ from jinja2 import Environment, FileSystemLoader
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-BADGE_SYMBOL = {"yes": "\u2713", "no": "\u2715", "partial": "~"}
 LIB_LABELS = {
     "pygixml": "pygixml",
     "lxml": "lxml",
@@ -594,7 +593,6 @@ def build(results_dir, output_path, chartjs_path):
     scaling = _load(os.path.join(results_dir, "scaling.json"))
     memory = _load(os.path.join(results_dir, "memory.json"))
     sizes = _load(os.path.join(results_dir, "sizes.json"))
-    features = _load(os.path.join(results_dir, "features.json"))
     system_info = _load(os.path.join(results_dir, "system_info.json"))
 
     mem = _build_memory_section(memory)
@@ -607,7 +605,7 @@ def build(results_dir, output_path, chartjs_path):
 
     embedded = {
         "throughput": throughput, "throughput_memory": throughput_memory, "scaling": scaling,
-        "memory": memory, "sizes": sizes, "features": features, "system_info": system_info,
+        "memory": memory, "sizes": sizes, "system_info": system_info,
     }
 
     headline = "pygixml, measured honestly"
@@ -642,13 +640,9 @@ def build(results_dir, output_path, chartjs_path):
         scaling_dom_available=scl["dom_available"],
         throughput_ops=thr["ops"],
         repeats=thr["repeats"],
-        libraries=features["libraries"] if features else [],
-        lib_labels=LIB_LABELS,
-        features=features["features"] if features else [],
-        badge_symbol=BADGE_SYMBOL,
         has_memory=bool(memory), has_scaling=bool(scaling), has_throughput=bool(throughput),
         has_throughput_memory=bool(throughput_memory),
-        has_sizes=bool(sizes), has_features=bool(features),
+        has_sizes=bool(sizes),
         system_info=system_info,
         chartjs_source=chartjs_source,
         embedded_json=json.dumps(embedded),
@@ -664,7 +658,7 @@ def build(results_dir, output_path, chartjs_path):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("results_dir", help="directory containing throughput.json, scaling.json, memory.json, sizes.json, features.json, system_info.json")
+    p.add_argument("results_dir", help="directory containing throughput.json, scaling.json, memory.json, sizes.json, system_info.json")
     p.add_argument("output", help="path to write the standalone report.html")
     p.add_argument("--chartjs-path", default=os.path.join(HERE, "vendor", "chart.umd.min.js"),
                     help="path to a Chart.js UMD build (CMake fetches this fresh; "

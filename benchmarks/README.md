@@ -43,7 +43,6 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_throughput_memory` | Peak memory for the same operations/libraries/entries, one isolated process per (entry, op, library) |
 | `pygixml_bench_scaling` | Time vs. N — the O(n) vs. O(n²) story |
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
-| `pygixml_bench_features` | The feature comparison matrix (static, hand-curated) |
 | `pygixml_bench_system_info` | Record the machine's OS, CPU model, core count, and RAM |
 | `pygixml_bench_report` | Render everything above into `results/report.html` |
 
@@ -70,10 +69,12 @@ actual conversion layers, not just JSON: raw DOM parse, dict
 conversion (`dictify`, matched fairly against `xmltodict` since both
 use the same `@attr`/`#text` convention), lazy-object access
 (`objectify`, matched against lxml's own `objectify` submodule), and
-end-to-end XML→JSON (`jsonify`) — plus memory use at scale, install
-footprint, and a static feature matrix (XPath, XSLT, schema
-validation, streaming, CLI tools, and so on — things a speed number
-can't capture).
+end-to-end XML→JSON (`jsonify`) — plus memory use at scale and install
+footprint. The static feature matrix (XPath, XSLT, schema validation,
+streaming, CLI tools, and so on — things a speed number can't capture)
+lives on the [landing page](../docs/landing/index.html.in) instead of
+here: it's hand-curated fact, not something worth running code to
+regenerate.
 
 ### Corpus
 

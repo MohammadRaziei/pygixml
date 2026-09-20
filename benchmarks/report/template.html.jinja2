@@ -30,6 +30,46 @@ body {
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
 
 /* ---- Hero ---- */
+/* ---- Navbar ---- */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 24px;
+  background: rgba(11, 14, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.navbar-brand img { height: 22px; width: auto; }
+.navbar-links { display: flex; align-items: center; gap: 22px; }
+.navbar-link {
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--text-dim);
+  transition: color 150ms ease;
+}
+.navbar-link:hover { color: var(--text); }
+.navbar-link.current { color: var(--accent); font-weight: 600; }
+.navbar-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: 7px;
+  text-decoration: none;
+  transition: opacity 150ms ease;
+}
+.navbar-cta:hover { opacity: 0.85; }
+.navbar-cta svg { width: 14px; height: 14px; }
+
 .hero {
   padding: 90px 24px 70px;
   text-align: center;
@@ -143,28 +183,6 @@ th { color: var(--text-dim); font-weight: 600; font-size: 12.5px; text-transform
 td.num, th.num { text-align: right; font-family: var(--mono); }
 tr:last-child td { border-bottom: none; }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 0 6px;
-}
-.badge.yes { background: rgba(53,208,186,0.15); color: var(--good); }
-.badge.no  { background: rgba(255,107,129,0.12); color: var(--bad); }
-.badge.partial { background: rgba(255,180,84,0.15); color: var(--warn); }
-
-.feature-table td:first-child { color: var(--text); font-weight: 550; max-width: 220px; white-space: normal; }
-.feature-table .fnote { display:block; color: var(--text-dim); font-weight: 400; font-size: 12px; margin-top: 2px; }
-.feature-table td, .feature-table th { text-align: center; }
-.feature-table td:first-child, .feature-table th:first-child { text-align: left; }
-.table-scroll { overflow-x: auto; max-width: 100%; }
-.feature-table { min-width: 640px; }
-
 /* ---- Section-local download ---- */
 .section-download { margin-top: 22px; }
 .dl-btn {
@@ -204,6 +222,20 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 </style>
 </head>
 <body>
+
+<header class="navbar">
+  <a class="navbar-brand" href="https://mohammadraziei.github.io/pygixml/">
+    <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml">
+  </a>
+  <div class="navbar-links">
+    <a class="navbar-link" href="https://mohammadraziei.github.io/pygixml/docs/index.html">Docs</a>
+    <a class="navbar-link current" href="https://mohammadraziei.github.io/pygixml/benchmarks/index.html">Benchmarks</a>
+    <a class="navbar-cta" href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.1.83-.27.83-.58v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.72.08-.72 1.2.09 1.84 1.24 1.84 1.24 1.07 1.82 2.8 1.3 3.49 1 .1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3Z"/></svg>
+      GitHub
+    </a>
+  </div>
+</header>
 
 <div class="hero">
   <div class="eyebrow">pygixml benchmark report &middot; generated {{ generated_at }}</div>
@@ -394,54 +426,6 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     <button class="dl-btn" onclick="downloadJSON('sizes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
       sizes.json
-    </button>
-  </div>
-</section>
-{% endif %}
-
-{% if has_features %}
-<!-- ========================= FEATURES ========================= -->
-<section id="features">
-  <div class="kicker">Beyond speed</div>
-  <h2>What each library can actually do</h2>
-  <p class="lede">
-    Speed and memory aren't the whole story, and pygixml's scope isn't either
-    (pygixml = <strong>py</strong>thon <strong>gi</strong>ant <strong>xml</strong>,
-    built on pugixml plus a streaming yxml layer for the oversized case). This is
-    a factual capability comparison, not a benchmark &mdash; see
-    <code>benchmarks/python/features.py</code> for sourcing.
-  </p>
-  <div class="panel">
-    <div class="table-scroll">
-    <table class="feature-table">
-      <thead>
-        <tr>
-          <th>Feature</th>
-          {% for lib in libraries %}<th>{{ lib_labels[lib] }}</th>{% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in features %}
-        <tr>
-          <td>{{ row.feature }}{% if row.note %}<span class="fnote">{{ row.note }}</span>{% endif %}</td>
-          {% for lib in libraries %}
-          {% set cell = row['values'][lib] %}
-          <td>
-            <span class="badge {{ cell.value }}">{{ badge_symbol[cell.value] }}</span>
-            {% if cell.detail %}<span class="fnote">{{ cell.detail }}</span>{% endif %}
-          </td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    </div>
-  </div>
-
-  <div class="section-download">
-    <button class="dl-btn" onclick="downloadJSON('features')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
-      features.json
     </button>
   </div>
 </section>

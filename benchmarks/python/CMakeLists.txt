@@ -245,18 +245,12 @@ add_custom_command(
 )
 add_custom_target(pygixml_bench_memory DEPENDS "${MEMORY_JSON}")
 
-# ------------------------------------------------------------- features --
-
-set(FEATURES_JSON "${RESULTS_DIR}/features.json")
-
-add_custom_command(
-  OUTPUT "${FEATURES_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/features.py" "${FEATURES_JSON}"
-  DEPENDS "${VENV_STAMP}" "${PY_DIR}/features.py"
-  COMMENT "pygixml benchmarks: writing the feature comparison matrix"
-  USES_TERMINAL
-)
-add_custom_target(pygixml_bench_features DEPENDS "${FEATURES_JSON}")
+# Note: the "what each library can actually do" feature matrix used to
+# be generated here (features.py -> features.json -> a table in the
+# report). It's static, hand-curated content -- nothing to run, no
+# JSON worth round-tripping -- so it now lives as a plain HTML table on
+# the landing page instead (docs/landing/index.html.in), not as a
+# benchmark pipeline step.
 
 # --------------------------------------------------------- system info --
 # What machine this actually ran on -- reported plainly in the report
@@ -278,5 +272,5 @@ set(PYGIXML_BENCH_RESULTS_SCRATCH_DIR "${RESULTS_DIR}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_PYTHON "${VENV_PYTHON}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_STAMP "${VENV_STAMP}" PARENT_SCOPE)
 set(PYGIXML_BENCH_ALL_RESULT_JSONS
-    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${FEATURES_JSON}" "${SYSTEM_INFO_JSON}"
+    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${SYSTEM_INFO_JSON}"
     PARENT_SCOPE)
