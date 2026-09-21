@@ -8,6 +8,13 @@ if(WIN32)
 else()
   set(VENV_PYTHON "${VENV_DIR}/bin/python")
 endif()
+# Every invocation below passes -W ignore::RuntimeWarning:site: CMake's
+# Ninja generator relativizes absolute in-build-tree paths in generated
+# build commands for portability (e.g. "report/../python/venv/bin/python"
+# instead of the fully-resolved path) -- functionally identical, ".."
+# resolves correctly, but it trips a sys.prefix/pyvenv.cfg consistency
+# check Python 3.11+ added in the frozen `site` module. Scoped to that
+# one module so it never hides a real RuntimeWarning from anything else.
 
 file(MAKE_DIRECTORY "${RESULTS_DIR}")
 file(MAKE_DIRECTORY "${SCRATCH_DIR}")
@@ -44,7 +51,7 @@ if(NOT EXISTS "${VENV_STAMP}")
 
   message(STATUS "pygixml benchmarks: installing competitors + pygixml from ${PYGIXML_BENCH_GITHUB_URL} (configure time)...")
   execute_process(
-    COMMAND "${VENV_PYTHON}" -m pip install --upgrade pip --quiet
+    COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" -m pip install --upgrade pip --quiet
     RESULT_VARIABLE _pygixml_pip_upgrade_rc
   )
   if(NOT _pygixml_pip_upgrade_rc EQUAL 0)
@@ -52,7 +59,7 @@ if(NOT EXISTS "${VENV_STAMP}")
   endif()
 
   execute_process(
-    COMMAND "${VENV_PYTHON}" -m pip install -r "${PY_DIR}/requirements.txt" --quiet
+    COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" -m pip install -r "${PY_DIR}/requirements.txt" --quiet
     RESULT_VARIABLE _pygixml_pip_req_rc
   )
   if(NOT _pygixml_pip_req_rc EQUAL 0)
@@ -60,7 +67,7 @@ if(NOT EXISTS "${VENV_STAMP}")
   endif()
 
   execute_process(
-    COMMAND "${VENV_PYTHON}" -m pip install --force-reinstall --no-deps "${PYGIXML_BENCH_GITHUB_URL}" --quiet
+    COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" -m pip install --force-reinstall --no-deps "${PYGIXML_BENCH_GITHUB_URL}" --quiet
     RESULT_VARIABLE _pygixml_pip_pkg_rc
   )
   if(NOT _pygixml_pip_pkg_rc EQUAL 0)
@@ -82,7 +89,7 @@ set(CORPUS_MANIFEST "${CORPUS_DIR}/manifest.json")
 
 add_custom_command(
   OUTPUT "${CORPUS_MANIFEST}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/corpus.py" "${CORPUS_DIR}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/corpus.py" "${CORPUS_DIR}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/corpus.py"
   COMMENT "pygixml benchmarks: generating the synthetic corpus"
   USES_TERMINAL
@@ -108,7 +115,7 @@ if(PYGIXML_REAL_CORPUS_DIR)
   endif()
   add_custom_command(
     OUTPUT "${REAL_CORPUS_MANIFEST}"
-    COMMAND "${VENV_PYTHON}" "${PY_DIR}/real_corpus_manifest.py"
+    COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/real_corpus_manifest.py"
             "${PYGIXML_REAL_CORPUS_DIR}" "${REAL_CORPUS_XML_DIR}" "${REAL_CORPUS_MANIFEST}"
             ${_giant_xml_arg}
     DEPENDS "${VENV_STAMP}" "${PY_DIR}/real_corpus_manifest.py" ${_giant_xml_depend}
@@ -129,7 +136,7 @@ set(SIZES_JSON "${RESULTS_DIR}/sizes.json")
 
 add_custom_command(
   OUTPUT "${SIZES_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_sizes.py" "${SIZES_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_sizes.py" "${SIZES_JSON}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_sizes.py"
   COMMENT "pygixml benchmarks: comparing install footprint (pip-size)"
   USES_TERMINAL
@@ -149,7 +156,7 @@ set(THROUGHPUT_JSON "${RESULTS_DIR}/throughput.json")
 
 add_custom_command(
   OUTPUT "${THROUGHPUT_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_throughput.py" ${THROUGHPUT_MANIFESTS} "${THROUGHPUT_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_throughput.py" ${THROUGHPUT_MANIFESTS} "${THROUGHPUT_JSON}"
           --repeats "${PYGIXML_BENCH_REPEATS}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_throughput.py" "${CORPUS_MANIFEST}"
           "$<$<BOOL:${PYGIXML_REAL_CORPUS_DIR}>:${REAL_CORPUS_MANIFEST}>"
@@ -174,7 +181,7 @@ set(THROUGHPUT_MEMORY_JSON "${RESULTS_DIR}/throughput_memory.json")
 
 add_custom_command(
   OUTPUT "${THROUGHPUT_MEMORY_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_op_memory_driver.py" ${THROUGHPUT_MANIFESTS} "${THROUGHPUT_MEMORY_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_op_memory_driver.py" ${THROUGHPUT_MANIFESTS} "${THROUGHPUT_MEMORY_JSON}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_op_memory_driver.py" "${PY_DIR}/bench_op_memory_one.py" "${CORPUS_MANIFEST}"
           "$<$<BOOL:${PYGIXML_REAL_CORPUS_DIR}>:${REAL_CORPUS_MANIFEST}>"
   COMMENT "pygixml benchmarks: peak memory for parse/dictify/objectify/jsonify, all libraries"
@@ -189,7 +196,7 @@ set(SCALING_JSON "${RESULTS_DIR}/scaling.json")
 
 add_custom_command(
   OUTPUT "${SCALING_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_scaling.py" "${SCALING_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_scaling.py" "${SCALING_JSON}"
           --tmp-dir "${SCRATCH_DIR}/scaling"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_scaling.py" "${PY_DIR}/corpus.py"
   COMMENT "pygixml benchmarks: time vs N (records shape vs interleaved shape)"
@@ -214,7 +221,7 @@ set(MEMORY_GEN_MANIFEST "${MEMORY_GEN_DIR}/manifest.json")
 
 add_custom_command(
   OUTPUT "${MEMORY_GEN_MANIFEST}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_memory_gen.py" "${MEMORY_GEN_DIR}" --sizes "${MEMORY_SIZES_CSV}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_memory_gen.py" "${MEMORY_GEN_DIR}" --sizes "${MEMORY_SIZES_CSV}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_memory_gen.py" "${PY_DIR}/corpus.py"
   COMMENT "pygixml benchmarks: writing memory-benchmark input files (${MEMORY_SIZES_CSV} records)"
   USES_TERMINAL
@@ -232,7 +239,7 @@ foreach(_n ${MEMORY_SIZES})
     set(_point_json "${MEMORY_POINTS_DIR}/${_approach}_${_n}.json")
     add_custom_command(
       OUTPUT "${_point_json}"
-      COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_memory_one.py"
+      COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_memory_one.py"
               "${_approach}" "${_xml}" "${_scratch_out}" "${_point_json}" --n "${_n}"
       DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_memory_one.py" "${MEMORY_GEN_MANIFEST}"
       COMMENT "pygixml benchmarks: memory, ${_approach}, n=${_n}"
@@ -246,7 +253,7 @@ set(MEMORY_JSON "${RESULTS_DIR}/memory.json")
 
 add_custom_command(
   OUTPUT "${MEMORY_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/bench_memory_aggregate.py" "${MEMORY_POINTS_DIR}" "${MEMORY_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_memory_aggregate.py" "${MEMORY_POINTS_DIR}" "${MEMORY_JSON}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_memory_aggregate.py" ${MEMORY_POINT_JSONS}
   COMMENT "pygixml benchmarks: combining memory data points"
   USES_TERMINAL
@@ -268,7 +275,7 @@ set(SYSTEM_INFO_JSON "${RESULTS_DIR}/system_info.json")
 
 add_custom_command(
   OUTPUT "${SYSTEM_INFO_JSON}"
-  COMMAND "${VENV_PYTHON}" "${PY_DIR}/system_info.py" "${SYSTEM_INFO_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/system_info.py" "${SYSTEM_INFO_JSON}"
   DEPENDS "${VENV_STAMP}" "${PY_DIR}/system_info.py"
   COMMENT "pygixml benchmarks: recording machine specs (CPU/RAM/OS)"
   USES_TERMINAL

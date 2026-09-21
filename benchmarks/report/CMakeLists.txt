@@ -33,7 +33,10 @@ file(MAKE_DIRECTORY "${PYGIXML_BENCH_RESULTS_DIR}")
 
 add_custom_command(
   OUTPUT "${REPORT_HTML}"
-  COMMAND "${PYGIXML_BENCH_VENV_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/generate_report.py"
+  # -W ignore::RuntimeWarning:site -- see the comment on VENV_PYTHON in
+  # python/CMakeLists.txt for why every venv-python invocation carries this.
+  COMMAND "${PYGIXML_BENCH_VENV_PYTHON}" -W "ignore::RuntimeWarning:site"
+          "${CMAKE_CURRENT_SOURCE_DIR}/generate_report.py"
           "${PYGIXML_BENCH_RESULTS_SCRATCH_DIR}" "${REPORT_HTML}"
           --chartjs-path "${CHARTJS_UMD_MIN}"
   DEPENDS

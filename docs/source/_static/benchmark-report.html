@@ -73,6 +73,10 @@ body {
 }
 .navbar-cta:hover { opacity: 0.85; }
 .navbar-cta svg { width: 14px; height: 14px; }
+@media (max-width: 480px) {
+  .navbar-cta-text { display: none; }
+  .navbar-cta { padding: 7px 9px; }
+}
 
 .hero {
   padding: 90px 24px 70px;
@@ -198,8 +202,7 @@ h3.op-title:first-of-type { margin-top: 8px; }
 .panel h4 { margin: 0 0 4px; font-size: 14px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
 .chart-box { position: relative; height: 320px; }
 .chart-box.tall { height: 420px; }
-.chart-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-@media (max-width: 780px) { .chart-pair { grid-template-columns: 1fr; } }
+.chart-pair { display: grid; grid-template-columns: 1fr; gap: 18px; }
 
 /* ---- Tables ---- */
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -258,17 +261,17 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
       <a class="navbar-link current" href="https://mohammadraziei.github.io/pygixml/benchmarks/index.html">Benchmarks</a>
       <a class="navbar-cta" href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.1.83-.27.83-.58v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.72.08-.72 1.2.09 1.84 1.24 1.84 1.24 1.07 1.82 2.8 1.3 3.49 1 .1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3Z"/></svg>
-        GitHub
+        <span class="navbar-cta-text">GitHub</span>
       </a>
     </div>
   </div>
 </header>
 
 <div class="hero">
-  <div class="eyebrow">pygixml benchmark report &middot; generated 2026-09-21 03:06 UTC</div>
+  <div class="eyebrow">pygixml benchmark report &middot; generated 2026-09-21 08:11 UTC</div>
   <h1>pygixml, measured honestly</h1>
   <p class="sub">Every conversion layer pygixml ships &mdash; raw pugixml parsing, dictify, objectify, jsonify &mdash; benchmarked against lxml, ElementTree, xmltodict, and xmljson, on the same corpus, with the same methodology throughout.</p>
-  <div class="meta">10 corpus entries &middot; 5 repeats per cell</div>
+  <div class="meta">10 corpus entries &middot; 7 repeats per cell</div>
 </div>
 
 <div class="wrap">
@@ -285,14 +288,14 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     holding the whole tree in memory, so its curve is flat &mdash; O(1) against the
     others' O(n). That's a difference in <em>growth rate</em>, not a fixed multiplier:
     the gap widens as input grows, so no single "N&times; less memory" number at one
-    input size represents it fairly &mdash; the chart does. Largest file in this comparison: 12.3MB.
+    input size represents it fairly &mdash; the chart does. Largest file in this comparison: 3.1MB.
   </p>
 
   <div class="panel">
     <h4>Peak RSS vs. input size</h4>
     <p class="op-note">Log scale on both axes &mdash; a flat line here means constant memory; a line with the same slope as the others means it scales with input, same as everyone else.</p>
     <div class="chart-box tall"><canvas id="chart-memory"></canvas></div>
-    <p class="legend-note"><strong>pygixml (stream_dump)</strong> (O(1)) stayed within 15.7–15.9MB across every size tested, up to 12.3MB. Among the O(n), DOM-based approaches only (a fair comparison -- same complexity class): at the largest file tested, <strong>xmltodict</strong> used 2.6× less memory than <strong>lxml + xmljson</strong> (127.5MB vs 326.6MB).</p>
+    <p class="legend-note"><strong>pygixml (stream_dump)</strong> (O(1)) stayed within 15.7–15.9MB across every size tested, up to 3.1MB. Among the O(n), DOM-based approaches only (a fair comparison -- same complexity class): at the largest file tested, <strong>xmltodict</strong> used 2.0× less memory than <strong>lxml + xmljson</strong> (48.6MB vs 94.9MB).</p>
   </div>
 
   
@@ -336,7 +339,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     <h4>Time vs. N, by shape</h4>
     <p class="op-note">Same operation (<code>jsonify.stream_dump</code>), two different input shapes. Log-log, so a straight line means a power-law relationship &mdash; the slope tells you which power.</p>
     <div class="chart-box tall"><canvas id="chart-scaling"></canvas></div>
-    <p class="legend-note">N grew 256× (500 → 128,000): records-shape time grew 259.9× (linear, tracks N); interleaved-shape time grew 1452.4× (superlinear — approaching the documented O(n²) case). The slope, not a single ratio, is the finding.</p>
+    <p class="legend-note">N grew 256× (500 → 128,000): records-shape time grew 252.3× (linear, tracks N); interleaved-shape time grew 1361.4× (superlinear — approaching the documented O(n²) case). The slope, not a single ratio, is the finding.</p>
   </div>
 
   
@@ -366,7 +369,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     raw DOM, dict (<code>dictify</code>), lazy object (<code>objectify</code>), and
     JSON (<code>jsonify</code>). Each gets its own panel below, measured against its
     real, direct competitor rather than being folded into a single "XML to JSON"
-    number: <strong>time</strong> per corpus entry (best of 5 runs),
+    number: <strong>time</strong> per corpus entry (best of 7 runs),
     <strong>peak memory</strong> per corpus entry (each measured in its own isolated
     process, same reasoning as the memory section above), and
     <strong>throughput</strong> (MB/s) vs. input size, to see whether the rate holds
@@ -376,8 +379,8 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   
   <h3 class="op-title">parse — build a tree from the XML string, discard it</h3>
   <p class="op-note">xmltodict/xmljson have no separate “parse to a tree” step distinct from “parse straight to dict”, so they don't appear here.</p>
-  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 0.324ms) — lxml 2.32ms, ElementTree 4.24ms median. pygixml is 13.1× faster than the slowest (ElementTree) at the median.</p>
-  <p class="op-winner">Lowest peak memory on 9 of 10 corpus entries: <strong>ElementTree</strong> (median 15.0MB) — pygixml 17.5MB, lxml 20.5MB median. ElementTree uses 1.4× less memory than the highest (lxml).</p>
+  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 0.306ms) — lxml 2.26ms, ElementTree 4.13ms median. pygixml is 13.5× faster than the slowest (ElementTree) at the median.</p>
+  <p class="op-winner">Lowest peak memory on 9 of 10 corpus entries: <strong>ElementTree</strong> (median 15.0MB) — pygixml 17.5MB, lxml 20.4MB median. ElementTree uses 1.4× less memory than the highest (lxml).</p>
 
   <details class="mini-details">
     <summary>See per-entry detail (10 corpus entries)</summary>
@@ -387,11 +390,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-0"></canvas></div>
-        <div class="mini-values">pygixml 0.035ms  ·  lxml 0.221ms  ·  ElementTree 0.389ms</div>
+        <div class="mini-values">pygixml 0.035ms  ·  lxml 0.215ms  ·  ElementTree 0.340ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-0"></canvas></div>
-        <div class="mini-values">ElementTree 12.9MB  ·  pygixml 15.9MB  ·  lxml 18.0MB</div>
+        <div class="mini-values">ElementTree 13.0MB  ·  pygixml 15.9MB  ·  lxml 18.0MB</div>
         
       </div>
       
@@ -399,11 +402,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-1"></canvas></div>
-        <div class="mini-values">pygixml 0.711ms  ·  lxml 1.94ms  ·  ElementTree 3.20ms</div>
+        <div class="mini-values">pygixml 0.762ms  ·  lxml 1.90ms  ·  ElementTree 3.04ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-1"></canvas></div>
-        <div class="mini-values">ElementTree 14.6MB  ·  pygixml 17.7MB  ·  lxml 20.3MB</div>
+        <div class="mini-values">ElementTree 14.6MB  ·  pygixml 17.6MB  ·  lxml 20.2MB</div>
         
       </div>
       
@@ -411,11 +414,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-2"></canvas></div>
-        <div class="mini-values">pygixml 6.86ms  ·  lxml 19.7ms  ·  ElementTree 34.8ms</div>
+        <div class="mini-values">pygixml 6.96ms  ·  lxml 19.4ms  ·  ElementTree 35.1ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-2"></canvas></div>
-        <div class="mini-values">ElementTree 33.2MB  ·  pygixml 36.1MB  ·  lxml 42.3MB</div>
+        <div class="mini-values">ElementTree 33.3MB  ·  pygixml 36.0MB  ·  lxml 42.4MB</div>
         
       </div>
       
@@ -423,11 +426,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-3"></canvas></div>
-        <div class="mini-values">pygixml 0.052ms  ·  lxml 0.448ms  ·  ElementTree 0.725ms</div>
+        <div class="mini-values">pygixml 0.050ms  ·  lxml 0.471ms  ·  ElementTree 0.779ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-3"></canvas></div>
-        <div class="mini-values">ElementTree 13.0MB  ·  pygixml 15.9MB  ·  lxml 18.2MB</div>
+        <div class="mini-values">ElementTree 13.0MB  ·  pygixml 16.0MB  ·  lxml 18.3MB</div>
         
       </div>
       
@@ -435,11 +438,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-4"></canvas></div>
-        <div class="mini-values">pygixml 0.416ms  ·  lxml 4.19ms  ·  ElementTree 7.27ms</div>
+        <div class="mini-values">pygixml 0.383ms  ·  lxml 4.08ms  ·  ElementTree 7.16ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-4"></canvas></div>
-        <div class="mini-values">ElementTree 17.0MB  ·  pygixml 18.6MB  ·  lxml 22.7MB</div>
+        <div class="mini-values">ElementTree 17.0MB  ·  pygixml 18.5MB  ·  lxml 22.8MB</div>
         
       </div>
       
@@ -447,7 +450,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-5"></canvas></div>
-        <div class="mini-values">pygixml 10.7ms  ·  lxml 47.0ms  ·  ElementTree 84.7ms</div>
+        <div class="mini-values">pygixml 12.6ms  ·  lxml 55.8ms  ·  ElementTree 91.5ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-5"></canvas></div>
@@ -459,11 +462,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-6"></canvas></div>
-        <div class="mini-values">pygixml 0.032ms  ·  lxml 0.304ms  ·  ElementTree 0.426ms</div>
+        <div class="mini-values">pygixml 0.031ms  ·  lxml 0.307ms  ·  ElementTree 0.414ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-6"></canvas></div>
-        <div class="mini-values">ElementTree 13.0MB  ·  pygixml 15.8MB  ·  lxml 18.1MB</div>
+        <div class="mini-values">ElementTree 13.1MB  ·  pygixml 15.9MB  ·  lxml 18.1MB</div>
         
       </div>
       
@@ -471,11 +474,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-7"></canvas></div>
-        <div class="mini-values">pygixml 0.233ms  ·  lxml 2.70ms  ·  ElementTree 4.05ms</div>
+        <div class="mini-values">pygixml 0.229ms  ·  lxml 2.62ms  ·  ElementTree 4.04ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-7"></canvas></div>
-        <div class="mini-values">ElementTree 14.6MB  ·  pygixml 17.4MB  ·  lxml 20.7MB</div>
+        <div class="mini-values">ElementTree 14.5MB  ·  pygixml 17.5MB  ·  lxml 20.6MB</div>
         
       </div>
       
@@ -483,11 +486,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-8"></canvas></div>
-        <div class="mini-values">pygixml 7.80ms  ·  lxml 27.5ms  ·  ElementTree 45.0ms</div>
+        <div class="mini-values">pygixml 6.91ms  ·  lxml 27.1ms  ·  ElementTree 44.1ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-8"></canvas></div>
-        <div class="mini-values">ElementTree 33.3MB  ·  pygixml 33.8MB  ·  lxml 45.6MB</div>
+        <div class="mini-values">ElementTree 33.4MB  ·  pygixml 33.7MB  ·  lxml 45.6MB</div>
         
       </div>
       
@@ -495,11 +498,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">config/fixed</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-parse-9"></canvas></div>
-        <div class="mini-values">pygixml 0.230ms  ·  lxml 1.71ms  ·  ElementTree 4.43ms</div>
+        <div class="mini-values">pygixml 0.226ms  ·  lxml 1.63ms  ·  ElementTree 4.23ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-parse-9"></canvas></div>
-        <div class="mini-values">ElementTree 15.4MB  ·  pygixml 16.9MB  ·  lxml 19.6MB</div>
+        <div class="mini-values">ElementTree 15.4MB  ·  pygixml 16.8MB  ·  lxml 19.6MB</div>
         
       </div>
       
@@ -532,7 +535,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   
   <h3 class="op-title">dict_convert — pygixml.dictify vs xmltodict</h3>
   <p class="op-note">Both sides use the same convention (@-prefixed attributes, #text for mixed content) so the dicts they produce are structurally identical, not just “both happen to be a dict.”</p>
-  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 2.53ms) — xmltodict 20.0ms median. pygixml is 7.9× faster than the slowest (xmltodict) at the median.</p>
+  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 2.52ms) — xmltodict 19.9ms median. pygixml is 7.9× faster than the slowest (xmltodict) at the median.</p>
   <p class="op-winner">Lowest peak memory on 7 of 10 corpus entries: <strong>pygixml</strong> (median 18.9MB) — xmltodict 23.0MB median. pygixml uses 1.2× less memory than the highest (xmltodict).</p>
 
   <details class="mini-details">
@@ -543,11 +546,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-0"></canvas></div>
-        <div class="mini-values">pygixml 0.210ms  ·  xmltodict 1.71ms</div>
+        <div class="mini-values">pygixml 0.215ms  ·  xmltodict 1.71ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-0"></canvas></div>
-        <div class="mini-values">pygixml 15.9MB  ·  xmltodict 21.0MB</div>
+        <div class="mini-values">pygixml 16.0MB  ·  xmltodict 20.9MB</div>
         
       </div>
       
@@ -555,7 +558,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-1"></canvas></div>
-        <div class="mini-values">pygixml 2.33ms  ·  xmltodict 16.1ms</div>
+        <div class="mini-values">pygixml 2.35ms  ·  xmltodict 16.1ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-1"></canvas></div>
@@ -567,11 +570,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-2"></canvas></div>
-        <div class="mini-values">pygixml 27.2ms  ·  xmltodict 172.9ms</div>
+        <div class="mini-values">pygixml 28.2ms  ·  xmltodict 172.2ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-2"></canvas></div>
-        <div class="mini-values">xmltodict 39.5MB  ·  pygixml 46.6MB</div>
+        <div class="mini-values">xmltodict 39.5MB  ·  pygixml 46.4MB</div>
         
       </div>
       
@@ -579,11 +582,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-3"></canvas></div>
-        <div class="mini-values">pygixml 0.522ms  ·  xmltodict 3.38ms</div>
+        <div class="mini-values">pygixml 0.525ms  ·  xmltodict 3.32ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-3"></canvas></div>
-        <div class="mini-values">pygixml 16.2MB  ·  xmltodict 21.3MB</div>
+        <div class="mini-values">pygixml 16.2MB  ·  xmltodict 21.2MB</div>
         
       </div>
       
@@ -591,11 +594,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-4"></canvas></div>
-        <div class="mini-values">pygixml 5.08ms  ·  xmltodict 32.9ms</div>
+        <div class="mini-values">pygixml 5.00ms  ·  xmltodict 32.7ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-4"></canvas></div>
-        <div class="mini-values">pygixml 21.9MB  ·  xmltodict 25.7MB</div>
+        <div class="mini-values">pygixml 21.9MB  ·  xmltodict 25.8MB</div>
         
       </div>
       
@@ -603,11 +606,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-5"></canvas></div>
-        <div class="mini-values">pygixml 75.6ms  ·  xmltodict 383.7ms</div>
+        <div class="mini-values">pygixml 81.8ms  ·  xmltodict 368.3ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-5"></canvas></div>
-        <div class="mini-values">xmltodict 64.5MB  ·  pygixml 78.4MB</div>
+        <div class="mini-values">xmltodict 64.3MB  ·  pygixml 78.4MB</div>
         
       </div>
       
@@ -615,7 +618,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-6"></canvas></div>
-        <div class="mini-values">pygixml 0.267ms  ·  xmltodict 2.50ms</div>
+        <div class="mini-values">pygixml 0.269ms  ·  xmltodict 2.40ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-6"></canvas></div>
@@ -627,7 +630,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-7"></canvas></div>
-        <div class="mini-values">pygixml 2.73ms  ·  xmltodict 24.0ms</div>
+        <div class="mini-values">pygixml 2.70ms  ·  xmltodict 23.8ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-7"></canvas></div>
@@ -639,11 +642,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-8"></canvas></div>
-        <div class="mini-values">pygixml 37.4ms  ·  xmltodict 247.6ms</div>
+        <div class="mini-values">pygixml 39.4ms  ·  xmltodict 241.4ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-8"></canvas></div>
-        <div class="mini-values">xmltodict 39.8MB  ·  pygixml 50.1MB</div>
+        <div class="mini-values">xmltodict 39.8MB  ·  pygixml 50.2MB</div>
         
       </div>
       
@@ -651,11 +654,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">config/fixed</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-dict_convert-9"></canvas></div>
-        <div class="mini-values">pygixml 1.54ms  ·  xmltodict 15.2ms</div>
+        <div class="mini-values">pygixml 1.50ms  ·  xmltodict 15.0ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-dict_convert-9"></canvas></div>
-        <div class="mini-values">pygixml 17.7MB  ·  xmltodict 23.2MB</div>
+        <div class="mini-values">pygixml 17.7MB  ·  xmltodict 23.3MB</div>
         
       </div>
       
@@ -688,8 +691,8 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   
   <h3 class="op-title">to_object — pygixml.objectify vs lxml.objectify</h3>
   <p class="op-note">Lazy attribute-style access (root.child.grandchild), matched against lxml's own objectify submodule -- a real feature both libraries ship, not an improvised comparison.</p>
-  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 0.338ms) — lxml 2.32ms median. pygixml is 6.9× faster than the slowest (lxml) at the median.</p>
-  <p class="op-winner">Lowest peak memory on 10 of 10 corpus entries: <strong>pygixml</strong> (median 17.6MB) — lxml 21.3MB median. pygixml uses 1.2× less memory than the highest (lxml).</p>
+  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 0.308ms) — lxml 2.17ms median. pygixml is 7.0× faster than the slowest (lxml) at the median.</p>
+  <p class="op-winner">Lowest peak memory on 10 of 10 corpus entries: <strong>pygixml</strong> (median 17.6MB) — lxml 21.4MB median. pygixml uses 1.2× less memory than the highest (lxml).</p>
 
   <details class="mini-details">
     <summary>See per-entry detail (10 corpus entries)</summary>
@@ -699,11 +702,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-0"></canvas></div>
-        <div class="mini-values">pygixml 0.038ms  ·  lxml 0.224ms</div>
+        <div class="mini-values">pygixml 0.036ms  ·  lxml 0.217ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-0"></canvas></div>
-        <div class="mini-values">pygixml 15.9MB  ·  lxml 19.0MB</div>
+        <div class="mini-values">pygixml 15.9MB  ·  lxml 19.1MB</div>
         
       </div>
       
@@ -711,11 +714,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-1"></canvas></div>
-        <div class="mini-values">pygixml 0.645ms  ·  lxml 1.94ms</div>
+        <div class="mini-values">pygixml 0.680ms  ·  lxml 1.91ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-1"></canvas></div>
-        <div class="mini-values">pygixml 17.7MB  ·  lxml 21.2MB</div>
+        <div class="mini-values">pygixml 17.7MB  ·  lxml 21.3MB</div>
         
       </div>
       
@@ -723,11 +726,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-2"></canvas></div>
-        <div class="mini-values">pygixml 6.74ms  ·  lxml 19.5ms</div>
+        <div class="mini-values">pygixml 6.95ms  ·  lxml 19.2ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-2"></canvas></div>
-        <div class="mini-values">pygixml 36.0MB  ·  lxml 43.3MB</div>
+        <div class="mini-values">pygixml 36.1MB  ·  lxml 43.3MB</div>
         
       </div>
       
@@ -735,11 +738,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-3"></canvas></div>
-        <div class="mini-values">pygixml 0.055ms  ·  lxml 0.442ms</div>
+        <div class="mini-values">pygixml 0.050ms  ·  lxml 0.460ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-3"></canvas></div>
-        <div class="mini-values">pygixml 15.9MB  ·  lxml 19.2MB</div>
+        <div class="mini-values">pygixml 16.1MB  ·  lxml 19.2MB</div>
         
       </div>
       
@@ -747,11 +750,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-4"></canvas></div>
-        <div class="mini-values">pygixml 0.425ms  ·  lxml 4.16ms</div>
+        <div class="mini-values">pygixml 0.389ms  ·  lxml 4.30ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-4"></canvas></div>
-        <div class="mini-values">pygixml 18.6MB  ·  lxml 23.6MB</div>
+        <div class="mini-values">pygixml 18.6MB  ·  lxml 23.7MB</div>
         
       </div>
       
@@ -759,11 +762,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-5"></canvas></div>
-        <div class="mini-values">pygixml 11.2ms  ·  lxml 47.5ms</div>
+        <div class="mini-values">pygixml 10.8ms  ·  lxml 47.8ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-5"></canvas></div>
-        <div class="mini-values">pygixml 45.1MB  ·  lxml 68.0MB</div>
+        <div class="mini-values">pygixml 45.1MB  ·  lxml 67.9MB</div>
         
       </div>
       
@@ -771,11 +774,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-6"></canvas></div>
-        <div class="mini-values">pygixml 0.035ms  ·  lxml 0.299ms</div>
+        <div class="mini-values">pygixml 0.034ms  ·  lxml 0.300ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-6"></canvas></div>
-        <div class="mini-values">pygixml 15.8MB  ·  lxml 19.1MB</div>
+        <div class="mini-values">pygixml 15.9MB  ·  lxml 19.0MB</div>
         
       </div>
       
@@ -783,11 +786,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-7"></canvas></div>
-        <div class="mini-values">pygixml 0.251ms  ·  lxml 2.71ms</div>
+        <div class="mini-values">pygixml 0.216ms  ·  lxml 2.42ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-7"></canvas></div>
-        <div class="mini-values">pygixml 17.6MB  ·  lxml 21.5MB</div>
+        <div class="mini-values">pygixml 17.5MB  ·  lxml 21.5MB</div>
         
       </div>
       
@@ -795,11 +798,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-8"></canvas></div>
-        <div class="mini-values">pygixml 6.84ms  ·  lxml 27.1ms</div>
+        <div class="mini-values">pygixml 6.79ms  ·  lxml 26.8ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-8"></canvas></div>
-        <div class="mini-values">pygixml 33.6MB  ·  lxml 46.5MB</div>
+        <div class="mini-values">pygixml 33.7MB  ·  lxml 46.5MB</div>
         
       </div>
       
@@ -807,11 +810,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">config/fixed</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-to_object-9"></canvas></div>
-        <div class="mini-values">pygixml 0.234ms  ·  lxml 1.58ms</div>
+        <div class="mini-values">pygixml 0.228ms  ·  lxml 1.57ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-to_object-9"></canvas></div>
-        <div class="mini-values">pygixml 16.9MB  ·  lxml 20.5MB</div>
+        <div class="mini-values">pygixml 16.9MB  ·  lxml 20.6MB</div>
         
       </div>
       
@@ -844,7 +847,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   
   <h3 class="op-title">xml_to_json — pygixml.jsonify vs the field, end to end</h3>
   <p class="op-note">ElementTree has no built-in dict/JSON conversion at all -- a real gap for it, not an oversight in this chart.</p>
-  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 1.88ms) — xmltodict 21.4ms, xmljson 23.9ms median. pygixml is 12.7× faster than the slowest (xmljson) at the median.</p>
+  <p class="op-winner">Fastest on 10 of 10 corpus entries: <strong>pygixml</strong> (median 1.79ms) — xmltodict 20.9ms, xmljson 23.5ms median. pygixml is 13.1× faster than the slowest (xmljson) at the median.</p>
   <p class="op-winner">Lowest peak memory on 9 of 10 corpus entries: <strong>pygixml</strong> (median 18.2MB) — xmljson 22.8MB, xmltodict 23.0MB median. pygixml uses 1.3× less memory than the highest (xmltodict).</p>
 
   <details class="mini-details">
@@ -855,11 +858,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-0"></canvas></div>
-        <div class="mini-values">pygixml 0.173ms  ·  xmltodict 1.83ms  ·  xmljson 2.29ms</div>
+        <div class="mini-values">pygixml 0.171ms  ·  xmltodict 1.76ms  ·  xmljson 2.21ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-0"></canvas></div>
-        <div class="mini-values">pygixml 15.9MB  ·  xmljson 18.3MB  ·  xmltodict 21.0MB</div>
+        <div class="mini-values">pygixml 15.8MB  ·  xmljson 18.3MB  ·  xmltodict 21.0MB</div>
         
       </div>
       
@@ -867,7 +870,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-1"></canvas></div>
-        <div class="mini-values">pygixml 2.11ms  ·  xmltodict 17.2ms  ·  xmljson 22.2ms</div>
+        <div class="mini-values">pygixml 2.06ms  ·  xmltodict 17.1ms  ·  xmljson 22.0ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-1"></canvas></div>
@@ -879,11 +882,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">rss/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-2"></canvas></div>
-        <div class="mini-values">pygixml 21.9ms  ·  xmltodict 177.0ms  ·  xmljson 244.6ms</div>
+        <div class="mini-values">pygixml 22.3ms  ·  xmltodict 183.1ms  ·  xmljson 247.3ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-2"></canvas></div>
-        <div class="mini-values">xmltodict 42.4MB  ·  pygixml 43.3MB  ·  xmljson 57.9MB</div>
+        <div class="mini-values">xmltodict 42.4MB  ·  pygixml 43.2MB  ·  xmljson 57.9MB</div>
         
       </div>
       
@@ -891,11 +894,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-3"></canvas></div>
-        <div class="mini-values">pygixml 0.295ms  ·  xmljson 2.79ms  ·  xmltodict 3.68ms</div>
+        <div class="mini-values">pygixml 0.288ms  ·  xmljson 2.69ms  ·  xmltodict 3.66ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-3"></canvas></div>
-        <div class="mini-values">pygixml 16.0MB  ·  xmljson 18.6MB  ·  xmltodict 21.2MB</div>
+        <div class="mini-values">pygixml 16.1MB  ·  xmljson 18.6MB  ·  xmltodict 21.2MB</div>
         
       </div>
       
@@ -903,11 +906,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-4"></canvas></div>
-        <div class="mini-values">pygixml 2.80ms  ·  xmljson 26.9ms  ·  xmltodict 36.1ms</div>
+        <div class="mini-values">pygixml 2.76ms  ·  xmljson 27.2ms  ·  xmltodict 36.0ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-4"></canvas></div>
-        <div class="mini-values">pygixml 19.6MB  ·  xmljson 25.7MB  ·  xmltodict 25.8MB</div>
+        <div class="mini-values">pygixml 19.5MB  ·  xmljson 25.7MB  ·  xmltodict 25.8MB</div>
         
       </div>
       
@@ -915,11 +918,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">catalog/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-5"></canvas></div>
-        <div class="mini-values">pygixml 40.1ms  ·  xmljson 322.3ms  ·  xmltodict 401.4ms</div>
+        <div class="mini-values">pygixml 40.0ms  ·  xmljson 327.8ms  ·  xmltodict 398.8ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-5"></canvas></div>
-        <div class="mini-values">pygixml 53.9MB  ·  xmltodict 68.1MB  ·  xmljson 86.9MB</div>
+        <div class="mini-values">pygixml 53.8MB  ·  xmltodict 68.1MB  ·  xmljson 86.9MB</div>
         
       </div>
       
@@ -927,11 +930,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/small</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-6"></canvas></div>
-        <div class="mini-values">pygixml 0.178ms  ·  xmltodict 2.65ms  ·  xmljson 2.74ms</div>
+        <div class="mini-values">pygixml 0.176ms  ·  xmljson 2.60ms  ·  xmltodict 2.60ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-6"></canvas></div>
-        <div class="mini-values">pygixml 15.9MB  ·  xmljson 18.5MB  ·  xmltodict 20.9MB</div>
+        <div class="mini-values">pygixml 16.0MB  ·  xmljson 18.4MB  ·  xmltodict 21.0MB</div>
         
       </div>
       
@@ -939,11 +942,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/medium</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-7"></canvas></div>
-        <div class="mini-values">pygixml 1.64ms  ·  xmltodict 25.7ms  ·  xmljson 25.7ms</div>
+        <div class="mini-values">pygixml 1.52ms  ·  xmltodict 24.8ms  ·  xmljson 25.0ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-7"></canvas></div>
-        <div class="mini-values">pygixml 17.9MB  ·  xmltodict 22.8MB  ·  xmljson 23.6MB</div>
+        <div class="mini-values">pygixml 17.9MB  ·  xmltodict 22.8MB  ·  xmljson 23.7MB</div>
         
       </div>
       
@@ -951,11 +954,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">records/large</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-8"></canvas></div>
-        <div class="mini-values">pygixml 22.9ms  ·  xmltodict 255.9ms  ·  xmljson 290.3ms</div>
+        <div class="mini-values">pygixml 22.6ms  ·  xmltodict 258.3ms  ·  xmljson 295.2ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-8"></canvas></div>
-        <div class="mini-values">pygixml 37.7MB  ·  xmltodict 39.9MB  ·  xmljson 68.4MB</div>
+        <div class="mini-values">pygixml 37.8MB  ·  xmltodict 39.8MB  ·  xmljson 68.4MB</div>
         
       </div>
       
@@ -963,11 +966,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
         <div class="mini-label">config/fixed</div>
         <div class="mini-subhead">Time (ms)</div>
         <div class="mini-chart-box"><canvas id="chart-time-xml_to_json-9"></canvas></div>
-        <div class="mini-values">pygixml 1.14ms  ·  xmljson 11.7ms  ·  xmltodict 15.9ms</div>
+        <div class="mini-values">pygixml 1.20ms  ·  xmljson 11.4ms  ·  xmltodict 16.0ms</div>
         
         <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
         <div class="mini-chart-box"><canvas id="chart-mem-xml_to_json-9"></canvas></div>
-        <div class="mini-values">pygixml 17.2MB  ·  xmljson 20.8MB  ·  xmltodict 23.1MB</div>
+        <div class="mini-values">pygixml 17.2MB  ·  xmljson 20.8MB  ·  xmltodict 23.2MB</div>
         
       </div>
       
@@ -1099,7 +1102,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 </script>
 
 <script id="pygixml-data" type="application/json">
-{"throughput": {"operation_notes": {"parse": "build a tree from the XML string, discard it", "dict_convert": "XML string in, plain dict out (same @attr/#text convention both sides)", "to_object": "XML string in, lazy attribute-style object out", "xml_to_json": "XML string in, JSON string out, end to end"}, "repeats": 5, "metric": "best (min) wall-clock seconds over repeats", "results": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 3.510599998435282e-05}, "lxml": {"available": true, "seconds": 0.0002214170000058857}, "elementtree": {"available": true, "seconds": 0.0003894350000166469}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.00020964000000844862}, "xmltodict": {"available": true, "seconds": 0.0017117460000122264}}, "to_object": {"pygixml": {"available": true, "seconds": 3.788799998005743e-05}, "lxml": {"available": true, "seconds": 0.00022421100001679406}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0001730209999948329}, "xmltodict": {"available": true, "seconds": 0.0018295349999846167}, "xmljson": {"available": true, "seconds": 0.0022921599999961018}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.000711051000024554}, "lxml": {"available": true, "seconds": 0.0019390349999923728}, "elementtree": {"available": true, "seconds": 0.003204350000004297}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.002329350000024988}, "xmltodict": {"available": true, "seconds": 0.01607260300002622}}, "to_object": {"pygixml": {"available": true, "seconds": 0.0006450849999737329}, "lxml": {"available": true, "seconds": 0.0019415019999939886}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0021082220000039342}, "xmltodict": {"available": true, "seconds": 0.01716497399999639}, "xmljson": {"available": true, "seconds": 0.022150657999986834}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.0068580589999953645}, "lxml": {"available": true, "seconds": 0.019674315000003162}, "elementtree": {"available": true, "seconds": 0.03484758500002272}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.02719287900001177}, "xmltodict": {"available": true, "seconds": 0.17285143799998082}}, "to_object": {"pygixml": {"available": true, "seconds": 0.006738103000003548}, "lxml": {"available": true, "seconds": 0.019512378999991142}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.021948457999997117}, "xmltodict": {"available": true, "seconds": 0.17697071500001016}, "xmljson": {"available": true, "seconds": 0.24458394200001976}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 5.2232000001595225e-05}, "lxml": {"available": true, "seconds": 0.00044829700001969286}, "elementtree": {"available": true, "seconds": 0.0007252830000084032}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0005216759999768783}, "xmltodict": {"available": true, "seconds": 0.003375236000010773}}, "to_object": {"pygixml": {"available": true, "seconds": 5.505400000060945e-05}, "lxml": {"available": true, "seconds": 0.000442115999987891}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0002948830000093494}, "xmltodict": {"available": true, "seconds": 0.003680389000010109}, "xmljson": {"available": true, "seconds": 0.002788282000011577}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.00041580100000260245}, "lxml": {"available": true, "seconds": 0.004188018999997212}, "elementtree": {"available": true, "seconds": 0.007271770999977889}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.005082633000000669}, "xmltodict": {"available": true, "seconds": 0.03289929900000743}}, "to_object": {"pygixml": {"available": true, "seconds": 0.0004251370000076804}, "lxml": {"available": true, "seconds": 0.004162068999988833}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0027952640000137308}, "xmltodict": {"available": true, "seconds": 0.03610747199999764}, "xmljson": {"available": true, "seconds": 0.026914179000016247}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.01068408699998713}, "lxml": {"available": true, "seconds": 0.04698888799998713}, "elementtree": {"available": true, "seconds": 0.08466848300000152}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.07559632999999621}, "xmltodict": {"available": true, "seconds": 0.3836759470000004}}, "to_object": {"pygixml": {"available": true, "seconds": 0.011211830000007694}, "lxml": {"available": true, "seconds": 0.047524925000004714}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.040099681999976156}, "xmltodict": {"available": true, "seconds": 0.40144154699999035}, "xmljson": {"available": true, "seconds": 0.3222646020000184}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 3.150300000243078e-05}, "lxml": {"available": true, "seconds": 0.0003042369999946004}, "elementtree": {"available": true, "seconds": 0.0004260879999833378}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0002665640000145686}, "xmltodict": {"available": true, "seconds": 0.0025041640000154075}}, "to_object": {"pygixml": {"available": true, "seconds": 3.4814999992249795e-05}, "lxml": {"available": true, "seconds": 0.0002992039999867302}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.00017812900000535592}, "xmltodict": {"available": true, "seconds": 0.0026461820000065472}, "xmljson": {"available": true, "seconds": 0.0027428379999889785}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.00023253400001976843}, "lxml": {"available": true, "seconds": 0.002704553000000942}, "elementtree": {"available": true, "seconds": 0.004053179000010232}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0027273219999983667}, "xmltodict": {"available": true, "seconds": 0.02402487700001643}}, "to_object": {"pygixml": {"available": true, "seconds": 0.0002505289999987781}, "lxml": {"available": true, "seconds": 0.0027082519999908072}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0016439700000034918}, "xmltodict": {"available": true, "seconds": 0.02568601800001602}, "xmljson": {"available": true, "seconds": 0.02568616700000348}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.007797495999994908}, "lxml": {"available": true, "seconds": 0.027480471999979272}, "elementtree": {"available": true, "seconds": 0.045025191999997105}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0374378889999889}, "xmltodict": {"available": true, "seconds": 0.2476409559999979}}, "to_object": {"pygixml": {"available": true, "seconds": 0.0068373999999948865}, "lxml": {"available": true, "seconds": 0.02710528699998349}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.02289692200000104}, "xmltodict": {"available": true, "seconds": 0.25593931399998837}, "xmljson": {"available": true, "seconds": 0.29026034099999265}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.00022955199997909403}, "lxml": {"available": true, "seconds": 0.0017121649999864985}, "elementtree": {"available": true, "seconds": 0.004434583999994857}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0015368760000171733}, "xmltodict": {"available": true, "seconds": 0.01521526199999812}}, "to_object": {"pygixml": {"available": true, "seconds": 0.00023412799998823175}, "lxml": {"available": true, "seconds": 0.00158461200001625}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0011393709999936164}, "xmltodict": {"available": true, "seconds": 0.01585983800001145}, "xmljson": {"available": true, "seconds": 0.011707107000006545}}}]}, "throughput_memory": {"parse": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.9296875}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 32122, "available": true, "peak_rss_mb": 18.03125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 32122, "available": true, "peak_rss_mb": 12.890625}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 17.66015625}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 322067, "available": true, "peak_rss_mb": 20.328125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 322067, "available": true, "peak_rss_mb": 14.5859375}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 36.08984375}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 3249652, "available": true, "peak_rss_mb": 42.28515625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 3249652, "available": true, "peak_rss_mb": 33.24609375}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 15.9296875}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 39123, "available": true, "peak_rss_mb": 18.20703125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 39123, "available": true, "peak_rss_mb": 13.015625}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 18.6328125}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 389019, "available": true, "peak_rss_mb": 22.66796875}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 389019, "available": true, "peak_rss_mb": 17.0078125}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 45.12890625}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 3901895, "available": true, "peak_rss_mb": 66.9296875}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 3901895, "available": true, "peak_rss_mb": 58.234375}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.76953125}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 19035, "available": true, "peak_rss_mb": 18.06640625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 19035, "available": true, "peak_rss_mb": 13.015625}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 17.4375}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 194739, "available": true, "peak_rss_mb": 20.65625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 194739, "available": true, "peak_rss_mb": 14.59375}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 33.79296875}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 1987163, "available": true, "peak_rss_mb": 45.64453125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 1987163, "available": true, "peak_rss_mb": 33.3203125}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 16.8828125}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 170298, "available": true, "peak_rss_mb": 19.56640625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 170298, "available": true, "peak_rss_mb": 15.41015625}}}], "dict_convert": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.9453125}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 32122, "available": true, "peak_rss_mb": 20.95703125}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 18.7265625}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 322067, "available": true, "peak_rss_mb": 22.7578125}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 46.55859375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 3249652, "available": true, "peak_rss_mb": 39.546875}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 16.1640625}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 39123, "available": true, "peak_rss_mb": 21.33984375}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 21.8671875}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 389019, "available": true, "peak_rss_mb": 25.671875}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 78.35546875}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 3901895, "available": true, "peak_rss_mb": 64.48828125}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.984375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 19035, "available": true, "peak_rss_mb": 20.953125}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 19.0859375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 194739, "available": true, "peak_rss_mb": 22.796875}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 50.1484375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 1987163, "available": true, "peak_rss_mb": 39.7578125}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 17.67578125}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 170298, "available": true, "peak_rss_mb": 23.16796875}}}], "to_object": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.8515625}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 32122, "available": true, "peak_rss_mb": 18.9609375}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 17.65234375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 322067, "available": true, "peak_rss_mb": 21.1953125}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 35.9609375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 3249652, "available": true, "peak_rss_mb": 43.3125}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 15.9296875}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 39123, "available": true, "peak_rss_mb": 19.234375}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 18.56640625}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 389019, "available": true, "peak_rss_mb": 23.64453125}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 45.10546875}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 3901895, "available": true, "peak_rss_mb": 67.95703125}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.8359375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 19035, "available": true, "peak_rss_mb": 19.0859375}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 17.5546875}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 194739, "available": true, "peak_rss_mb": 21.4609375}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 33.6328125}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 1987163, "available": true, "peak_rss_mb": 46.54296875}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 16.8515625}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 170298, "available": true, "peak_rss_mb": 20.48046875}}}], "xml_to_json": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.8671875}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 32122, "available": true, "peak_rss_mb": 20.95703125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 32122, "available": true, "peak_rss_mb": 18.28125}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 18.50390625}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 322067, "available": true, "peak_rss_mb": 22.7578125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 322067, "available": true, "peak_rss_mb": 21.9140625}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 43.32421875}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 3249652, "available": true, "peak_rss_mb": 42.375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 3249652, "available": true, "peak_rss_mb": 57.921875}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 15.9921875}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 39123, "available": true, "peak_rss_mb": 21.203125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 39123, "available": true, "peak_rss_mb": 18.62109375}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 19.62109375}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 389019, "available": true, "peak_rss_mb": 25.75}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 389019, "available": true, "peak_rss_mb": 25.71875}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 53.93359375}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 3901895, "available": true, "peak_rss_mb": 68.1015625}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 3901895, "available": true, "peak_rss_mb": 86.921875}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.94140625}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 19035, "available": true, "peak_rss_mb": 20.94921875}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 19035, "available": true, "peak_rss_mb": 18.46484375}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 17.85546875}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 194739, "available": true, "peak_rss_mb": 22.80859375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 194739, "available": true, "peak_rss_mb": 23.63671875}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 37.7265625}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 1987163, "available": true, "peak_rss_mb": 39.859375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 1987163, "available": true, "peak_rss_mb": 68.37109375}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 17.19921875}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 170298, "available": true, "peak_rss_mb": 23.1484375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 170298, "available": true, "peak_rss_mb": 20.77734375}}}]}, "scaling": {"pygixml_stream_dump": {"records_shape": [{"n": 500, "bytes": 97023, "seconds": 0.032443463999982214}, {"n": 2000, "bytes": 393533, "seconds": 0.12992813900001465}, {"n": 8000, "bytes": 1587638, "seconds": 0.5328666930000168}, {"n": 32000, "bytes": 6448299, "seconds": 2.0942812580000236}, {"n": 128000, "bytes": 26060379, "seconds": 8.431801207000007}], "interleaved_shape": [{"n": 500, "bytes": 15841, "seconds": 0.007888976000003822}, {"n": 2000, "bytes": 65841, "seconds": 0.025719938000008824}, {"n": 8000, "bytes": 269841, "seconds": 0.12407552600001281}, {"n": 32000, "bytes": 1129841, "seconds": 1.0172532160000003}, {"n": 128000, "bytes": 4641841, "seconds": 11.457689861000006}]}, "dom_competitors_records_shape": {"pygixml_dom": {"available": true, "points": [{"n": 500, "bytes": 97023, "seconds": 0.0010896490000220638}, {"n": 2000, "bytes": 393533, "seconds": 0.003866651999999249}, {"n": 8000, "bytes": 1587638, "seconds": 0.01683022500000675}, {"n": 32000, "bytes": 6448299, "seconds": 0.07677831199998764}]}, "lxml_plus_xmljson": {"available": true, "points": [{"n": 500, "bytes": 97023, "seconds": 0.013663070999996307}, {"n": 2000, "bytes": 393533, "seconds": 0.056506210000009105}, {"n": 8000, "bytes": 1587638, "seconds": 0.2340860279999788}, {"n": 32000, "bytes": 6448299, "seconds": 1.0363416060000077}]}, "xmltodict": {"available": true, "points": [{"n": 500, "bytes": 97023, "seconds": 0.013092121999989104}, {"n": 2000, "bytes": 393533, "seconds": 0.052641147000002775}, {"n": 8000, "bytes": 1587638, "seconds": 0.2130595779999851}, {"n": 32000, "bytes": 6448299, "seconds": 0.8888047169999993}]}}}, "memory": {"lxml_plus_xmljson": {"available": true, "points": [{"approach": "lxml_plus_xmljson", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 23.39453125, "seconds": 0.02474747000002253}, {"approach": "lxml_plus_xmljson", "n": 4000, "bytes": 791105, "available": true, "peak_rss_mb": 37.62109375, "seconds": 0.10858614100001773}, {"approach": "lxml_plus_xmljson", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 94.95703125, "seconds": 0.48541425300001606}, {"approach": "lxml_plus_xmljson", "n": 64000, "bytes": 12937243, "available": true, "peak_rss_mb": 326.5703125, "seconds": 1.9934921349999968}]}, "pygixml_dom": {"available": true, "points": [{"approach": "pygixml_dom", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 17.88671875, "seconds": 0.002200682999983883}, {"approach": "pygixml_dom", "n": 4000, "bytes": 791105, "available": true, "peak_rss_mb": 24.0703125, "seconds": 0.008975792999990517}, {"approach": "pygixml_dom", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 48.6484375, "seconds": 0.03716774199997985}, {"approach": "pygixml_dom", "n": 64000, "bytes": 12937243, "available": true, "peak_rss_mb": 147.80078125, "seconds": 0.1678863070000034}]}, "pygixml_stream_dump": {"available": true, "points": [{"approach": "pygixml_stream_dump", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 15.875, "seconds": 0.05638632100001928}, {"approach": "pygixml_stream_dump", "n": 4000, "bytes": 791105, "available": true, "peak_rss_mb": 15.8828125, "seconds": 0.22531751899998653}, {"approach": "pygixml_stream_dump", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 15.69140625, "seconds": 0.9021715260000178}, {"approach": "pygixml_stream_dump", "n": 64000, "bytes": 12937243, "available": true, "peak_rss_mb": 15.83984375, "seconds": 3.7236425870000005}]}, "xmltodict": {"available": true, "points": [{"approach": "xmltodict", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 22.6171875, "seconds": 0.02570067599998538}, {"approach": "xmltodict", "n": 4000, "bytes": 791105, "available": true, "peak_rss_mb": 27.87890625, "seconds": 0.10527381700001115}, {"approach": "xmltodict", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 48.65625, "seconds": 0.43704920999999786}, {"approach": "xmltodict", "n": 64000, "bytes": 12937243, "available": true, "peak_rss_mb": 127.46484375, "seconds": 1.860815811000009}]}}, "sizes": {"pygixml": {"available": true, "name": "pygixml", "version": "0.12.2", "size": "402.5 KB", "total_size": "402.5 KB", "filename": "pygixml-0.12.2-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl"}, "lxml": {"available": true, "name": "lxml", "version": "6.1.3", "size": "5.0 MB", "total_size": "5.0 MB", "filename": "lxml-6.1.3-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl"}, "xmltodict": {"available": true, "name": "xmltodict", "version": "1.0.4", "size": "13.3 KB", "total_size": "13.3 KB", "filename": "xmltodict-1.0.4-py3-none-any.whl"}, "xmljson": {"available": true, "name": "xmljson", "version": "0.2.1", "size": "9.9 KB", "total_size": "9.9 KB", "filename": "xmljson-0.2.1-py2.py3-none-any.whl"}, "elementtree": {"available": true, "name": "elementtree", "version": "stdlib", "size": "0 B", "total_size": "0 B", "note": "Python standard library -- always present, nothing to install"}}, "system_info": {"os": "Linux 6.18.44-fc-v37", "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39", "architecture": "x86_64", "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz", "logical_cores": 1, "ram_gib": 3.9, "python_implementation": "CPython", "python_version": "3.12.3"}}
+{"throughput": {"operation_notes": {"parse": "build a tree from the XML string, discard it", "dict_convert": "XML string in, plain dict out (same @attr/#text convention both sides)", "to_object": "XML string in, lazy attribute-style object out", "xml_to_json": "XML string in, JSON string out, end to end"}, "repeats": 7, "metric": "best (min) wall-clock seconds over repeats", "results": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 3.53080000081718e-05}, "lxml": {"available": true, "seconds": 0.00021527100000184873}, "elementtree": {"available": true, "seconds": 0.00033975899999916237}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.00021518300000877844}, "xmltodict": {"available": true, "seconds": 0.0017077900000117552}}, "to_object": {"pygixml": {"available": true, "seconds": 3.61359999914157e-05}, "lxml": {"available": true, "seconds": 0.00021724199999084703}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.00017143099999827882}, "xmltodict": {"available": true, "seconds": 0.0017630570000051193}, "xmljson": {"available": true, "seconds": 0.002212493000001814}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.0007620299999899771}, "lxml": {"available": true, "seconds": 0.0018961660000087477}, "elementtree": {"available": true, "seconds": 0.0030360939999951597}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0023458929999975453}, "xmltodict": {"available": true, "seconds": 0.016122668999997813}}, "to_object": {"pygixml": {"available": true, "seconds": 0.0006803969999964465}, "lxml": {"available": true, "seconds": 0.0019122380000027306}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0020640099999980066}, "xmltodict": {"available": true, "seconds": 0.01706043699999782}, "xmljson": {"available": true, "seconds": 0.021950133000004257}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.006959706999992932}, "lxml": {"available": true, "seconds": 0.019403345000000627}, "elementtree": {"available": true, "seconds": 0.03513725599999873}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.028217067999989354}, "xmltodict": {"available": true, "seconds": 0.1722318580000035}}, "to_object": {"pygixml": {"available": true, "seconds": 0.006953242000008686}, "lxml": {"available": true, "seconds": 0.019217188000013152}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.02225798800000689}, "xmltodict": {"available": true, "seconds": 0.18307311599998854}, "xmljson": {"available": true, "seconds": 0.24728275399999688}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 4.999300000463336e-05}, "lxml": {"available": true, "seconds": 0.000470907999996939}, "elementtree": {"available": true, "seconds": 0.0007790230000068732}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0005249419999984184}, "xmltodict": {"available": true, "seconds": 0.0033174890000111645}}, "to_object": {"pygixml": {"available": true, "seconds": 5.047800000568259e-05}, "lxml": {"available": true, "seconds": 0.0004600649999986217}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.00028814899999929366}, "xmltodict": {"available": true, "seconds": 0.0036648199999973485}, "xmljson": {"available": true, "seconds": 0.002693862999990415}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.0003834769999997434}, "lxml": {"available": true, "seconds": 0.004076494000003095}, "elementtree": {"available": true, "seconds": 0.007156735999998887}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.004995575999998891}, "xmltodict": {"available": true, "seconds": 0.03274248999998974}}, "to_object": {"pygixml": {"available": true, "seconds": 0.0003891369999990957}, "lxml": {"available": true, "seconds": 0.004295671000008383}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0027595210000015413}, "xmltodict": {"available": true, "seconds": 0.036018967000003954}, "xmljson": {"available": true, "seconds": 0.027214326000006395}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.01256560500000603}, "lxml": {"available": true, "seconds": 0.05582362600000579}, "elementtree": {"available": true, "seconds": 0.09149321499999985}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.08176062499998693}, "xmltodict": {"available": true, "seconds": 0.36826953299998877}}, "to_object": {"pygixml": {"available": true, "seconds": 0.010812449999988871}, "lxml": {"available": true, "seconds": 0.04783687200000486}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.04000231899999562}, "xmltodict": {"available": true, "seconds": 0.39883604000000616}, "xmljson": {"available": true, "seconds": 0.32776742800000136}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 3.1346000000098684e-05}, "lxml": {"available": true, "seconds": 0.0003073290000088491}, "elementtree": {"available": true, "seconds": 0.000414097999993146}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0002691440000006651}, "xmltodict": {"available": true, "seconds": 0.002402654000007942}}, "to_object": {"pygixml": {"available": true, "seconds": 3.4399999989886965e-05}, "lxml": {"available": true, "seconds": 0.0003002539999954479}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0001758169999988013}, "xmltodict": {"available": true, "seconds": 0.002602193000001307}, "xmljson": {"available": true, "seconds": 0.002601169000001846}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.0002294319999975869}, "lxml": {"available": true, "seconds": 0.0026241580000032627}, "elementtree": {"available": true, "seconds": 0.004037675999995827}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0026974849999987782}, "xmltodict": {"available": true, "seconds": 0.023754957000008403}}, "to_object": {"pygixml": {"available": true, "seconds": 0.00021574299999826962}, "lxml": {"available": true, "seconds": 0.002422221000003333}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0015249730000022055}, "xmltodict": {"available": true, "seconds": 0.02480172399999958}, "xmljson": {"available": true, "seconds": 0.02495575800000438}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.006914124999994442}, "lxml": {"available": true, "seconds": 0.02711187800001369}, "elementtree": {"available": true, "seconds": 0.044052563999997574}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.039383344000000875}, "xmltodict": {"available": true, "seconds": 0.2414335759999915}}, "to_object": {"pygixml": {"available": true, "seconds": 0.00679159700000298}, "lxml": {"available": true, "seconds": 0.026784374000001776}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.02263909399999875}, "xmltodict": {"available": true, "seconds": 0.25826252800000304}, "xmljson": {"available": true, "seconds": 0.2952196699999945}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {}, "parse": {"pygixml": {"available": true, "seconds": 0.00022632400001043607}, "lxml": {"available": true, "seconds": 0.0016341530000119064}, "elementtree": {"available": true, "seconds": 0.0042272620000005645}}, "dict_convert": {"pygixml": {"available": true, "seconds": 0.0015024719999985336}, "xmltodict": {"available": true, "seconds": 0.014952696000008814}}, "to_object": {"pygixml": {"available": true, "seconds": 0.00022772799999870585}, "lxml": {"available": true, "seconds": 0.001565728000002764}}, "xml_to_json": {"pygixml": {"available": true, "seconds": 0.0012007680000039045}, "xmltodict": {"available": true, "seconds": 0.015978629999992222}, "xmljson": {"available": true, "seconds": 0.01144017699999722}}}]}, "throughput_memory": {"parse": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.9296875}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 32122, "available": true, "peak_rss_mb": 18.03125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 32122, "available": true, "peak_rss_mb": 13.0234375}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 17.58984375}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 322067, "available": true, "peak_rss_mb": 20.24609375}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 322067, "available": true, "peak_rss_mb": 14.61328125}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 36.01953125}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 3249652, "available": true, "peak_rss_mb": 42.36328125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 3249652, "available": true, "peak_rss_mb": 33.265625}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 15.9765625}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 39123, "available": true, "peak_rss_mb": 18.26953125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 39123, "available": true, "peak_rss_mb": 13.0234375}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 18.546875}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 389019, "available": true, "peak_rss_mb": 22.75390625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 389019, "available": true, "peak_rss_mb": 17.02734375}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 45.10546875}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 3901895, "available": true, "peak_rss_mb": 66.90234375}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 3901895, "available": true, "peak_rss_mb": 58.203125}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.93359375}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 19035, "available": true, "peak_rss_mb": 18.1171875}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 19035, "available": true, "peak_rss_mb": 13.1484375}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 17.49609375}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 194739, "available": true, "peak_rss_mb": 20.6328125}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 194739, "available": true, "peak_rss_mb": 14.5078125}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 33.703125}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 1987163, "available": true, "peak_rss_mb": 45.640625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 1987163, "available": true, "peak_rss_mb": 33.3515625}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "parse", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 16.80078125}, "lxml": {"operation": "parse", "library": "lxml", "bytes": 170298, "available": true, "peak_rss_mb": 19.640625}, "elementtree": {"operation": "parse", "library": "elementtree", "bytes": 170298, "available": true, "peak_rss_mb": 15.4140625}}}], "dict_convert": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.95703125}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 32122, "available": true, "peak_rss_mb": 20.890625}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 18.7109375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 322067, "available": true, "peak_rss_mb": 22.76171875}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 46.36328125}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 3249652, "available": true, "peak_rss_mb": 39.5}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 16.2421875}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 39123, "available": true, "peak_rss_mb": 21.19140625}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 21.9140625}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 389019, "available": true, "peak_rss_mb": 25.7734375}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 78.37109375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 3901895, "available": true, "peak_rss_mb": 64.296875}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.96875}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 19035, "available": true, "peak_rss_mb": 20.953125}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 19.078125}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 194739, "available": true, "peak_rss_mb": 22.80859375}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 50.16015625}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 1987163, "available": true, "peak_rss_mb": 39.76171875}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "dict_convert", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 17.71484375}, "xmltodict": {"operation": "dict_convert", "library": "xmltodict", "bytes": 170298, "available": true, "peak_rss_mb": 23.26953125}}}], "to_object": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.93359375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 32122, "available": true, "peak_rss_mb": 19.0546875}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 17.65625}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 322067, "available": true, "peak_rss_mb": 21.265625}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 36.11328125}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 3249652, "available": true, "peak_rss_mb": 43.32421875}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 16.1171875}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 39123, "available": true, "peak_rss_mb": 19.1796875}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 18.59765625}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 389019, "available": true, "peak_rss_mb": 23.69140625}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 45.11328125}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 3901895, "available": true, "peak_rss_mb": 67.9453125}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 15.93359375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 19035, "available": true, "peak_rss_mb": 19.046875}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 17.49609375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 194739, "available": true, "peak_rss_mb": 21.46875}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 33.74609375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 1987163, "available": true, "peak_rss_mb": 46.53125}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "to_object", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 16.859375}, "lxml": {"operation": "to_object", "library": "lxml", "bytes": 170298, "available": true, "peak_rss_mb": 20.58203125}}}], "xml_to_json": [{"genre": "rss", "size": "small", "bytes": 32122, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 32122, "available": true, "peak_rss_mb": 15.8203125}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 32122, "available": true, "peak_rss_mb": 20.95703125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 32122, "available": true, "peak_rss_mb": 18.2734375}}}, {"genre": "rss", "size": "medium", "bytes": 322067, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 322067, "available": true, "peak_rss_mb": 18.50390625}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 322067, "available": true, "peak_rss_mb": 22.8046875}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 322067, "available": true, "peak_rss_mb": 21.87109375}}}, {"genre": "rss", "size": "large", "bytes": 3249652, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 3249652, "available": true, "peak_rss_mb": 43.24609375}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 3249652, "available": true, "peak_rss_mb": 42.4296875}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 3249652, "available": true, "peak_rss_mb": 57.8984375}}}, {"genre": "catalog", "size": "small", "bytes": 39123, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 39123, "available": true, "peak_rss_mb": 16.08984375}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 39123, "available": true, "peak_rss_mb": 21.234375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 39123, "available": true, "peak_rss_mb": 18.63671875}}}, {"genre": "catalog", "size": "medium", "bytes": 389019, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 389019, "available": true, "peak_rss_mb": 19.5078125}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 389019, "available": true, "peak_rss_mb": 25.78125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 389019, "available": true, "peak_rss_mb": 25.73046875}}}, {"genre": "catalog", "size": "large", "bytes": 3901895, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 3901895, "available": true, "peak_rss_mb": 53.8203125}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 3901895, "available": true, "peak_rss_mb": 68.05078125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 3901895, "available": true, "peak_rss_mb": 86.8515625}}}, {"genre": "records", "size": "small", "bytes": 19035, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 19035, "available": true, "peak_rss_mb": 16.00390625}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 19035, "available": true, "peak_rss_mb": 20.9609375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 19035, "available": true, "peak_rss_mb": 18.4296875}}}, {"genre": "records", "size": "medium", "bytes": 194739, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 194739, "available": true, "peak_rss_mb": 17.8671875}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 194739, "available": true, "peak_rss_mb": 22.80859375}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 194739, "available": true, "peak_rss_mb": 23.66796875}}}, {"genre": "records", "size": "large", "bytes": 1987163, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 1987163, "available": true, "peak_rss_mb": 37.80859375}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 1987163, "available": true, "peak_rss_mb": 39.7578125}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 1987163, "available": true, "peak_rss_mb": 68.37109375}}}, {"genre": "config", "size": "fixed", "bytes": 170298, "libraries": {"pygixml": {"operation": "xml_to_json", "library": "pygixml", "bytes": 170298, "available": true, "peak_rss_mb": 17.2265625}, "xmltodict": {"operation": "xml_to_json", "library": "xmltodict", "bytes": 170298, "available": true, "peak_rss_mb": 23.171875}, "xmljson": {"operation": "xml_to_json", "library": "xmljson", "bytes": 170298, "available": true, "peak_rss_mb": 20.78515625}}}]}, "scaling": {"pygixml_stream_dump": {"records_shape": [{"n": 500, "bytes": 97023, "seconds": 0.03292407300000377}, {"n": 2000, "bytes": 393533, "seconds": 0.13095738499998788}, {"n": 8000, "bytes": 1587638, "seconds": 0.5269210710000038}, {"n": 32000, "bytes": 6448299, "seconds": 2.074632224000027}, {"n": 128000, "bytes": 26060379, "seconds": 8.307470205000016}], "interleaved_shape": [{"n": 500, "bytes": 15841, "seconds": 0.007831229999993639}, {"n": 2000, "bytes": 65841, "seconds": 0.025923445999978867}, {"n": 8000, "bytes": 269841, "seconds": 0.12507990500000687}, {"n": 32000, "bytes": 1129841, "seconds": 0.90786017100001}, {"n": 128000, "bytes": 4641841, "seconds": 10.661643757000007}]}, "dom_competitors_records_shape": {"pygixml_dom": {"available": true, "points": [{"n": 500, "bytes": 97023, "seconds": 0.0010602149999954236}, {"n": 2000, "bytes": 393533, "seconds": 0.0036920439999903465}, {"n": 8000, "bytes": 1587638, "seconds": 0.01713438599998085}, {"n": 32000, "bytes": 6448299, "seconds": 0.07740239700001439}]}, "lxml_plus_xmljson": {"available": true, "points": [{"n": 500, "bytes": 97023, "seconds": 0.013173120000004701}, {"n": 2000, "bytes": 393533, "seconds": 0.05577819799998451}, {"n": 8000, "bytes": 1587638, "seconds": 0.2350700510000081}, {"n": 32000, "bytes": 6448299, "seconds": 1.0257499340000038}]}, "xmltodict": {"available": true, "points": [{"n": 500, "bytes": 97023, "seconds": 0.013111549000001332}, {"n": 2000, "bytes": 393533, "seconds": 0.051413556999989396}, {"n": 8000, "bytes": 1587638, "seconds": 0.21056920200001628}, {"n": 32000, "bytes": 6448299, "seconds": 0.8890871689999926}]}}}, "memory": {"lxml_plus_xmljson": {"available": true, "points": [{"approach": "lxml_plus_xmljson", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 23.62890625, "seconds": 0.024976137999999537}, {"approach": "lxml_plus_xmljson", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 94.91015625, "seconds": 0.4857170740000072}]}, "pygixml_dom": {"available": true, "points": [{"approach": "pygixml_dom", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 17.87890625, "seconds": 0.0021819380000067667}, {"approach": "pygixml_dom", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 48.62890625, "seconds": 0.038821917000007033}]}, "pygixml_stream_dump": {"available": true, "points": [{"approach": "pygixml_stream_dump", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 15.87109375, "seconds": 0.056371433000009574}, {"approach": "pygixml_stream_dump", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 15.72265625, "seconds": 0.9031472169999972}]}, "xmltodict": {"available": true, "points": [{"approach": "xmltodict", "n": 1000, "bytes": 194739, "available": true, "peak_rss_mb": 22.6171875, "seconds": 0.02620455800001764}, {"approach": "xmltodict", "n": 16000, "bytes": 3203847, "available": true, "peak_rss_mb": 48.59765625, "seconds": 0.4328527870000016}]}}, "sizes": {"pygixml": {"available": true, "name": "pygixml", "version": "0.12.2", "size": "402.5 KB", "total_size": "402.5 KB", "filename": "pygixml-0.12.2-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl"}, "lxml": {"available": true, "name": "lxml", "version": "6.1.3", "size": "5.0 MB", "total_size": "5.0 MB", "filename": "lxml-6.1.3-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl"}, "xmltodict": {"available": true, "name": "xmltodict", "version": "1.0.4", "size": "13.3 KB", "total_size": "13.3 KB", "filename": "xmltodict-1.0.4-py3-none-any.whl"}, "xmljson": {"available": true, "name": "xmljson", "version": "0.2.1", "size": "9.9 KB", "total_size": "9.9 KB", "filename": "xmljson-0.2.1-py2.py3-none-any.whl"}, "elementtree": {"available": true, "name": "elementtree", "version": "stdlib", "size": "0 B", "total_size": "0 B", "note": "Python standard library -- always present, nothing to install"}}, "system_info": {"os": "Linux 6.18.44-fc-v37", "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39", "architecture": "x86_64", "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz", "logical_cores": 1, "ram_gib": 3.9, "python_implementation": "CPython", "python_version": "3.12.3"}}
 </script>
 
 <script>
@@ -1145,7 +1148,7 @@ Chart.defaults.font.family = "-apple-system, 'Segoe UI', sans-serif";
 
 new Chart(document.getElementById('chart-memory'), {
   type: 'line',
-  data: { datasets: [{"label": "lxml + xmljson", "data": [{"x": 0.18571758270263672, "y": 23.39453125}, {"x": 0.7544565200805664, "y": 37.62109375}, {"x": 3.055426597595215, "y": 94.95703125}, {"x": 12.337916374206543, "y": 326.5703125}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "tension": 0.25, "pointRadius": 5, "pointStyle": "triangle", "borderDash": [6, 3]}, {"label": "pygixml (DOM)", "data": [{"x": 0.18571758270263672, "y": 17.88671875}, {"x": 0.7544565200805664, "y": 24.0703125}, {"x": 3.055426597595215, "y": 48.6484375}, {"x": 12.337916374206543, "y": 147.80078125}], "borderColor": "#f2954f", "backgroundColor": "#f2954f", "tension": 0.25, "pointRadius": 5, "pointStyle": "rectRot", "borderDash": [4, 2]}, {"label": "pygixml (stream_dump)", "data": [{"x": 0.18571758270263672, "y": 15.875}, {"x": 0.7544565200805664, "y": 15.8828125}, {"x": 3.055426597595215, "y": 15.69140625}, {"x": 12.337916374206543, "y": 15.83984375}], "borderColor": "#e67225", "backgroundColor": "#e67225", "tension": 0.25, "pointRadius": 5, "pointStyle": "circle", "borderDash": []}, {"label": "xmltodict", "data": [{"x": 0.18571758270263672, "y": 22.6171875}, {"x": 0.7544565200805664, "y": 27.87890625}, {"x": 3.055426597595215, "y": 48.65625}, {"x": 12.337916374206543, "y": 127.46484375}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "tension": 0.25, "pointRadius": 5, "pointStyle": "star", "borderDash": [8, 3, 2, 3]}] },
+  data: { datasets: [{"label": "lxml + xmljson", "data": [{"x": 0.18571758270263672, "y": 23.62890625}, {"x": 3.055426597595215, "y": 94.91015625}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "tension": 0.25, "pointRadius": 5, "pointStyle": "triangle", "borderDash": [6, 3]}, {"label": "pygixml (DOM)", "data": [{"x": 0.18571758270263672, "y": 17.87890625}, {"x": 3.055426597595215, "y": 48.62890625}], "borderColor": "#f2954f", "backgroundColor": "#f2954f", "tension": 0.25, "pointRadius": 5, "pointStyle": "rectRot", "borderDash": [4, 2]}, {"label": "pygixml (stream_dump)", "data": [{"x": 0.18571758270263672, "y": 15.87109375}, {"x": 3.055426597595215, "y": 15.72265625}], "borderColor": "#e67225", "backgroundColor": "#e67225", "tension": 0.25, "pointRadius": 5, "pointStyle": "circle", "borderDash": []}, {"label": "xmltodict", "data": [{"x": 0.18571758270263672, "y": 22.6171875}, {"x": 3.055426597595215, "y": 48.59765625}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "tension": 0.25, "pointRadius": 5, "pointStyle": "star", "borderDash": [8, 3, 2, 3]}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1159,7 +1162,7 @@ new Chart(document.getElementById('chart-memory'), {
 
 new Chart(document.getElementById('chart-memory-speed'), {
   type: 'line',
-  data: { datasets: [{"label": "lxml + xmljson", "data": [{"x": 0.18571758270263672, "y": 0.02474747000002253}, {"x": 0.7544565200805664, "y": 0.10858614100001773}, {"x": 3.055426597595215, "y": 0.48541425300001606}, {"x": 12.337916374206543, "y": 1.9934921349999968}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "tension": 0.25, "pointRadius": 5, "pointStyle": "triangle", "borderDash": [6, 3]}, {"label": "pygixml (DOM)", "data": [{"x": 0.18571758270263672, "y": 0.002200682999983883}, {"x": 0.7544565200805664, "y": 0.008975792999990517}, {"x": 3.055426597595215, "y": 0.03716774199997985}, {"x": 12.337916374206543, "y": 0.1678863070000034}], "borderColor": "#f2954f", "backgroundColor": "#f2954f", "tension": 0.25, "pointRadius": 5, "pointStyle": "rectRot", "borderDash": [4, 2]}, {"label": "pygixml (stream_dump)", "data": [{"x": 0.18571758270263672, "y": 0.05638632100001928}, {"x": 0.7544565200805664, "y": 0.22531751899998653}, {"x": 3.055426597595215, "y": 0.9021715260000178}, {"x": 12.337916374206543, "y": 3.7236425870000005}], "borderColor": "#e67225", "backgroundColor": "#e67225", "tension": 0.25, "pointRadius": 5, "pointStyle": "circle", "borderDash": []}, {"label": "xmltodict", "data": [{"x": 0.18571758270263672, "y": 0.02570067599998538}, {"x": 0.7544565200805664, "y": 0.10527381700001115}, {"x": 3.055426597595215, "y": 0.43704920999999786}, {"x": 12.337916374206543, "y": 1.860815811000009}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "tension": 0.25, "pointRadius": 5, "pointStyle": "star", "borderDash": [8, 3, 2, 3]}] },
+  data: { datasets: [{"label": "lxml + xmljson", "data": [{"x": 0.18571758270263672, "y": 0.024976137999999537}, {"x": 3.055426597595215, "y": 0.4857170740000072}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "tension": 0.25, "pointRadius": 5, "pointStyle": "triangle", "borderDash": [6, 3]}, {"label": "pygixml (DOM)", "data": [{"x": 0.18571758270263672, "y": 0.0021819380000067667}, {"x": 3.055426597595215, "y": 0.038821917000007033}], "borderColor": "#f2954f", "backgroundColor": "#f2954f", "tension": 0.25, "pointRadius": 5, "pointStyle": "rectRot", "borderDash": [4, 2]}, {"label": "pygixml (stream_dump)", "data": [{"x": 0.18571758270263672, "y": 0.056371433000009574}, {"x": 3.055426597595215, "y": 0.9031472169999972}], "borderColor": "#e67225", "backgroundColor": "#e67225", "tension": 0.25, "pointRadius": 5, "pointStyle": "circle", "borderDash": []}, {"label": "xmltodict", "data": [{"x": 0.18571758270263672, "y": 0.02620455800001764}, {"x": 3.055426597595215, "y": 0.4328527870000016}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "tension": 0.25, "pointRadius": 5, "pointStyle": "star", "borderDash": [8, 3, 2, 3]}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1174,10 +1177,10 @@ new Chart(document.getElementById('chart-memory-speed'), {
 new Chart(document.getElementById('chart-scaling'), {
   type: 'line',
   data: { datasets: [
-    { label: 'records shape (realistic)', data: [{"x": 500, "y": 0.032443463999982214}, {"x": 2000, "y": 0.12992813900001465}, {"x": 8000, "y": 0.5328666930000168}, {"x": 32000, "y": 2.0942812580000236}, {"x": 128000, "y": 8.431801207000007}],
+    { label: 'records shape (realistic)', data: [{"x": 500, "y": 0.03292407300000377}, {"x": 2000, "y": 0.13095738499998788}, {"x": 8000, "y": 0.5269210710000038}, {"x": 32000, "y": 2.074632224000027}, {"x": 128000, "y": 8.307470205000016}],
        borderColor: '#35d0ba', backgroundColor: '#35d0ba', tension: 0.2, pointRadius: 5,
        pointStyle: 'circle', borderDash: [] },
-    { label: 'interleaved shape (adversarial)', data: [{"x": 500, "y": 0.007888976000003822}, {"x": 2000, "y": 0.025719938000008824}, {"x": 8000, "y": 0.12407552600001281}, {"x": 32000, "y": 1.0172532160000003}, {"x": 128000, "y": 11.457689861000006}],
+    { label: 'interleaved shape (adversarial)', data: [{"x": 500, "y": 0.007831229999993639}, {"x": 2000, "y": 0.025923445999978867}, {"x": 8000, "y": 0.12507990500000687}, {"x": 32000, "y": 0.90786017100001}, {"x": 128000, "y": 10.661643757000007}],
        borderColor: '#ff6b81', backgroundColor: '#ff6b81', tension: 0.2, pointRadius: 5,
        pointStyle: 'triangle', borderDash: [6, 3] }
   ]},
@@ -1194,7 +1197,7 @@ new Chart(document.getElementById('chart-scaling'), {
 
 new Chart(document.getElementById('chart-scaling-dom'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml (DOM)", "data": [{"x": 500, "y": 0.0010896490000220638}, {"x": 2000, "y": 0.003866651999999249}, {"x": 8000, "y": 0.01683022500000675}, {"x": 32000, "y": 0.07677831199998764}], "borderColor": "#f2954f", "backgroundColor": "#f2954f", "tension": 0.2, "pointRadius": 5, "pointStyle": "rectRot", "borderDash": [4, 2]}, {"label": "lxml + xmljson", "data": [{"x": 500, "y": 0.013663070999996307}, {"x": 2000, "y": 0.056506210000009105}, {"x": 8000, "y": 0.2340860279999788}, {"x": 32000, "y": 1.0363416060000077}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "tension": 0.2, "pointRadius": 5, "pointStyle": "triangle", "borderDash": [6, 3]}, {"label": "xmltodict", "data": [{"x": 500, "y": 0.013092121999989104}, {"x": 2000, "y": 0.052641147000002775}, {"x": 8000, "y": 0.2130595779999851}, {"x": 32000, "y": 0.8888047169999993}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "tension": 0.2, "pointRadius": 5, "pointStyle": "star", "borderDash": [8, 3, 2, 3]}] },
+  data: { datasets: [{"label": "pygixml (DOM)", "data": [{"x": 500, "y": 0.0010602149999954236}, {"x": 2000, "y": 0.0036920439999903465}, {"x": 8000, "y": 0.01713438599998085}, {"x": 32000, "y": 0.07740239700001439}], "borderColor": "#f2954f", "backgroundColor": "#f2954f", "tension": 0.2, "pointRadius": 5, "pointStyle": "rectRot", "borderDash": [4, 2]}, {"label": "lxml + xmljson", "data": [{"x": 500, "y": 0.013173120000004701}, {"x": 2000, "y": 0.05577819799998451}, {"x": 8000, "y": 0.2350700510000081}, {"x": 32000, "y": 1.0257499340000038}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "tension": 0.2, "pointRadius": 5, "pointStyle": "triangle", "borderDash": [6, 3]}, {"label": "xmltodict", "data": [{"x": 500, "y": 0.013111549000001332}, {"x": 2000, "y": 0.051413556999989396}, {"x": 8000, "y": 0.21056920200001628}, {"x": 32000, "y": 0.8890871689999926}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "tension": 0.2, "pointRadius": 5, "pointStyle": "star", "borderDash": [8, 3, 2, 3]}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1223,7 +1226,7 @@ new Chart(document.getElementById('chart-size'), {
 new Chart(document.getElementById('chart-time-parse-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.0351, 0.2214, 0.3894], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.0353, 0.2153, 0.3398], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1240,7 +1243,7 @@ new Chart(document.getElementById('chart-time-parse-0'), {
 new Chart(document.getElementById('chart-mem-parse-0'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [12.89, 15.93, 18.03], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [13.02, 15.93, 18.03], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1257,7 +1260,7 @@ new Chart(document.getElementById('chart-mem-parse-0'), {
 new Chart(document.getElementById('chart-time-parse-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.7111, 1.939, 3.2044], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.762, 1.8962, 3.0361], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1274,7 +1277,7 @@ new Chart(document.getElementById('chart-time-parse-1'), {
 new Chart(document.getElementById('chart-mem-parse-1'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [14.59, 17.66, 20.33], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [14.61, 17.59, 20.25], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1291,7 +1294,7 @@ new Chart(document.getElementById('chart-mem-parse-1'), {
 new Chart(document.getElementById('chart-time-parse-2'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [6.8581, 19.6743, 34.8476], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [6.9597, 19.4033, 35.1373], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1308,7 +1311,7 @@ new Chart(document.getElementById('chart-time-parse-2'), {
 new Chart(document.getElementById('chart-mem-parse-2'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [33.25, 36.09, 42.29], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [33.27, 36.02, 42.36], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1325,7 +1328,7 @@ new Chart(document.getElementById('chart-mem-parse-2'), {
 new Chart(document.getElementById('chart-time-parse-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.0522, 0.4483, 0.7253], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.05, 0.4709, 0.779], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1342,7 +1345,7 @@ new Chart(document.getElementById('chart-time-parse-3'), {
 new Chart(document.getElementById('chart-mem-parse-3'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [13.02, 15.93, 18.21], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [13.02, 15.98, 18.27], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1359,7 +1362,7 @@ new Chart(document.getElementById('chart-mem-parse-3'), {
 new Chart(document.getElementById('chart-time-parse-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.4158, 4.188, 7.2718], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.3835, 4.0765, 7.1567], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1376,7 +1379,7 @@ new Chart(document.getElementById('chart-time-parse-4'), {
 new Chart(document.getElementById('chart-mem-parse-4'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [17.01, 18.63, 22.67], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [17.03, 18.55, 22.75], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1393,7 +1396,7 @@ new Chart(document.getElementById('chart-mem-parse-4'), {
 new Chart(document.getElementById('chart-time-parse-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [10.6841, 46.9889, 84.6685], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [12.5656, 55.8236, 91.4932], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1410,7 +1413,7 @@ new Chart(document.getElementById('chart-time-parse-5'), {
 new Chart(document.getElementById('chart-mem-parse-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "ElementTree", "lxml"], datasets: [{
-    data: [45.13, 58.23, 66.93], backgroundColor: ["#e67225", "#5b8cff", "#ff6b81"]
+    data: [45.11, 58.2, 66.9], backgroundColor: ["#e67225", "#5b8cff", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1427,7 +1430,7 @@ new Chart(document.getElementById('chart-mem-parse-5'), {
 new Chart(document.getElementById('chart-time-parse-6'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.0315, 0.3042, 0.4261], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.0313, 0.3073, 0.4141], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1444,7 +1447,7 @@ new Chart(document.getElementById('chart-time-parse-6'), {
 new Chart(document.getElementById('chart-mem-parse-6'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [13.02, 15.77, 18.07], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [13.15, 15.93, 18.12], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1461,7 +1464,7 @@ new Chart(document.getElementById('chart-mem-parse-6'), {
 new Chart(document.getElementById('chart-time-parse-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.2325, 2.7046, 4.0532], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.2294, 2.6242, 4.0377], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1478,7 +1481,7 @@ new Chart(document.getElementById('chart-time-parse-7'), {
 new Chart(document.getElementById('chart-mem-parse-7'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [14.59, 17.44, 20.66], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [14.51, 17.5, 20.63], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1495,7 +1498,7 @@ new Chart(document.getElementById('chart-mem-parse-7'), {
 new Chart(document.getElementById('chart-time-parse-8'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [7.7975, 27.4805, 45.0252], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [6.9141, 27.1119, 44.0526], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1512,7 +1515,7 @@ new Chart(document.getElementById('chart-time-parse-8'), {
 new Chart(document.getElementById('chart-mem-parse-8'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [33.32, 33.79, 45.64], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [33.35, 33.7, 45.64], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1529,7 +1532,7 @@ new Chart(document.getElementById('chart-mem-parse-8'), {
 new Chart(document.getElementById('chart-time-parse-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml", "ElementTree"], datasets: [{
-    data: [0.2296, 1.7122, 4.4346], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
+    data: [0.2263, 1.6342, 4.2273], backgroundColor: ["#e67225", "#ff6b81", "#5b8cff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1546,7 +1549,7 @@ new Chart(document.getElementById('chart-time-parse-9'), {
 new Chart(document.getElementById('chart-mem-parse-9'), {
   type: 'bar',
   data: { labels: ["ElementTree", "pygixml", "lxml"], datasets: [{
-    data: [15.41, 16.88, 19.57], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
+    data: [15.41, 16.8, 19.64], backgroundColor: ["#5b8cff", "#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1562,7 +1565,7 @@ new Chart(document.getElementById('chart-mem-parse-9'), {
 
 new Chart(document.getElementById('chart-time-trend-parse'), {
   type: 'line',
-  data: { datasets: [{"label": "ElementTree", "data": [{"x": 0.0182, "y": 0.4261}, {"x": 0.0306, "y": 0.3894}, {"x": 0.0373, "y": 0.7253}, {"x": 0.1624, "y": 4.4346}, {"x": 0.1857, "y": 4.0532}, {"x": 0.3071, "y": 3.2044}, {"x": 0.371, "y": 7.2718}, {"x": 1.8951, "y": 45.0252}, {"x": 3.0991, "y": 34.8476}, {"x": 3.7211, "y": 84.6685}], "borderColor": "#5b8cff", "backgroundColor": "#5b8cff", "pointStyle": "rect", "borderDash": [2, 2], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "lxml", "data": [{"x": 0.0182, "y": 0.3042}, {"x": 0.0306, "y": 0.2214}, {"x": 0.0373, "y": 0.4483}, {"x": 0.1624, "y": 1.7122}, {"x": 0.1857, "y": 2.7046}, {"x": 0.3071, "y": 1.939}, {"x": 0.371, "y": 4.188}, {"x": 1.8951, "y": 27.4805}, {"x": 3.0991, "y": 19.6743}, {"x": 3.7211, "y": 46.9889}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 0.0315}, {"x": 0.0306, "y": 0.0351}, {"x": 0.0373, "y": 0.0522}, {"x": 0.1624, "y": 0.2296}, {"x": 0.1857, "y": 0.2325}, {"x": 0.3071, "y": 0.7111}, {"x": 0.371, "y": 0.4158}, {"x": 1.8951, "y": 7.7975}, {"x": 3.0991, "y": 6.8581}, {"x": 3.7211, "y": 10.6841}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "ElementTree", "data": [{"x": 0.0182, "y": 0.4141}, {"x": 0.0306, "y": 0.3398}, {"x": 0.0373, "y": 0.779}, {"x": 0.1624, "y": 4.2273}, {"x": 0.1857, "y": 4.0377}, {"x": 0.3071, "y": 3.0361}, {"x": 0.371, "y": 7.1567}, {"x": 1.8951, "y": 44.0526}, {"x": 3.0991, "y": 35.1373}, {"x": 3.7211, "y": 91.4932}], "borderColor": "#5b8cff", "backgroundColor": "#5b8cff", "pointStyle": "rect", "borderDash": [2, 2], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "lxml", "data": [{"x": 0.0182, "y": 0.3073}, {"x": 0.0306, "y": 0.2153}, {"x": 0.0373, "y": 0.4709}, {"x": 0.1624, "y": 1.6342}, {"x": 0.1857, "y": 2.6242}, {"x": 0.3071, "y": 1.8962}, {"x": 0.371, "y": 4.0765}, {"x": 1.8951, "y": 27.1119}, {"x": 3.0991, "y": 19.4033}, {"x": 3.7211, "y": 55.8236}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 0.0313}, {"x": 0.0306, "y": 0.0353}, {"x": 0.0373, "y": 0.05}, {"x": 0.1624, "y": 0.2263}, {"x": 0.1857, "y": 0.2294}, {"x": 0.3071, "y": 0.762}, {"x": 0.371, "y": 0.3835}, {"x": 1.8951, "y": 6.9141}, {"x": 3.0991, "y": 6.9597}, {"x": 3.7211, "y": 12.5656}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1576,7 +1579,7 @@ new Chart(document.getElementById('chart-time-trend-parse'), {
 
 new Chart(document.getElementById('chart-mem-trend-parse'), {
   type: 'line',
-  data: { datasets: [{"label": "ElementTree", "data": [{"x": 0.0182, "y": 13.02}, {"x": 0.0306, "y": 12.89}, {"x": 0.0373, "y": 13.02}, {"x": 0.1624, "y": 15.41}, {"x": 0.1857, "y": 14.59}, {"x": 0.3071, "y": 14.59}, {"x": 0.371, "y": 17.01}, {"x": 1.8951, "y": 33.32}, {"x": 3.0991, "y": 33.25}, {"x": 3.7211, "y": 58.23}], "borderColor": "#5b8cff", "backgroundColor": "#5b8cff", "pointStyle": "rect", "borderDash": [2, 2], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "lxml", "data": [{"x": 0.0182, "y": 18.07}, {"x": 0.0306, "y": 18.03}, {"x": 0.0373, "y": 18.21}, {"x": 0.1624, "y": 19.57}, {"x": 0.1857, "y": 20.66}, {"x": 0.3071, "y": 20.33}, {"x": 0.371, "y": 22.67}, {"x": 1.8951, "y": 45.64}, {"x": 3.0991, "y": 42.29}, {"x": 3.7211, "y": 66.93}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 15.77}, {"x": 0.0306, "y": 15.93}, {"x": 0.0373, "y": 15.93}, {"x": 0.1624, "y": 16.88}, {"x": 0.1857, "y": 17.44}, {"x": 0.3071, "y": 17.66}, {"x": 0.371, "y": 18.63}, {"x": 1.8951, "y": 33.79}, {"x": 3.0991, "y": 36.09}, {"x": 3.7211, "y": 45.13}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "ElementTree", "data": [{"x": 0.0182, "y": 13.15}, {"x": 0.0306, "y": 13.02}, {"x": 0.0373, "y": 13.02}, {"x": 0.1624, "y": 15.41}, {"x": 0.1857, "y": 14.51}, {"x": 0.3071, "y": 14.61}, {"x": 0.371, "y": 17.03}, {"x": 1.8951, "y": 33.35}, {"x": 3.0991, "y": 33.27}, {"x": 3.7211, "y": 58.2}], "borderColor": "#5b8cff", "backgroundColor": "#5b8cff", "pointStyle": "rect", "borderDash": [2, 2], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "lxml", "data": [{"x": 0.0182, "y": 18.12}, {"x": 0.0306, "y": 18.03}, {"x": 0.0373, "y": 18.27}, {"x": 0.1624, "y": 19.64}, {"x": 0.1857, "y": 20.63}, {"x": 0.3071, "y": 20.25}, {"x": 0.371, "y": 22.75}, {"x": 1.8951, "y": 45.64}, {"x": 3.0991, "y": 42.36}, {"x": 3.7211, "y": 66.9}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 15.93}, {"x": 0.0306, "y": 15.93}, {"x": 0.0373, "y": 15.98}, {"x": 0.1624, "y": 16.8}, {"x": 0.1857, "y": 17.5}, {"x": 0.3071, "y": 17.59}, {"x": 0.371, "y": 18.55}, {"x": 1.8951, "y": 33.7}, {"x": 3.0991, "y": 36.02}, {"x": 3.7211, "y": 45.11}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1590,7 +1593,7 @@ new Chart(document.getElementById('chart-mem-trend-parse'), {
 
 new Chart(document.getElementById('chart-tp-parse'), {
   type: 'line',
-  data: { datasets: [{"label": "ElementTree", "data": [{"x": 0.0182, "y": 42.6}, {"x": 0.0306, "y": 78.66}, {"x": 0.0373, "y": 51.44}, {"x": 0.1624, "y": 36.62}, {"x": 0.1857, "y": 45.82}, {"x": 0.3071, "y": 95.85}, {"x": 0.371, "y": 51.02}, {"x": 1.8951, "y": 42.09}, {"x": 3.0991, "y": 88.93}, {"x": 3.7211, "y": 43.95}], "borderColor": "#5b8cff", "backgroundColor": "#5b8cff", "pointStyle": "rect", "borderDash": [2, 2], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "lxml", "data": [{"x": 0.0182, "y": 59.67}, {"x": 0.0306, "y": 138.35}, {"x": 0.0373, "y": 83.23}, {"x": 0.1624, "y": 94.86}, {"x": 0.1857, "y": 68.67}, {"x": 0.3071, "y": 158.4}, {"x": 0.371, "y": 88.59}, {"x": 1.8951, "y": 68.96}, {"x": 3.0991, "y": 157.52}, {"x": 3.7211, "y": 79.19}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 576.24}, {"x": 0.0306, "y": 872.61}, {"x": 0.0373, "y": 714.32}, {"x": 0.1624, "y": 707.5}, {"x": 0.1857, "y": 798.67}, {"x": 0.3071, "y": 431.96}, {"x": 0.371, "y": 892.25}, {"x": 1.8951, "y": 243.04}, {"x": 3.0991, "y": 451.89}, {"x": 3.7211, "y": 348.29}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "ElementTree", "data": [{"x": 0.0182, "y": 43.84}, {"x": 0.0306, "y": 90.16}, {"x": 0.0373, "y": 47.89}, {"x": 0.1624, "y": 38.42}, {"x": 0.1857, "y": 46.0}, {"x": 0.3071, "y": 101.17}, {"x": 0.371, "y": 51.84}, {"x": 1.8951, "y": 43.02}, {"x": 3.0991, "y": 88.2}, {"x": 3.7211, "y": 40.67}], "borderColor": "#5b8cff", "backgroundColor": "#5b8cff", "pointStyle": "rect", "borderDash": [2, 2], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "lxml", "data": [{"x": 0.0182, "y": 59.07}, {"x": 0.0306, "y": 142.3}, {"x": 0.0373, "y": 79.23}, {"x": 0.1624, "y": 99.38}, {"x": 0.1857, "y": 70.77}, {"x": 0.3071, "y": 161.98}, {"x": 0.371, "y": 91.01}, {"x": 1.8951, "y": 69.9}, {"x": 3.0991, "y": 159.72}, {"x": 3.7211, "y": 66.66}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 579.12}, {"x": 0.0306, "y": 867.62}, {"x": 0.0373, "y": 746.32}, {"x": 0.1624, "y": 717.59}, {"x": 0.1857, "y": 809.47}, {"x": 0.3071, "y": 403.06}, {"x": 0.371, "y": 967.46}, {"x": 1.8951, "y": 274.09}, {"x": 3.0991, "y": 445.29}, {"x": 3.7211, "y": 296.14}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1605,7 +1608,7 @@ new Chart(document.getElementById('chart-tp-parse'), {
 new Chart(document.getElementById('chart-time-dict_convert-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [0.2096, 1.7117], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [0.2152, 1.7078], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1622,7 +1625,7 @@ new Chart(document.getElementById('chart-time-dict_convert-0'), {
 new Chart(document.getElementById('chart-mem-dict_convert-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [15.95, 20.96], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [15.96, 20.89], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1639,7 +1642,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-0'), {
 new Chart(document.getElementById('chart-time-dict_convert-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [2.3294, 16.0726], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [2.3459, 16.1227], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1656,7 +1659,7 @@ new Chart(document.getElementById('chart-time-dict_convert-1'), {
 new Chart(document.getElementById('chart-mem-dict_convert-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [18.73, 22.76], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [18.71, 22.76], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1673,7 +1676,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-1'), {
 new Chart(document.getElementById('chart-time-dict_convert-2'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [27.1929, 172.8514], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [28.2171, 172.2319], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1690,7 +1693,7 @@ new Chart(document.getElementById('chart-time-dict_convert-2'), {
 new Chart(document.getElementById('chart-mem-dict_convert-2'), {
   type: 'bar',
   data: { labels: ["xmltodict", "pygixml"], datasets: [{
-    data: [39.55, 46.56], backgroundColor: ["#35d0ba", "#e67225"]
+    data: [39.5, 46.36], backgroundColor: ["#35d0ba", "#e67225"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1707,7 +1710,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-2'), {
 new Chart(document.getElementById('chart-time-dict_convert-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [0.5217, 3.3752], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [0.5249, 3.3175], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1724,7 +1727,7 @@ new Chart(document.getElementById('chart-time-dict_convert-3'), {
 new Chart(document.getElementById('chart-mem-dict_convert-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [16.16, 21.34], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [16.24, 21.19], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1741,7 +1744,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-3'), {
 new Chart(document.getElementById('chart-time-dict_convert-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [5.0826, 32.8993], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [4.9956, 32.7425], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1758,7 +1761,7 @@ new Chart(document.getElementById('chart-time-dict_convert-4'), {
 new Chart(document.getElementById('chart-mem-dict_convert-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [21.87, 25.67], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [21.91, 25.77], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1775,7 +1778,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-4'), {
 new Chart(document.getElementById('chart-time-dict_convert-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [75.5963, 383.6759], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [81.7606, 368.2695], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1792,7 +1795,7 @@ new Chart(document.getElementById('chart-time-dict_convert-5'), {
 new Chart(document.getElementById('chart-mem-dict_convert-5'), {
   type: 'bar',
   data: { labels: ["xmltodict", "pygixml"], datasets: [{
-    data: [64.49, 78.36], backgroundColor: ["#35d0ba", "#e67225"]
+    data: [64.3, 78.37], backgroundColor: ["#35d0ba", "#e67225"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1809,7 +1812,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-5'), {
 new Chart(document.getElementById('chart-time-dict_convert-6'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [0.2666, 2.5042], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [0.2691, 2.4027], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1826,7 +1829,7 @@ new Chart(document.getElementById('chart-time-dict_convert-6'), {
 new Chart(document.getElementById('chart-mem-dict_convert-6'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [15.98, 20.95], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [15.97, 20.95], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1843,7 +1846,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-6'), {
 new Chart(document.getElementById('chart-time-dict_convert-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [2.7273, 24.0249], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [2.6975, 23.755], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1860,7 +1863,7 @@ new Chart(document.getElementById('chart-time-dict_convert-7'), {
 new Chart(document.getElementById('chart-mem-dict_convert-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [19.09, 22.8], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [19.08, 22.81], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1877,7 +1880,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-7'), {
 new Chart(document.getElementById('chart-time-dict_convert-8'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [37.4379, 247.641], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [39.3833, 241.4336], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1894,7 +1897,7 @@ new Chart(document.getElementById('chart-time-dict_convert-8'), {
 new Chart(document.getElementById('chart-mem-dict_convert-8'), {
   type: 'bar',
   data: { labels: ["xmltodict", "pygixml"], datasets: [{
-    data: [39.76, 50.15], backgroundColor: ["#35d0ba", "#e67225"]
+    data: [39.76, 50.16], backgroundColor: ["#35d0ba", "#e67225"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1911,7 +1914,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-8'), {
 new Chart(document.getElementById('chart-time-dict_convert-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [1.5369, 15.2153], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [1.5025, 14.9527], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1928,7 +1931,7 @@ new Chart(document.getElementById('chart-time-dict_convert-9'), {
 new Chart(document.getElementById('chart-mem-dict_convert-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict"], datasets: [{
-    data: [17.68, 23.17], backgroundColor: ["#e67225", "#35d0ba"]
+    data: [17.71, 23.27], backgroundColor: ["#e67225", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -1944,7 +1947,7 @@ new Chart(document.getElementById('chart-mem-dict_convert-9'), {
 
 new Chart(document.getElementById('chart-time-trend-dict_convert'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 0.2666}, {"x": 0.0306, "y": 0.2096}, {"x": 0.0373, "y": 0.5217}, {"x": 0.1624, "y": 1.5369}, {"x": 0.1857, "y": 2.7273}, {"x": 0.3071, "y": 2.3294}, {"x": 0.371, "y": 5.0826}, {"x": 1.8951, "y": 37.4379}, {"x": 3.0991, "y": 27.1929}, {"x": 3.7211, "y": 75.5963}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 2.5042}, {"x": 0.0306, "y": 1.7117}, {"x": 0.0373, "y": 3.3752}, {"x": 0.1624, "y": 15.2153}, {"x": 0.1857, "y": 24.0249}, {"x": 0.3071, "y": 16.0726}, {"x": 0.371, "y": 32.8993}, {"x": 1.8951, "y": 247.641}, {"x": 3.0991, "y": 172.8514}, {"x": 3.7211, "y": 383.6759}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 0.2691}, {"x": 0.0306, "y": 0.2152}, {"x": 0.0373, "y": 0.5249}, {"x": 0.1624, "y": 1.5025}, {"x": 0.1857, "y": 2.6975}, {"x": 0.3071, "y": 2.3459}, {"x": 0.371, "y": 4.9956}, {"x": 1.8951, "y": 39.3833}, {"x": 3.0991, "y": 28.2171}, {"x": 3.7211, "y": 81.7606}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 2.4027}, {"x": 0.0306, "y": 1.7078}, {"x": 0.0373, "y": 3.3175}, {"x": 0.1624, "y": 14.9527}, {"x": 0.1857, "y": 23.755}, {"x": 0.3071, "y": 16.1227}, {"x": 0.371, "y": 32.7425}, {"x": 1.8951, "y": 241.4336}, {"x": 3.0991, "y": 172.2319}, {"x": 3.7211, "y": 368.2695}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1958,7 +1961,7 @@ new Chart(document.getElementById('chart-time-trend-dict_convert'), {
 
 new Chart(document.getElementById('chart-mem-trend-dict_convert'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 15.98}, {"x": 0.0306, "y": 15.95}, {"x": 0.0373, "y": 16.16}, {"x": 0.1624, "y": 17.68}, {"x": 0.1857, "y": 19.09}, {"x": 0.3071, "y": 18.73}, {"x": 0.371, "y": 21.87}, {"x": 1.8951, "y": 50.15}, {"x": 3.0991, "y": 46.56}, {"x": 3.7211, "y": 78.36}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 20.95}, {"x": 0.0306, "y": 20.96}, {"x": 0.0373, "y": 21.34}, {"x": 0.1624, "y": 23.17}, {"x": 0.1857, "y": 22.8}, {"x": 0.3071, "y": 22.76}, {"x": 0.371, "y": 25.67}, {"x": 1.8951, "y": 39.76}, {"x": 3.0991, "y": 39.55}, {"x": 3.7211, "y": 64.49}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 15.97}, {"x": 0.0306, "y": 15.96}, {"x": 0.0373, "y": 16.24}, {"x": 0.1624, "y": 17.71}, {"x": 0.1857, "y": 19.08}, {"x": 0.3071, "y": 18.71}, {"x": 0.371, "y": 21.91}, {"x": 1.8951, "y": 50.16}, {"x": 3.0991, "y": 46.36}, {"x": 3.7211, "y": 78.37}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 20.95}, {"x": 0.0306, "y": 20.89}, {"x": 0.0373, "y": 21.19}, {"x": 0.1624, "y": 23.27}, {"x": 0.1857, "y": 22.81}, {"x": 0.3071, "y": 22.76}, {"x": 0.371, "y": 25.77}, {"x": 1.8951, "y": 39.76}, {"x": 3.0991, "y": 39.5}, {"x": 3.7211, "y": 64.3}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1972,7 +1975,7 @@ new Chart(document.getElementById('chart-mem-trend-dict_convert'), {
 
 new Chart(document.getElementById('chart-tp-dict_convert'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 68.1}, {"x": 0.0306, "y": 146.13}, {"x": 0.0373, "y": 71.52}, {"x": 0.1624, "y": 105.67}, {"x": 0.1857, "y": 68.1}, {"x": 0.3071, "y": 131.86}, {"x": 0.371, "y": 72.99}, {"x": 1.8951, "y": 50.62}, {"x": 3.0991, "y": 113.97}, {"x": 3.7211, "y": 49.22}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 7.25}, {"x": 0.0306, "y": 17.9}, {"x": 0.0373, "y": 11.05}, {"x": 0.1624, "y": 10.67}, {"x": 0.1857, "y": 7.73}, {"x": 0.3071, "y": 19.11}, {"x": 0.371, "y": 11.28}, {"x": 1.8951, "y": 7.65}, {"x": 3.0991, "y": 17.93}, {"x": 3.7211, "y": 9.7}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 67.45}, {"x": 0.0306, "y": 142.36}, {"x": 0.0373, "y": 71.08}, {"x": 0.1624, "y": 108.09}, {"x": 0.1857, "y": 68.85}, {"x": 0.3071, "y": 130.93}, {"x": 0.371, "y": 74.27}, {"x": 1.8951, "y": 48.12}, {"x": 3.0991, "y": 109.83}, {"x": 3.7211, "y": 45.51}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 7.56}, {"x": 0.0306, "y": 17.94}, {"x": 0.0373, "y": 11.25}, {"x": 0.1624, "y": 10.86}, {"x": 0.1857, "y": 7.82}, {"x": 0.3071, "y": 19.05}, {"x": 0.371, "y": 11.33}, {"x": 1.8951, "y": 7.85}, {"x": 3.0991, "y": 17.99}, {"x": 3.7211, "y": 10.1}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -1987,7 +1990,7 @@ new Chart(document.getElementById('chart-tp-dict_convert'), {
 new Chart(document.getElementById('chart-time-to_object-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.0379, 0.2242], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.0361, 0.2172], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2004,7 +2007,7 @@ new Chart(document.getElementById('chart-time-to_object-0'), {
 new Chart(document.getElementById('chart-mem-to_object-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [15.85, 18.96], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [15.93, 19.05], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2021,7 +2024,7 @@ new Chart(document.getElementById('chart-mem-to_object-0'), {
 new Chart(document.getElementById('chart-time-to_object-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.6451, 1.9415], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.6804, 1.9122], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2038,7 +2041,7 @@ new Chart(document.getElementById('chart-time-to_object-1'), {
 new Chart(document.getElementById('chart-mem-to_object-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [17.65, 21.2], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [17.66, 21.27], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2055,7 +2058,7 @@ new Chart(document.getElementById('chart-mem-to_object-1'), {
 new Chart(document.getElementById('chart-time-to_object-2'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [6.7381, 19.5124], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [6.9532, 19.2172], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2072,7 +2075,7 @@ new Chart(document.getElementById('chart-time-to_object-2'), {
 new Chart(document.getElementById('chart-mem-to_object-2'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [35.96, 43.31], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [36.11, 43.32], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2089,7 +2092,7 @@ new Chart(document.getElementById('chart-mem-to_object-2'), {
 new Chart(document.getElementById('chart-time-to_object-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.0551, 0.4421], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.0505, 0.4601], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2106,7 +2109,7 @@ new Chart(document.getElementById('chart-time-to_object-3'), {
 new Chart(document.getElementById('chart-mem-to_object-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [15.93, 19.23], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [16.12, 19.18], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2123,7 +2126,7 @@ new Chart(document.getElementById('chart-mem-to_object-3'), {
 new Chart(document.getElementById('chart-time-to_object-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.4251, 4.1621], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.3891, 4.2957], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2140,7 +2143,7 @@ new Chart(document.getElementById('chart-time-to_object-4'), {
 new Chart(document.getElementById('chart-mem-to_object-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [18.57, 23.64], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [18.6, 23.69], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2157,7 +2160,7 @@ new Chart(document.getElementById('chart-mem-to_object-4'), {
 new Chart(document.getElementById('chart-time-to_object-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [11.2118, 47.5249], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [10.8124, 47.8369], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2174,7 +2177,7 @@ new Chart(document.getElementById('chart-time-to_object-5'), {
 new Chart(document.getElementById('chart-mem-to_object-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [45.11, 67.96], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [45.11, 67.95], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2191,7 +2194,7 @@ new Chart(document.getElementById('chart-mem-to_object-5'), {
 new Chart(document.getElementById('chart-time-to_object-6'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.0348, 0.2992], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.0344, 0.3003], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2208,7 +2211,7 @@ new Chart(document.getElementById('chart-time-to_object-6'), {
 new Chart(document.getElementById('chart-mem-to_object-6'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [15.84, 19.09], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [15.93, 19.05], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2225,7 +2228,7 @@ new Chart(document.getElementById('chart-mem-to_object-6'), {
 new Chart(document.getElementById('chart-time-to_object-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.2505, 2.7083], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.2157, 2.4222], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2242,7 +2245,7 @@ new Chart(document.getElementById('chart-time-to_object-7'), {
 new Chart(document.getElementById('chart-mem-to_object-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [17.55, 21.46], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [17.5, 21.47], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2259,7 +2262,7 @@ new Chart(document.getElementById('chart-mem-to_object-7'), {
 new Chart(document.getElementById('chart-time-to_object-8'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [6.8374, 27.1053], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [6.7916, 26.7844], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2276,7 +2279,7 @@ new Chart(document.getElementById('chart-time-to_object-8'), {
 new Chart(document.getElementById('chart-mem-to_object-8'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [33.63, 46.54], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [33.75, 46.53], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2293,7 +2296,7 @@ new Chart(document.getElementById('chart-mem-to_object-8'), {
 new Chart(document.getElementById('chart-time-to_object-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [0.2341, 1.5846], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [0.2277, 1.5657], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2310,7 +2313,7 @@ new Chart(document.getElementById('chart-time-to_object-9'), {
 new Chart(document.getElementById('chart-mem-to_object-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "lxml"], datasets: [{
-    data: [16.85, 20.48], backgroundColor: ["#e67225", "#ff6b81"]
+    data: [16.86, 20.58], backgroundColor: ["#e67225", "#ff6b81"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2326,7 +2329,7 @@ new Chart(document.getElementById('chart-mem-to_object-9'), {
 
 new Chart(document.getElementById('chart-time-trend-to_object'), {
   type: 'line',
-  data: { datasets: [{"label": "lxml", "data": [{"x": 0.0182, "y": 0.2992}, {"x": 0.0306, "y": 0.2242}, {"x": 0.0373, "y": 0.4421}, {"x": 0.1624, "y": 1.5846}, {"x": 0.1857, "y": 2.7083}, {"x": 0.3071, "y": 1.9415}, {"x": 0.371, "y": 4.1621}, {"x": 1.8951, "y": 27.1053}, {"x": 3.0991, "y": 19.5124}, {"x": 3.7211, "y": 47.5249}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 0.0348}, {"x": 0.0306, "y": 0.0379}, {"x": 0.0373, "y": 0.0551}, {"x": 0.1624, "y": 0.2341}, {"x": 0.1857, "y": 0.2505}, {"x": 0.3071, "y": 0.6451}, {"x": 0.371, "y": 0.4251}, {"x": 1.8951, "y": 6.8374}, {"x": 3.0991, "y": 6.7381}, {"x": 3.7211, "y": 11.2118}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "lxml", "data": [{"x": 0.0182, "y": 0.3003}, {"x": 0.0306, "y": 0.2172}, {"x": 0.0373, "y": 0.4601}, {"x": 0.1624, "y": 1.5657}, {"x": 0.1857, "y": 2.4222}, {"x": 0.3071, "y": 1.9122}, {"x": 0.371, "y": 4.2957}, {"x": 1.8951, "y": 26.7844}, {"x": 3.0991, "y": 19.2172}, {"x": 3.7211, "y": 47.8369}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 0.0344}, {"x": 0.0306, "y": 0.0361}, {"x": 0.0373, "y": 0.0505}, {"x": 0.1624, "y": 0.2277}, {"x": 0.1857, "y": 0.2157}, {"x": 0.3071, "y": 0.6804}, {"x": 0.371, "y": 0.3891}, {"x": 1.8951, "y": 6.7916}, {"x": 3.0991, "y": 6.9532}, {"x": 3.7211, "y": 10.8124}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -2340,7 +2343,7 @@ new Chart(document.getElementById('chart-time-trend-to_object'), {
 
 new Chart(document.getElementById('chart-mem-trend-to_object'), {
   type: 'line',
-  data: { datasets: [{"label": "lxml", "data": [{"x": 0.0182, "y": 19.09}, {"x": 0.0306, "y": 18.96}, {"x": 0.0373, "y": 19.23}, {"x": 0.1624, "y": 20.48}, {"x": 0.1857, "y": 21.46}, {"x": 0.3071, "y": 21.2}, {"x": 0.371, "y": 23.64}, {"x": 1.8951, "y": 46.54}, {"x": 3.0991, "y": 43.31}, {"x": 3.7211, "y": 67.96}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 15.84}, {"x": 0.0306, "y": 15.85}, {"x": 0.0373, "y": 15.93}, {"x": 0.1624, "y": 16.85}, {"x": 0.1857, "y": 17.55}, {"x": 0.3071, "y": 17.65}, {"x": 0.371, "y": 18.57}, {"x": 1.8951, "y": 33.63}, {"x": 3.0991, "y": 35.96}, {"x": 3.7211, "y": 45.11}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "lxml", "data": [{"x": 0.0182, "y": 19.05}, {"x": 0.0306, "y": 19.05}, {"x": 0.0373, "y": 19.18}, {"x": 0.1624, "y": 20.58}, {"x": 0.1857, "y": 21.47}, {"x": 0.3071, "y": 21.27}, {"x": 0.371, "y": 23.69}, {"x": 1.8951, "y": 46.53}, {"x": 3.0991, "y": 43.32}, {"x": 3.7211, "y": 67.95}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 15.93}, {"x": 0.0306, "y": 15.93}, {"x": 0.0373, "y": 16.12}, {"x": 0.1624, "y": 16.86}, {"x": 0.1857, "y": 17.5}, {"x": 0.3071, "y": 17.66}, {"x": 0.371, "y": 18.6}, {"x": 1.8951, "y": 33.75}, {"x": 3.0991, "y": 36.11}, {"x": 3.7211, "y": 45.11}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -2354,7 +2357,7 @@ new Chart(document.getElementById('chart-mem-trend-to_object'), {
 
 new Chart(document.getElementById('chart-tp-to_object'), {
   type: 'line',
-  data: { datasets: [{"label": "lxml", "data": [{"x": 0.0182, "y": 60.67}, {"x": 0.0306, "y": 136.63}, {"x": 0.0373, "y": 84.39}, {"x": 0.1624, "y": 102.49}, {"x": 0.1857, "y": 68.57}, {"x": 0.3071, "y": 158.2}, {"x": 0.371, "y": 89.14}, {"x": 1.8951, "y": 69.92}, {"x": 3.0991, "y": 158.83}, {"x": 3.7211, "y": 78.3}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 521.42}, {"x": 0.0306, "y": 808.54}, {"x": 0.0373, "y": 677.71}, {"x": 0.1624, "y": 693.68}, {"x": 0.1857, "y": 741.3}, {"x": 0.3071, "y": 476.13}, {"x": 0.371, "y": 872.65}, {"x": 1.8951, "y": 277.17}, {"x": 3.0991, "y": 459.94}, {"x": 3.7211, "y": 331.89}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "lxml", "data": [{"x": 0.0182, "y": 60.46}, {"x": 0.0306, "y": 141.01}, {"x": 0.0373, "y": 81.1}, {"x": 0.1624, "y": 103.73}, {"x": 0.1857, "y": 76.67}, {"x": 0.3071, "y": 160.62}, {"x": 0.371, "y": 86.37}, {"x": 1.8951, "y": 70.75}, {"x": 3.0991, "y": 161.27}, {"x": 3.7211, "y": 77.79}], "borderColor": "#ff6b81", "backgroundColor": "#ff6b81", "pointStyle": "triangle", "borderDash": [6, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "pygixml", "data": [{"x": 0.0182, "y": 527.71}, {"x": 0.0306, "y": 847.74}, {"x": 0.0373, "y": 739.15}, {"x": 0.1624, "y": 713.17}, {"x": 0.1857, "y": 860.83}, {"x": 0.3071, "y": 451.42}, {"x": 0.371, "y": 953.39}, {"x": 1.8951, "y": 279.04}, {"x": 3.0991, "y": 445.71}, {"x": 3.7211, "y": 344.15}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -2369,7 +2372,7 @@ new Chart(document.getElementById('chart-tp-to_object'), {
 new Chart(document.getElementById('chart-time-xml_to_json-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [0.173, 1.8295, 2.2922], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [0.1714, 1.7631, 2.2125], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2386,7 +2389,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-0'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-0'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [15.87, 18.28, 20.96], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [15.82, 18.27, 20.96], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2403,7 +2406,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-0'), {
 new Chart(document.getElementById('chart-time-xml_to_json-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [2.1082, 17.165, 22.1507], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [2.064, 17.0604, 21.9501], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2420,7 +2423,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-1'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-1'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [18.5, 21.91, 22.76], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [18.5, 21.87, 22.8], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2437,7 +2440,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-1'), {
 new Chart(document.getElementById('chart-time-xml_to_json-2'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [21.9485, 176.9707, 244.5839], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [22.258, 183.0731, 247.2828], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2454,7 +2457,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-2'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-2'), {
   type: 'bar',
   data: { labels: ["xmltodict", "pygixml", "xmljson"], datasets: [{
-    data: [42.38, 43.32, 57.92], backgroundColor: ["#35d0ba", "#e67225", "#b98bff"]
+    data: [42.43, 43.25, 57.9], backgroundColor: ["#35d0ba", "#e67225", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2471,7 +2474,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-2'), {
 new Chart(document.getElementById('chart-time-xml_to_json-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [0.2949, 2.7883, 3.6804], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [0.2881, 2.6939, 3.6648], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2488,7 +2491,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-3'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-3'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [15.99, 18.62, 21.2], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [16.09, 18.64, 21.23], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2505,7 +2508,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-3'), {
 new Chart(document.getElementById('chart-time-xml_to_json-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [2.7953, 26.9142, 36.1075], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [2.7595, 27.2143, 36.019], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2522,7 +2525,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-4'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-4'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [19.62, 25.72, 25.75], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [19.51, 25.73, 25.78], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2539,7 +2542,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-4'), {
 new Chart(document.getElementById('chart-time-xml_to_json-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [40.0997, 322.2646, 401.4415], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [40.0023, 327.7674, 398.836], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2556,7 +2559,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-5'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-5'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [53.93, 68.1, 86.92], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [53.82, 68.05, 86.85], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2572,8 +2575,8 @@ new Chart(document.getElementById('chart-mem-xml_to_json-5'), {
 
 new Chart(document.getElementById('chart-time-xml_to_json-6'), {
   type: 'bar',
-  data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [0.1781, 2.6462, 2.7428], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+  data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
+    data: [0.1758, 2.6012, 2.6022], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2590,7 +2593,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-6'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-6'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [15.94, 18.46, 20.95], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [16.0, 18.43, 20.96], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2607,7 +2610,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-6'), {
 new Chart(document.getElementById('chart-time-xml_to_json-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [1.644, 25.686, 25.6862], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [1.525, 24.8017, 24.9558], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2624,7 +2627,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-7'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-7'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [17.86, 22.81, 23.64], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [17.87, 22.81, 23.67], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2641,7 +2644,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-7'), {
 new Chart(document.getElementById('chart-time-xml_to_json-8'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [22.8969, 255.9393, 290.2603], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [22.6391, 258.2625, 295.2197], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2658,7 +2661,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-8'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-8'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmltodict", "xmljson"], datasets: [{
-    data: [37.73, 39.86, 68.37], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
+    data: [37.81, 39.76, 68.37], backgroundColor: ["#e67225", "#35d0ba", "#b98bff"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2675,7 +2678,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-8'), {
 new Chart(document.getElementById('chart-time-xml_to_json-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [1.1394, 11.7071, 15.8598], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [1.2008, 11.4402, 15.9786], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2692,7 +2695,7 @@ new Chart(document.getElementById('chart-time-xml_to_json-9'), {
 new Chart(document.getElementById('chart-mem-xml_to_json-9'), {
   type: 'bar',
   data: { labels: ["pygixml", "xmljson", "xmltodict"], datasets: [{
-    data: [17.2, 20.78, 23.15], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
+    data: [17.23, 20.79, 23.17], backgroundColor: ["#e67225", "#b98bff", "#35d0ba"]
   }] },
   options: {
     indexAxis: 'y',
@@ -2708,7 +2711,7 @@ new Chart(document.getElementById('chart-mem-xml_to_json-9'), {
 
 new Chart(document.getElementById('chart-time-trend-xml_to_json'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 0.1781}, {"x": 0.0306, "y": 0.173}, {"x": 0.0373, "y": 0.2949}, {"x": 0.1624, "y": 1.1394}, {"x": 0.1857, "y": 1.644}, {"x": 0.3071, "y": 2.1082}, {"x": 0.371, "y": 2.7953}, {"x": 1.8951, "y": 22.8969}, {"x": 3.0991, "y": 21.9485}, {"x": 3.7211, "y": 40.0997}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmljson", "data": [{"x": 0.0182, "y": 2.7428}, {"x": 0.0306, "y": 2.2922}, {"x": 0.0373, "y": 2.7883}, {"x": 0.1624, "y": 11.7071}, {"x": 0.1857, "y": 25.6862}, {"x": 0.3071, "y": 22.1507}, {"x": 0.371, "y": 26.9142}, {"x": 1.8951, "y": 290.2603}, {"x": 3.0991, "y": 244.5839}, {"x": 3.7211, "y": 322.2646}], "borderColor": "#b98bff", "backgroundColor": "#b98bff", "pointStyle": "crossRot", "borderDash": [1, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 2.6462}, {"x": 0.0306, "y": 1.8295}, {"x": 0.0373, "y": 3.6804}, {"x": 0.1624, "y": 15.8598}, {"x": 0.1857, "y": 25.686}, {"x": 0.3071, "y": 17.165}, {"x": 0.371, "y": 36.1075}, {"x": 1.8951, "y": 255.9393}, {"x": 3.0991, "y": 176.9707}, {"x": 3.7211, "y": 401.4415}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 0.1758}, {"x": 0.0306, "y": 0.1714}, {"x": 0.0373, "y": 0.2881}, {"x": 0.1624, "y": 1.2008}, {"x": 0.1857, "y": 1.525}, {"x": 0.3071, "y": 2.064}, {"x": 0.371, "y": 2.7595}, {"x": 1.8951, "y": 22.6391}, {"x": 3.0991, "y": 22.258}, {"x": 3.7211, "y": 40.0023}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmljson", "data": [{"x": 0.0182, "y": 2.6012}, {"x": 0.0306, "y": 2.2125}, {"x": 0.0373, "y": 2.6939}, {"x": 0.1624, "y": 11.4402}, {"x": 0.1857, "y": 24.9558}, {"x": 0.3071, "y": 21.9501}, {"x": 0.371, "y": 27.2143}, {"x": 1.8951, "y": 295.2197}, {"x": 3.0991, "y": 247.2828}, {"x": 3.7211, "y": 327.7674}], "borderColor": "#b98bff", "backgroundColor": "#b98bff", "pointStyle": "crossRot", "borderDash": [1, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 2.6022}, {"x": 0.0306, "y": 1.7631}, {"x": 0.0373, "y": 3.6648}, {"x": 0.1624, "y": 15.9786}, {"x": 0.1857, "y": 24.8017}, {"x": 0.3071, "y": 17.0604}, {"x": 0.371, "y": 36.019}, {"x": 1.8951, "y": 258.2625}, {"x": 3.0991, "y": 183.0731}, {"x": 3.7211, "y": 398.836}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -2722,7 +2725,7 @@ new Chart(document.getElementById('chart-time-trend-xml_to_json'), {
 
 new Chart(document.getElementById('chart-mem-trend-xml_to_json'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 15.94}, {"x": 0.0306, "y": 15.87}, {"x": 0.0373, "y": 15.99}, {"x": 0.1624, "y": 17.2}, {"x": 0.1857, "y": 17.86}, {"x": 0.3071, "y": 18.5}, {"x": 0.371, "y": 19.62}, {"x": 1.8951, "y": 37.73}, {"x": 3.0991, "y": 43.32}, {"x": 3.7211, "y": 53.93}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmljson", "data": [{"x": 0.0182, "y": 18.46}, {"x": 0.0306, "y": 18.28}, {"x": 0.0373, "y": 18.62}, {"x": 0.1624, "y": 20.78}, {"x": 0.1857, "y": 23.64}, {"x": 0.3071, "y": 21.91}, {"x": 0.371, "y": 25.72}, {"x": 1.8951, "y": 68.37}, {"x": 3.0991, "y": 57.92}, {"x": 3.7211, "y": 86.92}], "borderColor": "#b98bff", "backgroundColor": "#b98bff", "pointStyle": "crossRot", "borderDash": [1, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 20.95}, {"x": 0.0306, "y": 20.96}, {"x": 0.0373, "y": 21.2}, {"x": 0.1624, "y": 23.15}, {"x": 0.1857, "y": 22.81}, {"x": 0.3071, "y": 22.76}, {"x": 0.371, "y": 25.75}, {"x": 1.8951, "y": 39.86}, {"x": 3.0991, "y": 42.38}, {"x": 3.7211, "y": 68.1}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 16.0}, {"x": 0.0306, "y": 15.82}, {"x": 0.0373, "y": 16.09}, {"x": 0.1624, "y": 17.23}, {"x": 0.1857, "y": 17.87}, {"x": 0.3071, "y": 18.5}, {"x": 0.371, "y": 19.51}, {"x": 1.8951, "y": 37.81}, {"x": 3.0991, "y": 43.25}, {"x": 3.7211, "y": 53.82}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmljson", "data": [{"x": 0.0182, "y": 18.43}, {"x": 0.0306, "y": 18.27}, {"x": 0.0373, "y": 18.64}, {"x": 0.1624, "y": 20.79}, {"x": 0.1857, "y": 23.67}, {"x": 0.3071, "y": 21.87}, {"x": 0.371, "y": 25.73}, {"x": 1.8951, "y": 68.37}, {"x": 3.0991, "y": 57.9}, {"x": 3.7211, "y": 86.85}], "borderColor": "#b98bff", "backgroundColor": "#b98bff", "pointStyle": "crossRot", "borderDash": [1, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 20.96}, {"x": 0.0306, "y": 20.96}, {"x": 0.0373, "y": 21.23}, {"x": 0.1624, "y": 23.17}, {"x": 0.1857, "y": 22.81}, {"x": 0.3071, "y": 22.8}, {"x": 0.371, "y": 25.78}, {"x": 1.8951, "y": 39.76}, {"x": 3.0991, "y": 42.43}, {"x": 3.7211, "y": 68.05}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
@@ -2736,7 +2739,7 @@ new Chart(document.getElementById('chart-mem-trend-xml_to_json'), {
 
 new Chart(document.getElementById('chart-tp-xml_to_json'), {
   type: 'line',
-  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 101.91}, {"x": 0.0306, "y": 177.05}, {"x": 0.0373, "y": 126.53}, {"x": 0.1624, "y": 142.54}, {"x": 0.1857, "y": 112.97}, {"x": 0.3071, "y": 145.69}, {"x": 0.371, "y": 132.72}, {"x": 1.8951, "y": 82.77}, {"x": 3.0991, "y": 141.2}, {"x": 3.7211, "y": 92.8}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmljson", "data": [{"x": 0.0182, "y": 6.62}, {"x": 0.0306, "y": 13.36}, {"x": 0.0373, "y": 13.38}, {"x": 0.1624, "y": 13.87}, {"x": 0.1857, "y": 7.23}, {"x": 0.3071, "y": 13.87}, {"x": 0.371, "y": 13.78}, {"x": 1.8951, "y": 6.53}, {"x": 3.0991, "y": 12.67}, {"x": 3.7211, "y": 11.55}], "borderColor": "#b98bff", "backgroundColor": "#b98bff", "pointStyle": "crossRot", "borderDash": [1, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 6.86}, {"x": 0.0306, "y": 16.74}, {"x": 0.0373, "y": 10.14}, {"x": 0.1624, "y": 10.24}, {"x": 0.1857, "y": 7.23}, {"x": 0.3071, "y": 17.89}, {"x": 0.371, "y": 10.27}, {"x": 1.8951, "y": 7.4}, {"x": 3.0991, "y": 17.51}, {"x": 3.7211, "y": 9.27}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
+  data: { datasets: [{"label": "pygixml", "data": [{"x": 0.0182, "y": 103.25}, {"x": 0.0306, "y": 178.7}, {"x": 0.0373, "y": 129.48}, {"x": 0.1624, "y": 135.25}, {"x": 0.1857, "y": 121.78}, {"x": 0.3071, "y": 148.81}, {"x": 0.371, "y": 134.44}, {"x": 1.8951, "y": 83.71}, {"x": 3.0991, "y": 139.24}, {"x": 3.7211, "y": 93.02}], "borderColor": "#e67225", "backgroundColor": "#e67225", "pointStyle": "circle", "borderDash": [], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmljson", "data": [{"x": 0.0182, "y": 6.98}, {"x": 0.0306, "y": 13.85}, {"x": 0.0373, "y": 13.85}, {"x": 0.1624, "y": 14.2}, {"x": 0.1857, "y": 7.44}, {"x": 0.3071, "y": 13.99}, {"x": 0.371, "y": 13.63}, {"x": 1.8951, "y": 6.42}, {"x": 3.0991, "y": 12.53}, {"x": 3.7211, "y": 11.35}], "borderColor": "#b98bff", "backgroundColor": "#b98bff", "pointStyle": "crossRot", "borderDash": [1, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}, {"label": "xmltodict", "data": [{"x": 0.0182, "y": 6.98}, {"x": 0.0306, "y": 17.38}, {"x": 0.0373, "y": 10.18}, {"x": 0.1624, "y": 10.16}, {"x": 0.1857, "y": 7.49}, {"x": 0.3071, "y": 18.0}, {"x": 0.371, "y": 10.3}, {"x": 1.8951, "y": 7.34}, {"x": 3.0991, "y": 16.93}, {"x": 3.7211, "y": 9.33}], "borderColor": "#35d0ba", "backgroundColor": "#35d0ba", "pointStyle": "star", "borderDash": [8, 3, 2, 3], "showLine": true, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8}] },
   options: {
     responsive: true, maintainAspectRatio: false,
     scales: {
