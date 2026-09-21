@@ -46,7 +46,8 @@ slow at another):
                    so it's excluded from this operation entirely --
                    that's a real, reportable gap, not an oversight.
 
-Each (library, genre, size) cell is repeated REPEATS times and the
+Each (library, genre, size) cell is repeated REPEATS times (configurable
+via --repeats / PYGIXML_BENCH_REPEATS, default 7) and the
 best (min) wall-clock time is kept -- standard practice for
 micro-benchmarks, since it's the closest single run gets to "no other
 process happened to interrupt this one."
@@ -61,10 +62,10 @@ except ImportError:
     def tqdm(iterable, **kwargs):
         return iterable
 
-REPEATS = 7
+DEFAULT_REPEATS = 7
 
 
-def _best_time(fn, repeats=REPEATS):
+def _best_time(fn, repeats):
     best = None
     for _ in range(repeats):
         gc.collect()
@@ -76,15 +77,15 @@ def _best_time(fn, repeats=REPEATS):
     return best
 
 
-def _try(label, fn):
+def _try(label, fn, repeats):
     try:
-        dt = _best_time(fn)
+        dt = _best_time(fn, repeats)
         return {"available": True, "seconds": dt}
     except Exception as e:
         return {"available": False, "error": f"{type(e).__name__}: {e}"}
 
 
-def run(manifest):
+def run(manifest, repeats=DEFAULT_REPEATS):
     import pygixml
     from pygixml import jsonify, dictify, objectify
 
@@ -122,20 +123,20 @@ def run(manifest):
 
         # ---- parse ----
         parse = {}
-        parse["pygixml"] = _try("parse", lambda: pygixml.parse_string(xml_text))
+        parse["pygixml"] = _try("parse", lambda: pygixml.parse_string(xml_text), repeats)
         if have_lxml:
-            parse["lxml"] = _try("parse", lambda: LET.fromstring(xml_bytes))
+            parse["lxml"] = _try("parse", lambda: LET.fromstring(xml_bytes), repeats)
         if have_et:
-            parse["elementtree"] = _try("parse", lambda: ET.fromstring(xml_text))
+            parse["elementtree"] = _try("parse", lambda: ET.fromstring(xml_text), repeats)
         row["parse"] = parse
 
         # ---- dict_convert ----
         # Same convention on both sides (@attr, #text) -- a genuinely
         # fair like-for-like, not "both happen to produce a dict".
         d2d = {}
-        d2d["pygixml"] = _try("dict_convert", lambda: dictify.parse(xml_text))
+        d2d["pygixml"] = _try("dict_convert", lambda: dictify.parse(xml_text), repeats)
         if have_xmltodict:
-            d2d["xmltodict"] = _try("dict_convert", lambda: xmltodict.parse(xml_text))
+            d2d["xmltodict"] = _try("dict_convert", lambda: xmltodict.parse(xml_text), repeats)
         row["dict_convert"] = d2d
 
         # ---- to_object ----
@@ -143,23 +144,25 @@ def run(manifest):
         # its own distinct approach, benchmarked against lxml's own
         # objectify submodule (a real feature match, not an improvised one).
         o2o = {}
-        o2o["pygixml"] = _try("to_object", lambda: objectify.from_string(xml_text))
+        o2o["pygixml"] = _try("to_object", lambda: objectify.from_string(xml_text), repeats)
         if have_lxml and LOBJ is not None:
-            o2o["lxml"] = _try("to_object", lambda: LOBJ.fromstring(xml_bytes))
+            o2o["lxml"] = _try("to_object", lambda: LOBJ.fromstring(xml_bytes), repeats)
         row["to_object"] = o2o
 
         # ---- xml_to_json ----
         x2j = {}
-        x2j["pygixml"] = _try("xml_to_json", lambda: jsonify.dumps(xml_text))
+        x2j["pygixml"] = _try("xml_to_json", lambda: jsonify.dumps(xml_text), repeats)
         if have_xmltodict:
             x2j["xmltodict"] = _try(
                 "xml_to_json",
                 lambda: json.dumps(xmltodict.parse(xml_text)),
+                repeats,
             )
         if have_xmljson and have_lxml:
             x2j["xmljson"] = _try(
                 "xml_to_json",
                 lambda: json.dumps(xmljson.parker.data(LET.fromstring(xml_bytes))),
+                repeats,
             )
         row["xml_to_json"] = x2j
 
@@ -172,7 +175,7 @@ def run(manifest):
             "to_object": "XML string in, lazy attribute-style object out",
             "xml_to_json": "XML string in, JSON string out, end to end",
         },
-        "repeats": REPEATS,
+        "repeats": repeats,
         "metric": "best (min) wall-clock seconds over repeats",
         "results": results,
     }
@@ -188,6 +191,9 @@ if __name__ == "__main__":
                     help="one or more JSON manifests from corpus.py / real_corpus_manifest.py "
                          "(each a list of {genre,size,path,bytes}); merged together")
     p.add_argument("output", help="path to write results JSON")
+    p.add_argument("--repeats", type=int, default=DEFAULT_REPEATS,
+                    help=f"timed repeats per (library, corpus entry, operation) cell; "
+                         f"best (min) of these is kept (default: {DEFAULT_REPEATS})")
     args = p.parse_args()
 
     manifest = []
@@ -195,7 +201,7 @@ if __name__ == "__main__":
         with open(m_path, "r", encoding="utf-8") as f:
             manifest.extend(_json.load(f))
 
-    result = run(manifest)
+    result = run(manifest, repeats=args.repeats)
 
     with open(args.output, "w", encoding="utf-8") as f:
         _json.dump(result, f, indent=2)

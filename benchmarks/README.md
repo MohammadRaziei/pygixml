@@ -127,6 +127,17 @@ genuinely separate OS processes, with the process spawning the
 CMake spawns one fresh process per (size, approach) data point instead
 of a Python loop doing it.
 
+## Tuning
+
+`PYGIXML_BENCH_REPEATS` (CMake cache variable, default `7`) — timed
+repeats per (library, corpus entry, operation) cell in
+`bench_throughput.py`; the best (minimum) of these is kept. Raise it on
+a noisy machine, lower it for a faster iteration loop:
+
+```bash
+cmake -S benchmarks -B benchmarks/build -DPYGIXML_BENCH_REPEATS=15
+```
+
 ## Requirements
 
 - CMake ≥ 3.18

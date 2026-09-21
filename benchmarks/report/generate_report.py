@@ -96,18 +96,32 @@ def _build_memory_section(memory):
     speed_datasets_js = []
     max_n_bytes = 0
 
+    # O(1) (never builds a tree) vs O(n) (every DOM-based approach here)
+    # are different complexity classes -- a ratio between them is only
+    # true at the one size it's computed from and gets worse for O(n) at
+    # every larger size (see "On fairness" in README.md). So: a ratio is
+    # only computed WITHIN the O(n) group (all same class, comparable),
+    # and O(1) just gets its own observed range stated plainly -- no
+    # comparison implied.
+    O1_APPROACHES = {"pygixml_stream_dump"}
+    on_group = {}
+    o1_group = {}
+
+    def _mlabel(approach):
+        return {
+            "pygixml_stream_dump": "pygixml (stream_dump)",
+            "pygixml_dom": "pygixml (DOM)",
+            "lxml_plus_xmljson": "lxml + xmljson",
+            "xmltodict": "xmltodict",
+        }.get(approach, approach)
+
     for approach, data in memory.items():
         if not data.get("available"):
             continue
         points = data["points"]
         xy = [{"x": p["bytes"] / (1024 * 1024), "y": p["peak_rss_mb"]} for p in points]
         color = LIB_COLORS.get(approach, "#b98bff")
-        label = {
-            "pygixml_stream_dump": "pygixml (stream_dump)",
-            "pygixml_dom": "pygixml (DOM)",
-            "lxml_plus_xmljson": "lxml + xmljson",
-            "xmltodict": "xmltodict",
-        }.get(approach, approach)
+        label = _mlabel(approach)
         datasets_js.append({
             "label": label, "data": xy, "borderColor": color,
             "backgroundColor": color, "tension": 0.25, "pointRadius": 5,
@@ -115,6 +129,11 @@ def _build_memory_section(memory):
             "borderDash": LIB_DASH.get(approach, []),
         })
         max_n_bytes = max(max_n_bytes, max(p["bytes"] for p in points))
+
+        if approach in O1_APPROACHES:
+            o1_group[approach] = points
+        else:
+            on_group[approach] = points
 
         # Same isolated-process runs, same input files -- so the timing
         # they also recorded is a fair speed comparison for stream_dump
@@ -128,6 +147,38 @@ def _build_memory_section(memory):
                 "pointStyle": LIB_POINT_STYLES.get(approach, "circle"),
                 "borderDash": LIB_DASH.get(approach, []),
             })
+
+    complexity_note = ""
+    if o1_group:
+        o1_parts = []
+        for approach, points in o1_group.items():
+            vals = [p["peak_rss_mb"] for p in points]
+            biggest = _fmt_bytes(max(p["bytes"] for p in points))
+            o1_parts.append(
+                f"<strong>{_mlabel(approach)}</strong> (O(1)) stayed within "
+                f"{min(vals):.1f}\u2013{max(vals):.1f}MB across every size tested, up to {biggest}"
+            )
+        complexity_note = "; ".join(o1_parts) + "."
+
+    if len(on_group) >= 2:
+        # Largest common size -- since every approach here ran on the
+        # same generated input files per size, this is an apples-to-apples
+        # point, not an average across different inputs.
+        at_size = {}
+        for approach, points in on_group.items():
+            biggest = max(points, key=lambda p: p["bytes"])
+            at_size[approach] = biggest["peak_rss_mb"]
+        ranked_on = sorted(at_size.items(), key=lambda kv: kv[1])
+        low_lib, low_val = ranked_on[0]
+        high_lib, high_val = ranked_on[-1]
+        if low_val > 0:
+            ratio_on = high_val / low_val
+            complexity_note += (
+                f" Among the O(n), DOM-based approaches only (a fair comparison -- same "
+                f"complexity class): at the largest file tested, <strong>{_mlabel(low_lib)}</strong> "
+                f"used {ratio_on:.1f}\u00d7 less memory than <strong>{_mlabel(high_lib)}</strong> "
+                f"({low_val:.1f}MB vs {high_val:.1f}MB)."
+            )
 
     chart_js = f"""
 new Chart(document.getElementById('chart-memory'), {{
@@ -166,7 +217,8 @@ new Chart(document.getElementById('chart-memory-speed'), {{
         if max_n_bytes else ""
     )
     return {"chart_js": chart_js, "speed_chart_js": speed_chart_js,
-            "lede_extra": lede_extra, "has_speed": bool(speed_datasets_js)}
+            "lede_extra": lede_extra, "has_speed": bool(speed_datasets_js),
+            "complexity_note": complexity_note}
 
 
 # --------------------------------------------------------------- scaling --
@@ -436,6 +488,17 @@ new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
                 f"(median {_fmt_ms(top_median * 1000)})"
                 + (f" \u2014 {rest} median" if rest else "") + "."
             )
+            # Every library in a throughput operation does the same
+            # single-pass O(n) work (none of them stream) -- same
+            # complexity class, so a ratio here is fair, computed from
+            # the medians above, not a hand-picked number.
+            if len(ranked) >= 2:
+                slow_lib, slow_median = ranked[-1]
+                ratio = slow_median / top_median
+                winner_summary += (
+                    f" {LIB_LABELS.get(top_lib, top_lib)} is {ratio:.1f}\u00d7 faster than "
+                    f"the slowest ({LIB_LABELS.get(slow_lib, slow_lib)}) at the median."
+                )
 
         memory_summary = ""
         if n_mem_comparisons:
@@ -450,6 +513,17 @@ new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
                 f"(median {top_mem_median:.1f}MB)"
                 + (f" \u2014 {rest_mem} median" if rest_mem else "") + "."
             )
+            # Same reasoning: none of these hold a whole document in
+            # memory any differently from each other here (all build
+            # a tree or an equivalent structure for this one
+            # operation) -- same class, ratio is fair.
+            if len(ranked_mem) >= 2:
+                high_lib, high_median = ranked_mem[-1]
+                mem_ratio = high_median / top_mem_median
+                memory_summary += (
+                    f" {LIB_LABELS.get(top_mem_lib, top_mem_lib)} uses {mem_ratio:.1f}\u00d7 less "
+                    f"memory than the highest ({LIB_LABELS.get(high_lib, high_lib)})."
+                )
 
         # Time-vs-size and memory-vs-size: the same "does the trend hold
         # as files grow" question the throughput chart answers, just for
@@ -636,6 +710,7 @@ def build(results_dir, output_path, chartjs_path):
         memory_available=bool(memory),
         memory_lede_extra=mem["lede_extra"],
         memory_has_speed=mem["has_speed"],
+        memory_complexity_note=mem["complexity_note"],
         scaling_note=scl["note"],
         scaling_dom_available=scl["dom_available"],
         throughput_ops=thr["ops"],

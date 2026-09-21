@@ -35,13 +35,17 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
+  background: rgba(11, 14, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.navbar-inner {
+  max-width: 1080px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 13px 24px;
-  background: rgba(11, 14, 20, 0.85);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
 }
 .navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .navbar-brand img { height: 22px; width: auto; }
@@ -128,11 +132,32 @@ h3.op-title:first-of-type { margin-top: 8px; }
 .op-winner { font-size: 15px; margin: 0 0 20px; color: var(--text); }
 .op-winner strong { color: var(--accent-2); font-weight: 700; }
 
+.mini-details { margin-bottom: 8px; }
+.mini-details summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 10px 4px;
+  list-style: none;
+}
+.mini-details summary::-webkit-details-marker { display: none; }
+.mini-details summary::before {
+  content: '\25B8';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 150ms ease;
+}
+.mini-details[open] summary::before { transform: rotate(90deg); }
+.mini-details summary:hover { color: var(--accent-2); }
+
 .mini-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 14px;
   margin-bottom: 8px;
+  margin-top: 4px;
 }
 .mini-panel {
   background: var(--bg-panel);
@@ -224,16 +249,18 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 <body>
 
 <header class="navbar">
-  <a class="navbar-brand" href="https://mohammadraziei.github.io/pygixml/">
-    <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml">
-  </a>
-  <div class="navbar-links">
-    <a class="navbar-link" href="https://mohammadraziei.github.io/pygixml/docs/index.html">Docs</a>
-    <a class="navbar-link current" href="https://mohammadraziei.github.io/pygixml/benchmarks/index.html">Benchmarks</a>
-    <a class="navbar-cta" href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.1.83-.27.83-.58v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.72.08-.72 1.2.09 1.84 1.24 1.84 1.24 1.07 1.82 2.8 1.3 3.49 1 .1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3Z"/></svg>
-      GitHub
+  <div class="navbar-inner">
+    <a class="navbar-brand" href="https://mohammadraziei.github.io/pygixml/">
+      <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml">
     </a>
+    <div class="navbar-links">
+      <a class="navbar-link" href="https://mohammadraziei.github.io/pygixml/docs/index.html">Docs</a>
+      <a class="navbar-link current" href="https://mohammadraziei.github.io/pygixml/benchmarks/index.html">Benchmarks</a>
+      <a class="navbar-cta" href="https://github.com/MohammadRaziei/pygixml" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.1.83-.27.83-.58v-2c-3.34.72-4.04-1.6-4.04-1.6-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.72.08-.72 1.2.09 1.84 1.24 1.84 1.24 1.07 1.82 2.8 1.3 3.49 1 .1-.77.42-1.3.76-1.6-2.66-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3Z"/></svg>
+        GitHub
+      </a>
+    </div>
   </div>
 </header>
 
@@ -265,6 +292,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     <h4>Peak RSS vs. input size</h4>
     <p class="op-note">Log scale on both axes &mdash; a flat line here means constant memory; a line with the same slope as the others means it scales with input, same as everyone else.</p>
     <div class="chart-box tall"><canvas id="chart-memory"></canvas></div>
+    {% if memory_complexity_note %}<p class="legend-note">{{ memory_complexity_note | safe }}</p>{% endif %}
   </div>
 
   {% if memory_has_speed %}
@@ -351,21 +379,24 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   {% if op.winner_summary %}<p class="op-winner">{{ op.winner_summary | safe }}</p>{% endif %}
   {% if op.memory_summary %}<p class="op-winner">{{ op.memory_summary | safe }}</p>{% endif %}
 
-  <div class="mini-grid">
-    {% for entry in op.entries %}
-    <div class="mini-panel">
-      <div class="mini-label">{{ entry.label }}</div>
-      <div class="mini-subhead">Time (ms)</div>
-      <div class="mini-chart-box"><canvas id="{{ entry.id }}"></canvas></div>
-      <div class="mini-values">{{ entry.values_text }}</div>
-      {% if entry.mem_id %}
-      <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
-      <div class="mini-chart-box"><canvas id="{{ entry.mem_id }}"></canvas></div>
-      <div class="mini-values">{{ entry.mem_text }}</div>
-      {% endif %}
+  <details class="mini-details">
+    <summary>See per-entry detail ({{ op.entries|length }} corpus entries)</summary>
+    <div class="mini-grid">
+      {% for entry in op.entries %}
+      <div class="mini-panel">
+        <div class="mini-label">{{ entry.label }}</div>
+        <div class="mini-subhead">Time (ms)</div>
+        <div class="mini-chart-box"><canvas id="{{ entry.id }}"></canvas></div>
+        <div class="mini-values">{{ entry.values_text }}</div>
+        {% if entry.mem_id %}
+        <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
+        <div class="mini-chart-box"><canvas id="{{ entry.mem_id }}"></canvas></div>
+        <div class="mini-values">{{ entry.mem_text }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
+  </details>
 
   {% if op.has_time_trend or op.has_mem_trend %}
   <div class="chart-pair" style="margin-top:18px;">
@@ -522,6 +553,20 @@ Chart.defaults.borderColor = '#232938';
 Chart.defaults.font.family = "-apple-system, 'Segoe UI', sans-serif";
 
 {{ chart_scripts | safe }}
+
+// Charts inside a collapsed <details> are built against a hidden
+// (0x0) canvas and can come out mis-sized; force a resize the first
+// time each block is actually opened, as a safety net alongside
+// Chart.js's own ResizeObserver.
+document.querySelectorAll('.mini-details').forEach(function (el) {
+  el.addEventListener('toggle', function () {
+    if (!el.open) return;
+    el.querySelectorAll('canvas').forEach(function (canvas) {
+      const chart = Chart.getChart(canvas);
+      if (chart) chart.resize();
+    });
+  });
+});
 </script>
 </body>
 </html>

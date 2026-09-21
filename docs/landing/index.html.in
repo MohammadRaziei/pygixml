@@ -458,7 +458,7 @@ pygixml convert data.xml data.json</code></pre>
     </div>
     <div class="text-fg0 text-xs mt-4">
       &copy; 2025 <a href="https://github.com/mohammadraziei" target="_blank" rel="noopener" class="hover:text-brand">Mohammad Raziei</a>
-      &middot; <a href="https://github.com/MohammadRaziei/pygixml/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-brand">MIT License</a>
+      &middot; <a href="https://github.com/MohammadRaziei/pygixml/blob/master/LICENSE" target="_blank" rel="noopener" class="hover:text-brand">MIT License</a>
       &middot; v@PROJECT_VERSION@
     </div>
   </div>
