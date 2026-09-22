@@ -65,11 +65,25 @@ cmake -S . -B build -DPYGIXML_BENCH_RESULTS_DIR=/somewhere/else
 pygixml vs. [lxml](https://lxml.de/), the standard library's
 `xml.etree.ElementTree`, [xmltodict](https://github.com/martinblech/xmltodict),
 and [xmljson](https://github.com/sanand0/xmljson) — across pygixml's
-actual conversion layers, not just JSON: raw DOM parse, dict
-conversion (`dictify`, matched fairly against `xmltodict` since both
-use the same `@attr`/`#text` convention), lazy-object access
-(`objectify`, matched against lxml's own `objectify` submodule), and
-end-to-end XML→JSON (`jsonify`) — plus memory use at scale and install
+five independent layers, not just JSON:
+
+1. **parse** (pugixml core) — raw DOM parse, vs. lxml and ElementTree.
+2. **iterparse** (yxml core) — stream every repeated element without
+   ever holding the whole document, vs. lxml's and ElementTree's own
+   `iterparse`. Only runs on corpus entries with one uniformly
+   repeated element (see `corpus.py`'s `RECORD_TAG`).
+3. **jsonify** — end-to-end XML→JSON, vs. xmltodict+`json.dumps` and
+   xmljson+lxml+`json.dumps`.
+4. **objectify** — lazy attribute-style access, vs. lxml's own
+   `objectify` submodule.
+5. **dictify**, in *both* modes — DOM mode (`dictify.parse`, matched
+   fairly against `xmltodict.parse` since both use the same
+   `@attr`/`#text` convention) and streaming mode (`dictify.iterdict`
+   vs. xmltodict's own `item_depth`/`item_callback` streaming — it
+   genuinely supports both, so neither comparison is a DOM tool facing
+   a streaming-only one).
+
+Plus memory use at scale and install
 footprint. The static feature matrix (XPath, XSLT, schema validation,
 streaming, CLI tools, and so on — things a speed number can't capture)
 lives on the [landing page](../docs/landing/index.html.in) instead of
@@ -155,10 +169,34 @@ class. `jsonify.stream_dump` never builds a tree, so its memory use is
 O(1) in input size; every DOM-based competitor is O(n). That means any
 single "pygixml uses N× less memory" figure is only true at the one
 input size it was computed from, and understates the gap at every
-larger size and overstates it at every smaller one. The report
-therefore doesn't print a ratio anywhere — it shows the actual curves
-(log-log, both axes) so the growth rate speaks for itself instead of
-one cherry-pickable number.
+larger size and overstates it at every smaller one. The report never
+computes a ratio between an O(1) approach and an O(n) one — the O(1)
+side just gets its own observed range stated plainly (e.g. "stayed
+within 15.7–15.9MB across every size tested"), and the actual curves
+(log-log, both axes) show the growth rate honestly instead of one
+cherry-pickable number.
+
+Where every approach genuinely *is* the same complexity class (every
+library in a throughput operation does one single-pass O(n) walk; the
+DOM-based approaches in the memory comparison all hold a full tree) —
+there a ratio is fair, and the report computes one, but not as a ratio
+of medians or of averages. It picks whichever approach wins the most
+comparisons as the **reference**, then for every other approach
+computes **E[target/ref]**: the ratio on *each* corpus entry
+individually, averaged across entries — ratio-then-average, not
+average-then-ratio. Concretely, for time:
+
+```
+E[time_x / time_ref] = mean( time_x_i / time_ref_i  for each corpus entry i )
+```
+
+not `median(time_x) / median(time_ref)` and not `mean(time_x) /
+mean(time_ref)`. The difference matters because corpus entries span
+several orders of magnitude in size (a 20-byte config value next to a
+4MB catalog) — averaging the raw numbers first lets the largest entry
+dominate the result; ratio-then-average weighs every entry's *relative*
+performance equally, regardless of its absolute size. See
+`_e_ratio()` in `report/generate_report.py`.
 
 ## What the report doesn't say (on purpose)
 

@@ -146,6 +146,16 @@ GENRES = {
     "records": gen_records,
 }
 
+# The one repeating element per genre, and its depth from the document
+# root (root=1) -- used by the iterparse/streaming operations
+# (pygixml.iterfind/iterparse, dictify.iterdict, lxml/ElementTree
+# iterparse, xmltodict's item_depth streaming mode). "config" has no
+# uniformly repeated tag (it's a deep, low-repetition settings tree),
+# so it's genuinely not a streaming-shaped document -- left out of this
+# map on purpose, not an oversight.
+RECORD_TAG = {"rss": "item", "catalog": "product", "records": "order"}
+RECORD_DEPTH = {"rss": 3, "catalog": 2, "records": 2}
+
 SIZES = {
     "small": 100,
     "medium": 1_000,
@@ -168,6 +178,8 @@ def write_corpus(out_dir):
             manifest.append({
                 "genre": genre_name, "size": size_name, "n": n,
                 "path": path, "bytes": len(xml.encode("utf-8")),
+                "record_tag": RECORD_TAG.get(genre_name),
+                "record_depth": RECORD_DEPTH.get(genre_name),
             })
 
     cfg = gen_config()
@@ -177,6 +189,7 @@ def write_corpus(out_dir):
     manifest.append({
         "genre": "config", "size": "fixed", "n": None,
         "path": cfg_path, "bytes": len(cfg.encode("utf-8")),
+        "record_tag": None, "record_depth": None,
     })
 
     return manifest

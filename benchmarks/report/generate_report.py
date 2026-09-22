@@ -79,6 +79,20 @@ def _fmt_bytes(n):
     return f"{n:.1f}TB"
 
 
+def _e_ratio(pairs):
+    """pairs: list of (target_seconds_or_mb, ref_seconds_or_mb), same
+    units, ref>0. Returns E[target/ref] -- the mean of each pair's OWN
+    ratio, not (mean of targets)/(mean of refs) and not (median of
+    targets)/(median of refs). Ratio-then-average, not average-then-
+    ratio: entries of very different absolute scale (a 20-byte file
+    next to a 4MB one) don't get to dominate just because their raw
+    numbers are bigger."""
+    ratios = [t / r for t, r in pairs if r and r > 0]
+    if not ratios:
+        return None
+    return sum(ratios) / len(ratios)
+
+
 def _load(path):
     if path and os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -149,6 +163,7 @@ def _build_memory_section(memory):
             })
 
     complexity_note = ""
+    o1_note = ""
     if o1_group:
         o1_parts = []
         for approach, points in o1_group.items():
@@ -158,27 +173,46 @@ def _build_memory_section(memory):
                 f"<strong>{_mlabel(approach)}</strong> (O(1)) stayed within "
                 f"{min(vals):.1f}\u2013{max(vals):.1f}MB across every size tested, up to {biggest}"
             )
-        complexity_note = "; ".join(o1_parts) + "."
+        o1_note = "; ".join(o1_parts) + "."
+        complexity_note = o1_note
 
     if len(on_group) >= 2:
-        # Largest common size -- since every approach here ran on the
-        # same generated input files per size, this is an apples-to-apples
-        # point, not an average across different inputs.
-        at_size = {}
+        # Pair points across approaches by matching byte size (every
+        # approach here ran on the same generated input files per
+        # size, so this is a real apples-to-apples pairing).
+        by_bytes = {}
         for approach, points in on_group.items():
-            biggest = max(points, key=lambda p: p["bytes"])
-            at_size[approach] = biggest["peak_rss_mb"]
-        ranked_on = sorted(at_size.items(), key=lambda kv: kv[1])
-        low_lib, low_val = ranked_on[0]
-        high_lib, high_val = ranked_on[-1]
-        if low_val > 0:
-            ratio_on = high_val / low_val
-            complexity_note += (
-                f" Among the O(n), DOM-based approaches only (a fair comparison -- same "
-                f"complexity class): at the largest file tested, <strong>{_mlabel(low_lib)}</strong> "
-                f"used {ratio_on:.1f}\u00d7 less memory than <strong>{_mlabel(high_lib)}</strong> "
-                f"({low_val:.1f}MB vs {high_val:.1f}MB)."
-            )
+            for p in points:
+                by_bytes.setdefault(p["bytes"], {})[approach] = p["peak_rss_mb"]
+
+        wins_on = {a: 0 for a in on_group}
+        n_sizes = 0
+        for vals in by_bytes.values():
+            if len(vals) >= 2:
+                n_sizes += 1
+                wins_on[min(vals.items(), key=lambda kv: kv[1])[0]] += 1
+        ref_on = max(wins_on.items(), key=lambda kv: kv[1])[0] if n_sizes else None
+
+        if ref_on:
+            pairs_by_approach = {a: [] for a in on_group if a != ref_on}
+            for vals in by_bytes.values():
+                if ref_on not in vals:
+                    continue
+                for a in pairs_by_approach:
+                    if a in vals:
+                        pairs_by_approach[a].append((vals[a], vals[ref_on]))
+            e_on = {a: _e_ratio(p) for a, p in pairs_by_approach.items() if p}
+            if e_on:
+                parts = ", ".join(
+                    f"<strong>{_mlabel(a)}</strong> {e:.1f}\u00d7"
+                    for a, e in sorted(e_on.items(), key=lambda kv: kv[1])
+                )
+                complexity_note += (
+                    f" Among the O(n), DOM-based approaches only (a fair comparison -- same "
+                    f"complexity class): <strong>{_mlabel(ref_on)}</strong> is the reference "
+                    f"(lowest memory on {wins_on[ref_on]} of {n_sizes} sizes tested); on average "
+                    f"(E[memory/{_mlabel(ref_on)}], mean of each size's own ratio): {parts} as much."
+                )
 
     chart_js = f"""
 new Chart(document.getElementById('chart-memory'), {{
@@ -218,7 +252,7 @@ new Chart(document.getElementById('chart-memory-speed'), {{
     )
     return {"chart_js": chart_js, "speed_chart_js": speed_chart_js,
             "lede_extra": lede_extra, "has_speed": bool(speed_datasets_js),
-            "complexity_note": complexity_note}
+            "complexity_note": complexity_note, "o1_note": o1_note}
 
 
 # --------------------------------------------------------------- scaling --
@@ -317,28 +351,43 @@ OP_META = [
     {
         "key": "parse",
         "title": "parse — build a tree from the XML string, discard it",
-        "note": "xmltodict/xmljson have no separate \u201cparse to a tree\u201d step "
-                "distinct from \u201cparse straight to dict\u201d, so they don't appear here.",
+        "note": "The pugixml core, directly. xmltodict/xmljson have no separate \u201cparse to a "
+                "tree\u201d step distinct from \u201cparse straight to dict\u201d, so they don't appear here.",
     },
     {
-        "key": "dict_convert",
-        "title": "dict_convert — pygixml.dictify vs xmltodict",
-        "note": "Both sides use the same convention (@-prefixed attributes, #text for mixed "
-                "content) so the dicts they produce are structurally identical, not just "
-                "\u201cboth happen to be a dict.\u201d",
+        "key": "iterparse",
+        "title": "iterparse — stream every element, never hold the whole document",
+        "note": "The yxml core, via pygixml.iterfind, against lxml's and ElementTree's own "
+                "iterparse -- real streaming APIs on both sides. Only runs on corpus entries "
+                "with one uniformly repeated element (a config-tree genre genuinely has none, "
+                "so it's absent here, not skipped by oversight).",
+    },
+    {
+        "key": "xml_to_json",
+        "title": "jsonify — pygixml.jsonify vs the field, end to end",
+        "note": "XML string in, JSON string out. ElementTree has no built-in dict/JSON "
+                "conversion at all -- a real gap for it, not an oversight in this chart.",
     },
     {
         "key": "to_object",
-        "title": "to_object — pygixml.objectify vs lxml.objectify",
+        "title": "objectify — pygixml.objectify vs lxml.objectify",
         "note": "Lazy attribute-style access (root.child.grandchild), matched against lxml's "
                 "own objectify submodule -- a real feature both libraries ship, not an "
                 "improvised comparison.",
     },
     {
-        "key": "xml_to_json",
-        "title": "xml_to_json — pygixml.jsonify vs the field, end to end",
-        "note": "ElementTree has no built-in dict/JSON conversion at all -- a real gap for it, "
-                "not an oversight in this chart.",
+        "key": "dict_convert",
+        "title": "dictify (DOM mode) — pygixml.dictify.parse vs xmltodict.parse",
+        "note": "Both sides use the same convention (@-prefixed attributes, #text for mixed "
+                "content) so the dicts they produce are structurally identical, not just "
+                "\u201cboth happen to be a dict.\u201d",
+    },
+    {
+        "key": "dict_stream",
+        "title": "dictify (streaming mode) — pygixml.dictify.iterdict vs xmltodict's own item_depth streaming",
+        "note": "xmltodict genuinely supports streaming too (item_depth + item_callback), not "
+                "just a DOM-only tool being compared unfairly against a streaming one. Same "
+                "record-tag restriction as iterparse.",
     },
 ]
 
@@ -383,8 +432,6 @@ def _build_throughput_section(throughput, throughput_memory):
         # you compare many groups at once without hiding anything.
         entries = []
         wins = {lib: 0 for lib in libs}
-        all_times = {lib: [] for lib in libs}
-        all_mem = {lib: [] for lib in libs}
         mem_wins = {lib: 0 for lib in libs}
         time_trend_points = {lib: [] for lib in libs}
         mem_trend_points = {lib: [] for lib in libs}
@@ -401,7 +448,6 @@ def _build_throughput_section(throughput, throughput_memory):
             winner_lib = cells[0][0]
             wins[winner_lib] += 1
             for lib, c in cells:
-                all_times[lib].append(c["seconds"])
                 time_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
                                                 "y": round(c["seconds"] * 1000, 4)})
 
@@ -421,7 +467,6 @@ def _build_throughput_section(throughput, throughput_memory):
                 n_mem_comparisons += 1
                 mem_wins[mem_cells_sorted[0][0]] += 1
                 for lib, m in mem_cells:
-                    all_mem[lib].append(m["peak_rss_mb"])
                     mem_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
                                                    "y": round(m["peak_rss_mb"], 2)})
                 mem_text = "  \u00b7  ".join(
@@ -473,57 +518,55 @@ new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
                              "mem_chart_js": mem_chart_js, "mem_text": mem_text})
 
         winner_summary = ""
+        ref_lib = None
         if n_comparisons:
-            medians = {}
-            import statistics
-            for lib in libs:
-                if all_times[lib]:
-                    medians[lib] = statistics.median(all_times[lib])
-            ranked = sorted(medians.items(), key=lambda kv: kv[1])
-            top_lib, top_median = ranked[0]
-            rest = ", ".join(f"{LIB_LABELS.get(lib, lib)} {_fmt_ms(m * 1000)}" for lib, m in ranked[1:])
+            ref_lib = max(wins.items(), key=lambda kv: kv[1])[0]
+            # E[target/ref]: for each OTHER library, take its ratio to
+            # ref_lib on every corpus entry where both are available,
+            # then average those per-entry ratios -- not
+            # avg(target)/avg(ref), and not median(target)/median(ref).
+            time_pairs = {lib: [] for lib in libs if lib != ref_lib}
+            for r in rows:
+                ref_cell = r.get(key, {}).get(ref_lib)
+                if not (ref_cell and ref_cell.get("available")):
+                    continue
+                for lib in time_pairs:
+                    c = r.get(key, {}).get(lib)
+                    if c and c.get("available"):
+                        time_pairs[lib].append((c["seconds"], ref_cell["seconds"]))
+            e_ratios = {lib: _e_ratio(pairs) for lib, pairs in time_pairs.items() if pairs}
+            ranked_ratios = sorted(e_ratios.items(), key=lambda kv: kv[1])
+            rest = ", ".join(f"{LIB_LABELS.get(lib, lib)} {e:.1f}\u00d7" for lib, e in ranked_ratios)
             winner_summary = (
-                f"Fastest on {wins[top_lib]} of {n_comparisons} corpus entries: "
-                f"<strong>{LIB_LABELS.get(top_lib, top_lib)}</strong> "
-                f"(median {_fmt_ms(top_median * 1000)})"
-                + (f" \u2014 {rest} median" if rest else "") + "."
+                f"<strong>{LIB_LABELS.get(ref_lib, ref_lib)}</strong> is the reference "
+                f"(fastest on {wins[ref_lib]} of {n_comparisons} corpus entries). "
+                f"On average (E[time/{LIB_LABELS.get(ref_lib, ref_lib)}], mean of each entry's own "
+                f"ratio, not a ratio of medians)"
+                + (f": {rest} as long." if rest else ".")
             )
-            # Every library in a throughput operation does the same
-            # single-pass O(n) work (none of them stream) -- same
-            # complexity class, so a ratio here is fair, computed from
-            # the medians above, not a hand-picked number.
-            if len(ranked) >= 2:
-                slow_lib, slow_median = ranked[-1]
-                ratio = slow_median / top_median
-                winner_summary += (
-                    f" {LIB_LABELS.get(top_lib, top_lib)} is {ratio:.1f}\u00d7 faster than "
-                    f"the slowest ({LIB_LABELS.get(slow_lib, slow_lib)}) at the median."
-                )
 
         memory_summary = ""
         if n_mem_comparisons:
-            import statistics
-            mem_medians = {lib: statistics.median(vals) for lib, vals in all_mem.items() if vals}
-            ranked_mem = sorted(mem_medians.items(), key=lambda kv: kv[1])
-            top_mem_lib, top_mem_median = ranked_mem[0]
-            rest_mem = ", ".join(f"{LIB_LABELS.get(lib, lib)} {m:.1f}MB" for lib, m in ranked_mem[1:])
+            mem_ref_lib = max(mem_wins.items(), key=lambda kv: kv[1])[0]
+            mem_pairs = {lib: [] for lib in libs if lib != mem_ref_lib}
+            for r in rows:
+                entry_mem = mem_by_entry.get((r["genre"], r["size"]), {})
+                ref_m = entry_mem.get(mem_ref_lib)
+                if not (ref_m and ref_m.get("available")):
+                    continue
+                for lib in mem_pairs:
+                    m = entry_mem.get(lib)
+                    if m and m.get("available"):
+                        mem_pairs[lib].append((m["peak_rss_mb"], ref_m["peak_rss_mb"]))
+            mem_e_ratios = {lib: _e_ratio(pairs) for lib, pairs in mem_pairs.items() if pairs}
+            ranked_mem_ratios = sorted(mem_e_ratios.items(), key=lambda kv: kv[1])
+            rest_mem = ", ".join(f"{LIB_LABELS.get(lib, lib)} {e:.1f}\u00d7" for lib, e in ranked_mem_ratios)
             memory_summary = (
-                f"Lowest peak memory on {mem_wins[top_mem_lib]} of {n_mem_comparisons} corpus entries: "
-                f"<strong>{LIB_LABELS.get(top_mem_lib, top_mem_lib)}</strong> "
-                f"(median {top_mem_median:.1f}MB)"
-                + (f" \u2014 {rest_mem} median" if rest_mem else "") + "."
+                f"<strong>{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}</strong> uses the least memory "
+                f"(lowest on {mem_wins[mem_ref_lib]} of {n_mem_comparisons} corpus entries). "
+                f"On average (E[memory/{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}])"
+                + (f": {rest_mem} as much." if rest_mem else ".")
             )
-            # Same reasoning: none of these hold a whole document in
-            # memory any differently from each other here (all build
-            # a tree or an equivalent structure for this one
-            # operation) -- same class, ratio is fair.
-            if len(ranked_mem) >= 2:
-                high_lib, high_median = ranked_mem[-1]
-                mem_ratio = high_median / top_mem_median
-                memory_summary += (
-                    f" {LIB_LABELS.get(top_mem_lib, top_mem_lib)} uses {mem_ratio:.1f}\u00d7 less "
-                    f"memory than the highest ({LIB_LABELS.get(high_lib, high_lib)})."
-                )
 
         # Time-vs-size and memory-vs-size: the same "does the trend hold
         # as files grow" question the throughput chart answers, just for
@@ -614,6 +657,11 @@ new Chart(document.getElementById('chart-tp-{key}'), {{
             "key": key, "title": meta["title"], "note": meta["note"],
             "winner_summary": winner_summary,
             "memory_summary": memory_summary,
+            "ref_lib": ref_lib,
+            "e_ratios": e_ratios if n_comparisons else {},
+            "mem_e_ratios": mem_e_ratios if n_mem_comparisons else {},
+            "rows": rows,  # raw rows, for cross-op narrative building in build()
+            "mem_by_entry": mem_by_entry,
             "entries": entries,
             "time_trend_chart_js": time_trend_chart_js, "has_time_trend": has_time_trend,
             "mem_trend_chart_js": mem_trend_chart_js, "has_mem_trend": has_mem_trend,
@@ -621,10 +669,139 @@ new Chart(document.getElementById('chart-tp-{key}'), {{
             "has_tp_chart": bool(tp_datasets),
         })
 
-    return {"ops": ops_out, "repeats": repeats}
+    return {"ops": ops_out, "ops_by_key": {o["key"]: o for o in ops_out}, "repeats": repeats}
 
 
-# ------------------------------------------------------------------ size --
+# --------------------------------------------------------- jsonify note --
+# Small files: memory isn't the story yet (every approach fits in RAM
+# comfortably), so speed AND memory both get a fair, same-complexity-
+# class E[target/ref] comparison against xmljson specifically -- the
+# DOM-based path pygixml.jsonify.dumps actually competes with. Big
+# files: that's stream_dump's story instead (O(1), told in the memory
+# section), referenced here rather than re-derived.
+
+def _build_jsonify_narrative(xml_to_json_op, o1_note):
+    if not xml_to_json_op or not xml_to_json_op.get("rows"):
+        return ""
+    rows = xml_to_json_op["rows"]
+    mem_by_entry = xml_to_json_op.get("mem_by_entry", {})
+    small_rows = [r for r in rows if r.get("size") == "small"]
+    if not small_rows:
+        return ""
+
+    time_pairs = []
+    for r in small_rows:
+        p = r.get("xml_to_json", {}).get("pygixml")
+        x = r.get("xml_to_json", {}).get("xmljson")
+        if p and p.get("available") and x and x.get("available"):
+            time_pairs.append((x["seconds"], p["seconds"]))
+    speed_ratio = _e_ratio(time_pairs)
+
+    mem_pairs = []
+    for r in small_rows:
+        entry_mem = mem_by_entry.get((r["genre"], r["size"]), {})
+        p = entry_mem.get("pygixml")
+        x = entry_mem.get("xmljson")
+        if p and p.get("available") and x and x.get("available"):
+            mem_pairs.append((x["peak_rss_mb"], p["peak_rss_mb"]))
+    mem_ratio = _e_ratio(mem_pairs)
+
+    if speed_ratio is None and mem_ratio is None:
+        return ""
+
+    parts = ["<p>On small documents, memory isn't the deciding factor for either "
+             "approach -- both fit comfortably in RAM. What's left is speed, and "
+             "there <code>jsonify.dumps</code> (the DOM path) wins clearly"]
+    if speed_ratio is not None:
+        parts.append(
+            f": on average <strong>{speed_ratio:.1f}\u00d7</strong> the speed of xmljson "
+            f"(E[time<sub>xmljson</sub>/time<sub>pygixml</sub>], mean of each small entry's own ratio)"
+        )
+    parts.append(". ")
+    if mem_ratio is not None:
+        parts.append(
+            f"Even on memory -- where this is the DOM path, not <code>stream_dump</code>, so "
+            f"both sides are genuinely O(n) here, a fair same-complexity-class comparison -- "
+            f"pygixml still uses on average <strong>{mem_ratio:.1f}\u00d7 less</strong> memory than "
+            f"xmljson on these same small files (E[memory<sub>xmljson</sub>/memory<sub>pygixml</sub>]). "
+        )
+    parts.append(
+        "</p><p>Once the document stops being small, the calculus changes: that's exactly when "
+        "<code>jsonify.stream_dump</code> takes over, trading the DOM path's speed for a "
+        "fundamentally different complexity class. "
+    )
+    if o1_note:
+        parts.append(o1_note)
+    parts.append(" See the memory panel below for the full trade-off, not just the flattering half.</p>")
+    return "".join(parts)
+
+
+# ------------------------------------------------- dictify DOM vs stream --
+# The DOM-mode dictify comparison (dict_convert) and the streaming-mode
+# one (dict_stream) are computed as two separate operations above (each
+# already has its own mini-grid/trend/throughput panels), but the
+# question "is streaming actually worth it, for which library" only
+# shows up if all four series -- pygixml DOM, pygixml stream, xmltodict
+# DOM, xmltodict stream -- are on the same axes together.
+
+def _build_dictify_mode_chart(dict_convert_op, dict_stream_op):
+    if not dict_convert_op or not dict_stream_op:
+        return "", False
+    dom_rows = {(r["genre"], r["size"]): r for r in dict_convert_op.get("rows", [])}
+    stream_rows = {(r["genre"], r["size"]): r for r in dict_stream_op.get("rows", [])}
+
+    series_points = {"pygixml (DOM)": [], "pygixml (stream)": [],
+                      "xmltodict (DOM)": [], "xmltodict (stream)": []}
+    style_key = {"pygixml (DOM)": "pygixml", "pygixml (stream)": "pygixml_stream_dump",
+                 "xmltodict (DOM)": "xmltodict", "xmltodict (stream)": "xmltodict"}
+
+    for key_gs, srow in stream_rows.items():
+        drow = dom_rows.get(key_gs)
+        if not drow:
+            continue
+        mb = round(drow["bytes"] / (1024 * 1024), 4)
+        for lib, dom_label, stream_label in (("pygixml", "pygixml (DOM)", "pygixml (stream)"),
+                                              ("xmltodict", "xmltodict (DOM)", "xmltodict (stream)")):
+            dc = drow.get("dict_convert", {}).get(lib)
+            if dc and dc.get("available"):
+                series_points[dom_label].append({"x": mb, "y": round(dc["seconds"] * 1000, 4)})
+            sc = srow.get("dict_stream", {}).get(lib)
+            if sc and sc.get("available"):
+                series_points[stream_label].append({"x": mb, "y": round(sc["seconds"] * 1000, 4)})
+
+    datasets = []
+    for label, pts in series_points.items():
+        if not pts:
+            continue
+        pts.sort(key=lambda p: p["x"])
+        skey = style_key[label]
+        color = LIB_COLORS.get(skey, "#8b93a7")
+        datasets.append({
+            "label": label, "data": pts, "borderColor": color, "backgroundColor": color,
+            "pointStyle": LIB_POINT_STYLES.get(skey, "circle"),
+            "borderDash": [] if "stream" in label else [6, 3],
+            "showLine": True, "tension": 0.25, "pointRadius": 5, "pointHoverRadius": 8,
+        })
+
+    if not datasets:
+        return "", False
+
+    chart_js = f"""
+new Chart(document.getElementById('chart-dictify-modes'), {{
+  type: 'line',
+  data: {{ datasets: {json.dumps(datasets)} }},
+  options: {{
+    responsive: true, maintainAspectRatio: false,
+    scales: {{
+      x: {{ type: 'logarithmic', title: {{ display: true, text: 'Input size (MB, log scale)' }} }},
+      y: {{ type: 'logarithmic', title: {{ display: true, text: 'Time (ms, log scale, lower is better)' }} }}
+    }},
+    plugins: {{ legend: {{ position: 'bottom' }} }}
+  }}
+}});
+"""
+    return chart_js, True
+
 
 def _build_size_section(sizes):
     if not sizes:
@@ -674,6 +851,11 @@ def build(results_dir, output_path, chartjs_path):
     thr = _build_throughput_section(throughput, throughput_memory)
     siz = _build_size_section(sizes)
 
+    ops_by_key = thr["ops_by_key"]
+    jsonify_narrative = _build_jsonify_narrative(ops_by_key.get("xml_to_json"), mem["o1_note"])
+    dictify_mode_chart_js, has_dictify_mode_chart = _build_dictify_mode_chart(
+        ops_by_key.get("dict_convert"), ops_by_key.get("dict_stream"))
+
     with open(chartjs_path, "r", encoding="utf-8") as f:
         chartjs_source = f.read()
 
@@ -684,12 +866,13 @@ def build(results_dir, output_path, chartjs_path):
 
     headline = "pygixml, measured honestly"
     subhead = (
-        "Every conversion layer pygixml ships &mdash; raw pugixml parsing, dictify, "
-        "objectify, jsonify &mdash; benchmarked against lxml, ElementTree, xmltodict, "
-        "and xmljson, on the same corpus, with the same methodology throughout."
+        "Five independent ways to work with XML &mdash; raw pugixml parsing, yxml streaming, "
+        "jsonify, objectify, dictify &mdash; each measured on its own against its real, direct "
+        "competitor. JSON is one section among five, not the point of the exercise."
     )
 
-    chart_scripts = [mem["chart_js"], mem["speed_chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"]]
+    chart_scripts = [mem["chart_js"], mem["speed_chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"],
+                      dictify_mode_chart_js]
     for op in thr["ops"]:
         for entry in op["entries"]:
             chart_scripts.append(entry["chart_js"])
@@ -713,7 +896,15 @@ def build(results_dir, output_path, chartjs_path):
         memory_complexity_note=mem["complexity_note"],
         scaling_note=scl["note"],
         scaling_dom_available=scl["dom_available"],
-        throughput_ops=thr["ops"],
+        op_parse=ops_by_key.get("parse"),
+        op_iterparse=ops_by_key.get("iterparse"),
+        op_jsonify=ops_by_key.get("xml_to_json"),
+        op_objectify=ops_by_key.get("to_object"),
+        op_dictify_dom=ops_by_key.get("dict_convert"),
+        op_dictify_stream=ops_by_key.get("dict_stream"),
+        jsonify_narrative=jsonify_narrative,
+        dictify_mode_chart_js=dictify_mode_chart_js,
+        has_dictify_mode_chart=has_dictify_mode_chart,
         repeats=thr["repeats"],
         has_memory=bool(memory), has_scaling=bool(scaling), has_throughput=bool(throughput),
         has_throughput_memory=bool(throughput_memory),

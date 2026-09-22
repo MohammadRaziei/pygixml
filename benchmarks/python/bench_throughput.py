@@ -3,48 +3,64 @@ bench_throughput.py — parse and conversion throughput, across every
 genre/size in the corpus, for every library that's installed.
 
 pygixml is not "a JSON library" -- it's a set of independent
-conversion layers on top of the same pugixml-backed core (raw DOM,
-dict, lazy object, JSON, streaming). Each layer gets its own fair,
-apples-to-apples operation below instead of being collapsed into a
-single "xml_to_json" number, so dictify/objectify aren't invisible
-just because they don't happen to produce JSON.
+conversion layers on top of two C/C++ cores (pugixml's DOM, an inlined
+yxml streaming parser). Each layer gets its own fair, apples-to-apples
+operation below instead of being collapsed into a single "xml_to_json"
+number, so dictify/objectify/streaming aren't invisible just because
+they don't happen to produce JSON.
 
-Four operations, run independently (a library can be fast at one and
+Six operations, run independently (a library can be fast at one and
 slow at another):
 
-  parse        Build a tree from the XML string and discard it. Only
-               libraries with a real DOM concept participate: pygixml
-               (raw pugixml tree), lxml, ElementTree.
+  parse           Build a tree from the XML string and discard it
+                   (pugixml core). Only libraries with a real DOM
+                   concept participate: pygixml, lxml, ElementTree.
 
-  dict_convert XML string in, plain dict out.
-                 - pygixml.dictify.parse   (matches xmltodict's own
-                                             convention -- @-prefixed
-                                             attrs, #text for mixed
-                                             content -- by design, so
-                                             the two are directly
-                                             comparable, not just
-                                             "both produce a dict")
-                 - xmltodict.parse          (its whole purpose)
+  iterparse       Stream every <record_tag> element and discard it,
+                   never holding the whole document (yxml core, via
+                   pygixml.iterfind). Matched against lxml's and
+                   ElementTree's own iterparse -- both real streaming
+                   APIs, not improvised. Only runs on corpus entries
+                   with a uniformly repeated element (see corpus.py's
+                   RECORD_TAG); a deep, low-repetition tree like
+                   "config" genuinely has no streaming target.
 
-  to_object    XML string in, a lazy attribute-style object out
-               (root.child.grandchild, not a materialized dict/tree).
-                 - pygixml.objectify.from_string
-                 - lxml.objectify.fromstring (lxml ships a real
-                                               objectify submodule --
-                                               this is a genuine,
-                                               not improvised, match)
+  dict_convert    XML string in, plain dict out.
+                    - pygixml.dictify.parse   (matches xmltodict's own
+                                                convention -- @-prefixed
+                                                attrs, #text for mixed
+                                                content -- by design, so
+                                                the two are directly
+                                                comparable, not just
+                                                "both produce a dict")
+                    - xmltodict.parse          (its whole purpose)
 
-  xml_to_json  The end-to-end operation most people actually want: XML
-               *string* in, JSON *string* out, however the library
-               gets there internally. Every library that can do this
-               at all participates:
-                 - pygixml.jsonify.dumps           (direct XML->JSON,
-                                                     no dict step)
-                 - xmltodict.parse + json.dumps     (its whole purpose)
-                 - xmljson.parker + lxml + json.dumps
-                 - ElementTree has no built-in dict/JSON conversion,
-                   so it's excluded from this operation entirely --
-                   that's a real, reportable gap, not an oversight.
+  dict_stream     Same dict conversion, but streamed one record at a
+                   time instead of materializing the whole document as
+                   one dict (pygixml.dictify.iterdict vs xmltodict's
+                   own item_depth/item_callback streaming mode --
+                   xmltodict genuinely supports this, not a fallback).
+                   Same record-tag restriction as iterparse.
+
+  to_object       XML string in, a lazy attribute-style object out
+                   (root.child.grandchild, not a materialized dict/tree).
+                    - pygixml.objectify.from_string
+                    - lxml.objectify.fromstring (lxml ships a real
+                                                  objectify submodule --
+                                                  this is a genuine,
+                                                  not improvised, match)
+
+  xml_to_json     The end-to-end operation most people actually want: XML
+                   *string* in, JSON *string* out, however the library
+                   gets there internally. Every library that can do this
+                   at all participates:
+                    - pygixml.jsonify.dumps           (direct XML->JSON,
+                                                        no dict step)
+                    - xmltodict.parse + json.dumps     (its whole purpose)
+                    - xmljson.parker + lxml + json.dumps
+                    - ElementTree has no built-in dict/JSON conversion,
+                      so it's excluded from this operation entirely --
+                      that's a real, reportable gap, not an oversight.
 
 Each (library, genre, size) cell is repeated REPEATS times (configurable
 via --repeats / PYGIXML_BENCH_REPEATS, default 7) and the
@@ -112,12 +128,34 @@ def run(manifest, repeats=DEFAULT_REPEATS):
     except ImportError:
         have_xmljson = False
 
+    def _consume_pygixml_iterfind(path, tag):
+        for elem in pygixml.iterfind(path, tag):
+            elem.clear()
+
+    def _consume_lxml_iterparse(path, tag):
+        for _event, elem in LET.iterparse(path, events=("end",), tag=tag):
+            elem.clear()
+
+    def _consume_et_iterparse(path, tag):
+        for _event, elem in ET.iterparse(path, events=("end",)):
+            if elem.tag == tag:
+                elem.clear()
+
+    def _consume_pygixml_iterdict(path, tag):
+        for _d in dictify.iterdict(path, tag):
+            pass
+
+    def _consume_xmltodict_stream(xml_bytes, depth):
+        xmltodict.parse(xml_bytes, item_depth=depth, item_callback=lambda *a: True)
+
     results = []
 
     for entry in tqdm(manifest, desc="bench_throughput", unit="file"):
         with open(entry["path"], "r", encoding="utf-8") as f:
             xml_text = f.read()
         xml_bytes = xml_text.encode("utf-8")
+        record_tag = entry.get("record_tag")
+        record_depth = entry.get("record_depth")
         row = {"genre": entry["genre"], "size": entry["size"],
                "bytes": entry["bytes"], "libraries": {}}
 
@@ -130,6 +168,19 @@ def run(manifest, repeats=DEFAULT_REPEATS):
             parse["elementtree"] = _try("parse", lambda: ET.fromstring(xml_text), repeats)
         row["parse"] = parse
 
+        # ---- iterparse (streaming, needs a uniformly repeated tag) ----
+        iterp = {}
+        if record_tag:
+            iterp["pygixml"] = _try(
+                "iterparse", lambda: _consume_pygixml_iterfind(entry["path"], record_tag), repeats)
+            if have_lxml:
+                iterp["lxml"] = _try(
+                    "iterparse", lambda: _consume_lxml_iterparse(entry["path"], record_tag), repeats)
+            if have_et:
+                iterp["elementtree"] = _try(
+                    "iterparse", lambda: _consume_et_iterparse(entry["path"], record_tag), repeats)
+        row["iterparse"] = iterp
+
         # ---- dict_convert ----
         # Same convention on both sides (@attr, #text) -- a genuinely
         # fair like-for-like, not "both happen to produce a dict".
@@ -138,6 +189,16 @@ def run(manifest, repeats=DEFAULT_REPEATS):
         if have_xmltodict:
             d2d["xmltodict"] = _try("dict_convert", lambda: xmltodict.parse(xml_text), repeats)
         row["dict_convert"] = d2d
+
+        # ---- dict_stream (streaming dict conversion, needs a record tag) ----
+        d2ds = {}
+        if record_tag:
+            d2ds["pygixml"] = _try(
+                "dict_stream", lambda: _consume_pygixml_iterdict(entry["path"], record_tag), repeats)
+            if have_xmltodict:
+                d2ds["xmltodict"] = _try(
+                    "dict_stream", lambda: _consume_xmltodict_stream(xml_bytes, record_depth), repeats)
+        row["dict_stream"] = d2ds
 
         # ---- to_object ----
         # Lazy attribute-style access, not a materialized dict/tree --
@@ -170,8 +231,10 @@ def run(manifest, repeats=DEFAULT_REPEATS):
 
     return {
         "operation_notes": {
-            "parse": "build a tree from the XML string, discard it",
+            "parse": "build a tree from the XML string, discard it (pugixml core)",
+            "iterparse": "stream every record element and discard it (yxml core); needs a uniformly repeated tag",
             "dict_convert": "XML string in, plain dict out (same @attr/#text convention both sides)",
+            "dict_stream": "same dict conversion, streamed one record at a time; needs a uniformly repeated tag",
             "to_object": "XML string in, lazy attribute-style object out",
             "xml_to_json": "XML string in, JSON string out, end to end",
         },
@@ -206,8 +269,7 @@ if __name__ == "__main__":
     with open(args.output, "w", encoding="utf-8") as f:
         _json.dump(result, f, indent=2)
 
-    ops = ["parse", "dict_convert", "to_object", "xml_to_json"]
+    ops = ["parse", "iterparse", "dict_convert", "dict_stream", "to_object", "xml_to_json"]
     n_libs = len({lib for row in result["results"] for op in ops for lib in row[op]})
     print(f"bench_throughput: {len(result['results'])} corpus entries, "
           f"{n_libs} libraries, {len(ops)} operations -> {args.output}", file=sys.stderr)
-

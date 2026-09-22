@@ -359,26 +359,7 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 </section>
 {% endif %}
 
-{% if has_throughput %}
-<!-- ========================= THROUGHPUT ========================= -->
-<section id="throughput">
-  <div class="kicker">Speed &amp; memory, at realistic sizes</div>
-  <h2>Every conversion layer, not just JSON</h2>
-  <p class="lede">
-    pygixml is a set of independent layers on the same pugixml-backed core &mdash;
-    raw DOM, dict (<code>dictify</code>), lazy object (<code>objectify</code>), and
-    JSON (<code>jsonify</code>). Each gets its own panel below, measured against its
-    real, direct competitor rather than being folded into a single "XML to JSON"
-    number: <strong>time</strong> per corpus entry (best of {{ repeats }} runs),
-    <strong>peak memory</strong> per corpus entry (each measured in its own isolated
-    process, same reasoning as the memory section above), and
-    <strong>throughput</strong> (MB/s) vs. input size, to see whether the rate holds
-    up as files grow.
-  </p>
-
-  {% for op in throughput_ops %}
-  <h3 class="op-title">{{ op.title }}</h3>
-  <p class="op-note">{{ op.note }}</p>
+{% macro op_body(op) %}
   {% if op.winner_summary %}<p class="op-winner">{{ op.winner_summary | safe }}</p>{% endif %}
   {% if op.memory_summary %}<p class="op-winner">{{ op.memory_summary | safe }}</p>{% endif %}
 
@@ -424,7 +405,94 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     <div class="chart-box"><canvas id="chart-tp-{{ op.key }}"></canvas></div>
   </div>
   {% endif %}
-  {% endfor %}
+{% endmacro %}
+
+{% if has_throughput %}
+
+<!-- ========================= PARSE ========================= -->
+{% if op_parse %}
+<section id="op-parse">
+  <div class="kicker">1 of 5 &middot; pugixml core</div>
+  <h2>parse &mdash; build a tree from the XML string, discard it</h2>
+  <p class="lede">{{ op_parse.note }} Time per corpus entry (best of {{ repeats }} runs) and
+     peak memory (each measured in its own isolated process).</p>
+  {{ op_body(op_parse) }}
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('throughput')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      throughput.json
+    </button>
+    {% if has_throughput_memory %}
+    <button class="dl-btn" onclick="downloadJSON('throughput_memory')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      throughput_memory.json
+    </button>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ========================= ITERPARSE / STREAMING ========================= -->
+{% if op_iterparse %}
+<section id="op-iterparse">
+  <div class="kicker">2 of 5 &middot; yxml core</div>
+  <h2>iterparse &mdash; stream every element, never hold the whole document</h2>
+  <p class="lede">{{ op_iterparse.note }}</p>
+  {{ op_body(op_iterparse) }}
+</section>
+{% endif %}
+
+<!-- ========================= JSONIFY ========================= -->
+{% if op_jsonify %}
+<section id="op-jsonify">
+  <div class="kicker">3 of 5</div>
+  <h2>jsonify &mdash; XML to JSON, end to end</h2>
+  <p class="lede">{{ op_jsonify.note }}</p>
+  {% if jsonify_narrative %}{{ jsonify_narrative | safe }}{% endif %}
+  {{ op_body(op_jsonify) }}
+</section>
+{% endif %}
+
+<!-- ========================= OBJECTIFY ========================= -->
+{% if op_objectify %}
+<section id="op-objectify">
+  <div class="kicker">4 of 5</div>
+  <h2>objectify &mdash; lazy attribute-style access</h2>
+  <p class="lede">{{ op_objectify.note }}</p>
+  {{ op_body(op_objectify) }}
+</section>
+{% endif %}
+
+<!-- ========================= DICTIFY ========================= -->
+{% if op_dictify_dom %}
+<section id="op-dictify">
+  <div class="kicker">5 of 5</div>
+  <h2>dictify &mdash; XML to plain dict, DOM mode and streaming mode</h2>
+  <p class="lede">
+    Two independent comparisons, not one: dictify's regular (DOM) mode against
+    <code>xmltodict.parse</code>, and its streaming mode (<code>dictify.iterdict</code>)
+    against xmltodict's own streaming mode (<code>item_depth</code> +
+    <code>item_callback</code>) &mdash; xmltodict genuinely supports both, so
+    neither comparison is a DOM tool facing off against a streaming-only one.
+  </p>
+
+  <h3 class="op-title">DOM mode</h3>
+  <p class="op-note">{{ op_dictify_dom.note }}</p>
+  {{ op_body(op_dictify_dom) }}
+
+  {% if op_dictify_stream %}
+  <h3 class="op-title">Streaming mode</h3>
+  <p class="op-note">{{ op_dictify_stream.note }}</p>
+  {{ op_body(op_dictify_stream) }}
+  {% endif %}
+
+  {% if has_dictify_mode_chart %}
+  <div class="panel" style="margin-top:18px;">
+    <h4>DOM vs. streaming, both libraries, same axes (ms, log scale)</h4>
+    <p class="op-note">Solid line = streaming mode, dashed = DOM mode &mdash; is streaming actually worth it, and for whom?</p>
+    <div class="chart-box tall"><canvas id="chart-dictify-modes"></canvas></div>
+  </div>
+  {% endif %}
 
   <div class="section-download">
     <button class="dl-btn" onclick="downloadJSON('throughput')">
@@ -439,6 +507,8 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     {% endif %}
   </div>
 </section>
+{% endif %}
+
 {% endif %}
 
 {% if has_sizes %}

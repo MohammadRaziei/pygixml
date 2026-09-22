@@ -26,10 +26,16 @@ WORKER = Path(__file__).with_name("bench_op_memory_one.py")
 # the same operations and competitors show up in both places.
 OP_LIBRARIES = {
     "parse": ["pygixml", "lxml", "elementtree"],
+    "iterparse": ["pygixml", "lxml", "elementtree"],
     "dict_convert": ["pygixml", "xmltodict"],
+    "dict_stream": ["pygixml", "xmltodict"],
     "to_object": ["pygixml", "lxml"],
     "xml_to_json": ["pygixml", "xmltodict", "xmljson"],
 }
+# These two need a uniformly repeated element to stream over -- skipped
+# entirely for corpus entries without one (e.g. "config"), same as
+# bench_throughput.py.
+STREAMING_OPS = {"iterparse", "dict_stream"}
 
 
 def main():
@@ -45,18 +51,25 @@ def main():
             manifest.extend(json.load(f))  # metadata only -- paths and byte counts, never file content
 
     result = {}
-    total = len(manifest) * sum(len(libs) for libs in OP_LIBRARIES.values())
+    total = sum(
+        len(libraries) * sum(1 for e in manifest if not (op in STREAMING_OPS and not e.get("record_tag")))
+        for op, libraries in OP_LIBRARIES.items()
+    )
     done = 0
 
     for op, libraries in OP_LIBRARIES.items():
         op_rows = []
         for entry in manifest:
+            if op in STREAMING_OPS and not entry.get("record_tag"):
+                continue  # no uniformly repeated element in this file -- not applicable
             row = {"genre": entry["genre"], "size": entry["size"], "bytes": entry["bytes"], "libraries": {}}
             for lib in libraries:
-                proc = subprocess.run(
-                    [sys.executable, str(WORKER), op, lib, entry["path"]],
-                    capture_output=True, text=True, check=True,
-                )
+                cmd = [sys.executable, str(WORKER), op, lib, entry["path"]]
+                if op in STREAMING_OPS:
+                    cmd += ["--tag", entry["record_tag"]]
+                    if entry.get("record_depth"):
+                        cmd += ["--depth", str(entry["record_depth"])]
+                proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
                 point = json.loads(proc.stdout)
                 row["libraries"][lib] = point
                 done += 1

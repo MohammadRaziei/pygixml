@@ -23,7 +23,7 @@ REPEATS = 3  # peak RSS only grows across repeats (see module docstring
              # we're not measuring a one-off cold-cache fluke as "peak"
 
 
-def _runner(operation, library):
+def _runner(operation, library, path, tag, depth):
     if operation == "parse":
         if library == "pygixml":
             import pygixml
@@ -34,6 +34,28 @@ def _runner(operation, library):
         if library == "elementtree":
             import xml.etree.ElementTree as ET
             return lambda text, data: ET.fromstring(text)
+    if operation == "iterparse":
+        if not tag:
+            raise ValueError("iterparse needs --tag (no uniformly repeated element in this file)")
+        if library == "pygixml":
+            import pygixml
+            def _run(text, data):
+                for elem in pygixml.iterfind(path, tag):
+                    elem.clear()
+            return _run
+        if library == "lxml":
+            import lxml.etree as LET
+            def _run(text, data):
+                for _event, elem in LET.iterparse(path, events=("end",), tag=tag):
+                    elem.clear()
+            return _run
+        if library == "elementtree":
+            import xml.etree.ElementTree as ET
+            def _run(text, data):
+                for _event, elem in ET.iterparse(path, events=("end",)):
+                    if elem.tag == tag:
+                        elem.clear()
+            return _run
     if operation == "dict_convert":
         if library == "pygixml":
             from pygixml import dictify
@@ -41,6 +63,20 @@ def _runner(operation, library):
         if library == "xmltodict":
             import xmltodict
             return lambda text, data: xmltodict.parse(text)
+    if operation == "dict_stream":
+        if not tag:
+            raise ValueError("dict_stream needs --tag (no uniformly repeated element in this file)")
+        if library == "pygixml":
+            from pygixml import dictify
+            def _run(text, data):
+                for _d in dictify.iterdict(path, tag):
+                    pass
+            return _run
+        if library == "xmltodict":
+            import xmltodict
+            if not depth:
+                raise ValueError("dict_stream needs --depth for xmltodict")
+            return lambda text, data: xmltodict.parse(data, item_depth=depth, item_callback=lambda *a: True)
     if operation == "to_object":
         if library == "pygixml":
             from pygixml import objectify
@@ -67,12 +103,14 @@ def main():
     p.add_argument("operation")
     p.add_argument("library")
     p.add_argument("xml_path")
+    p.add_argument("--tag", default=None, help="repeated element tag (iterparse/dict_stream only)")
+    p.add_argument("--depth", type=int, default=None, help="xmltodict item_depth (dict_stream only)")
     args = p.parse_args()
 
     result = {"operation": args.operation, "library": args.library,
               "bytes": os.path.getsize(args.xml_path)}
     try:
-        run = _runner(args.operation, args.library)
+        run = _runner(args.operation, args.library, args.xml_path, args.tag, args.depth)
         with open(args.xml_path, "r", encoding="utf-8") as f:
             text = f.read()
         data = text.encode("utf-8")
