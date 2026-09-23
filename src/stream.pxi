@@ -1615,11 +1615,16 @@ cdef class PullParser:
     chunks.
 
     :param events: subset of ``("start", "end", "pi")`` -- which events
-        :meth:`read_events` produces. The element tree is always built
-        regardless of *events*; this only controls what is yielded.
+        :meth:`read_events` produces. When *tag* is not given, the
+        element tree is always built regardless of *events*; this only
+        controls what is yielded.
     :param tag: if given, only elements whose tag equals *tag* produce
-        ``"start"``/``"end"`` events (their subtrees are still built and
-        linked into the document as usual).
+        ``"start"``/``"end"`` events, and only those elements (and their
+        descendants) are actually built into :class:`StreamElement`
+        objects. Ancestors and siblings that are never part of a
+        matching element's subtree are walked but *not* built -- no
+        object, attrib dict, or text is allocated for them -- which is
+        what makes filtered streaming over large documents cheap.
     :param stack_size: size in bytes of yxml's internal name stack. Must
         be large enough to hold the names of all simultaneously-open
         elements/attributes/PIs plus their nesting depth (each name is
@@ -1642,6 +1647,13 @@ cdef class PullParser:
     cdef unsigned char *_stack_buf
     cdef object _queue
     cdef object _pending
+    # _elem_stack holds one entry per currently-open element: either a
+    # real StreamElement (we're inside something that must be built --
+    # no filter, a match, or a descendant of a match) or None (a
+    # "skip" marker for an element outside any matched subtree, whose
+    # object/attrib/text we never bother allocating). A skip marker
+    # can never appear underneath a real StreamElement -- see the
+    # build/skip decision in feed().
     cdef list _elem_stack
     cdef bytearray _text_buf
     cdef bytearray _attrval_buf
@@ -1707,19 +1719,24 @@ cdef class PullParser:
         text = self._text_buf.decode("utf-8")
         self._text_buf = bytearray()
         if self._elem_stack:
-            cur = <StreamElement>self._elem_stack[len(self._elem_stack) - 1]
-            if cur._children:
-                (<StreamElement>cur._children[len(cur._children) - 1]).tail = text
-            else:
-                cur.text = text
+            top = self._elem_stack[len(self._elem_stack) - 1]
+            if top is not None:
+                cur = <StreamElement>top
+                if cur._children:
+                    (<StreamElement>cur._children[len(cur._children) - 1]).tail = text
+                else:
+                    cur.text = text
 
     cdef inline void _finalize_pending(self):
         cdef StreamElement elem
+        cdef object top
         if self._pending is not None:
             elem = <StreamElement>self._pending
             self._pending = None
             if self._elem_stack:
-                (<StreamElement>self._elem_stack[len(self._elem_stack) - 1])._children.append(elem)
+                top = self._elem_stack[len(self._elem_stack) - 1]
+                if top is not None:
+                    (<StreamElement>top)._children.append(elem)
             if self._want_start and (self._tag_filter is None or elem.tag == self._tag_filter):
                 self._queue.append(("start", elem))
             self._elem_stack.append(elem)
@@ -1738,8 +1755,10 @@ cdef class PullParser:
         cdef int ret
         cdef Py_ssize_t symlen
         cdef bytes name
+        cdef str tagname
         cdef char *cdata
         cdef StreamElement elem
+        cdef object top
 
         for i in range(n):
             c = data[i]
@@ -1753,33 +1772,58 @@ cdef class PullParser:
                 self._flush_text()
                 symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.elem)
                 name = self._x.elem[:symlen]
-                self._pending = StreamElement(name.decode("utf-8"))
+                tagname = name.decode("utf-8")
+                # Build a real StreamElement when there's no filter, when
+                # we're already inside the subtree of a matched element
+                # (top of the stack is a real element, not a skip
+                # marker), or when this element itself is the one we're
+                # filtering for. Everything else is walked (yxml still
+                # validates it) but represented only by a `None` marker
+                # on the stack -- no object/attrib/text allocated.
+                if (self._tag_filter is None
+                        or (self._elem_stack and self._elem_stack[len(self._elem_stack) - 1] is not None)
+                        or tagname == self._tag_filter):
+                    self._pending = StreamElement(tagname)
+                else:
+                    self._pending = None
+                    self._elem_stack.append(None)
 
             elif ret == YXML_CONTENT:
                 self._finalize_pending()
-                cdata = self._x.data
-                self._text_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+                if self._elem_stack and self._elem_stack[len(self._elem_stack) - 1] is not None:
+                    cdata = self._x.data
+                    self._text_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+                # else: content inside a not-built (skipped) element --
+                # nothing references it, so don't bother decoding/copying it.
 
             elif ret == YXML_ELEMEND:
                 self._finalize_pending()
                 self._flush_text()
-                elem = <StreamElement>self._elem_stack.pop()
-                if self._want_end and (self._tag_filter is None or elem.tag == self._tag_filter):
-                    self._queue.append(("end", elem))
+                top = self._elem_stack.pop()
+                if top is not None:
+                    elem = <StreamElement>top
+                    if self._want_end and (self._tag_filter is None or elem.tag == self._tag_filter):
+                        self._queue.append(("end", elem))
+                # else: closing a skipped element -- nothing built for it.
 
             elif ret == YXML_ATTRSTART:
-                symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.attr)
-                name = self._x.attr[:symlen]
-                self._cur_attr = name.decode("utf-8")
-                self._attrval_buf = bytearray()
+                if self._pending is not None:
+                    symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.attr)
+                    name = self._x.attr[:symlen]
+                    self._cur_attr = name.decode("utf-8")
+                    self._attrval_buf = bytearray()
+                else:
+                    self._cur_attr = None
 
             elif ret == YXML_ATTRVAL:
-                cdata = self._x.data
-                self._attrval_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+                if self._cur_attr is not None:
+                    cdata = self._x.data
+                    self._attrval_buf += cdata[:<Py_ssize_t>strlen(cdata)]
 
             elif ret == YXML_ATTREND:
-                (<StreamElement>self._pending).attrib[self._cur_attr] = \
-                    self._attrval_buf.decode("utf-8")
+                if self._pending is not None and self._cur_attr is not None:
+                    (<StreamElement>self._pending).attrib[self._cur_attr] = \
+                        self._attrval_buf.decode("utf-8")
                 self._cur_attr = None
 
             elif ret == YXML_PISTART:
