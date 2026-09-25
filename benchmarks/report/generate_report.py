@@ -35,16 +35,21 @@ LIB_LABELS = {
     "elementtree": "ElementTree",
     "xmltodict": "xmltodict",
     "xmljson": "xmljson",
+    "yq": "yq",
+    "untangle": "untangle",
 }
 LIB_COLORS = {
     "pygixml": "#e67225",
     "pygixml_stream_dump": "#e67225",
     "pygixml_dom": "#f2954f",
+    "pygixml_cli": "#e67225",
     "lxml": "#ff6b81",
     "lxml_plus_xmljson": "#ff6b81",
     "elementtree": "#5b8cff",
     "xmltodict": "#35d0ba",
     "xmljson": "#b98bff",
+    "yq": "#ffb454",
+    "untangle": "#6ee7b7",
 }
 # Color is never the only way to tell two series apart here (colorblind
 # readers can't rely on hue alone) -- every multi-series chart also
@@ -104,7 +109,8 @@ def _load(path):
 
 def _build_memory_section(memory):
     if not memory:
-        return {"chart_js": "", "speed_chart_js": "", "lede_extra": "", "has_speed": False}
+        return {"chart_js": "", "speed_chart_js": "", "lede_extra": "", "has_speed": False,
+                "complexity_note": "", "o1_note": ""}
 
     datasets_js = []
     speed_datasets_js = []
@@ -210,7 +216,7 @@ def _build_memory_section(memory):
                 complexity_note += (
                     f" Among the O(n), DOM-based approaches only (a fair comparison -- same "
                     f"complexity class): <strong>{_mlabel(ref_on)}</strong> is the reference "
-                    f"(lowest memory on {wins_on[ref_on]} of {n_sizes} sizes tested); on average "
+                    f"(uses the least memory most consistently across the sizes tested); on average "
                     f"(E[memory/{_mlabel(ref_on)}], mean of each size's own ratio): {parts} as much."
                 )
 
@@ -351,22 +357,32 @@ OP_META = [
     {
         "key": "parse",
         "title": "parse — build a tree from the XML string, discard it",
-        "note": "The pugixml core, directly. xmltodict/xmljson have no separate \u201cparse to a "
+        "note": "Directly building an in-memory tree from the XML text. xmltodict/xmljson have "
+                "no separate \u201cparse to a "
                 "tree\u201d step distinct from \u201cparse straight to dict\u201d, so they don't appear here.",
     },
     {
         "key": "iterparse",
         "title": "iterparse — stream every element, never hold the whole document",
-        "note": "The yxml core, via pygixml.iterfind, against lxml's and ElementTree's own "
+        "note": "Streamed via pygixml.iterfind, against lxml's and ElementTree's own "
                 "iterparse -- real streaming APIs on both sides. Only runs on corpus entries "
                 "with one uniformly repeated element (a config-tree genre genuinely has none, "
                 "so it's absent here, not skipped by oversight).",
     },
     {
         "key": "xml_to_json",
-        "title": "jsonify — pygixml.jsonify vs the field, end to end",
-        "note": "XML string in, JSON string out. ElementTree has no built-in dict/JSON "
+        "title": "JSON — pygixml.jsonify vs the field, one document out",
+        "note": "XML string in, one JSON document out. ElementTree has no built-in dict/JSON "
                 "conversion at all -- a real gap for it, not an oversight in this chart.",
+    },
+    {
+        "key": "xml_to_jsonl",
+        "title": "JSON Lines — one JSON object per record, streamed",
+        "note": "The streaming sibling of the panel above: instead of one JSON value for the "
+                "whole document, one JSON object per matching element, read one at a time. "
+                "xmltodict's own item_depth/item_callback streaming mode is the fair reference "
+                "here too -- json.dumps happens per callback, same as pygixml emits per element. "
+                "Same uniformly-repeated-tag restriction as streaming/iterparse above.",
     },
     {
         "key": "to_object",
@@ -539,7 +555,7 @@ new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
             rest = ", ".join(f"{LIB_LABELS.get(lib, lib)} {e:.1f}\u00d7" for lib, e in ranked_ratios)
             winner_summary = (
                 f"<strong>{LIB_LABELS.get(ref_lib, ref_lib)}</strong> is the reference "
-                f"(fastest on {wins[ref_lib]} of {n_comparisons} corpus entries). "
+                f"(fastest most consistently across the corpus). "
                 f"On average (E[time/{LIB_LABELS.get(ref_lib, ref_lib)}], mean of each entry's own "
                 f"ratio, not a ratio of medians)"
                 + (f": {rest} as long." if rest else ".")
@@ -563,7 +579,7 @@ new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
             rest_mem = ", ".join(f"{LIB_LABELS.get(lib, lib)} {e:.1f}\u00d7" for lib, e in ranked_mem_ratios)
             memory_summary = (
                 f"<strong>{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}</strong> uses the least memory "
-                f"(lowest on {mem_wins[mem_ref_lib]} of {n_mem_comparisons} corpus entries). "
+                f"(uses the least memory most consistently across the corpus). "
                 f"On average (E[memory/{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}])"
                 + (f": {rest_mem} as much." if rest_mem else ".")
             )
@@ -805,7 +821,7 @@ new Chart(document.getElementById('chart-dictify-modes'), {{
 
 def _build_size_section(sizes):
     if not sizes:
-        return {"chart_js": ""}
+        return {"chart_js": "", "rows": []}
 
     def to_kb(data):
         s = data.get("total_size", "0 B")
@@ -813,29 +829,141 @@ def _build_size_section(sizes):
         num = float(num)
         return {"B": num / 1024, "KB": num, "MB": num * 1024, "GB": num * 1024 * 1024}.get(unit, 0)
 
-    labels, values, colors = [], [], []
+    labels, values, colors, borders = [], [], [], []
+    rows = []
     for name, data in sizes.items():
         if not data.get("available"):
             continue
-        labels.append(LIB_LABELS.get(name, name))
-        values.append(round(to_kb(data), 1))
-        colors.append(LIB_COLORS.get(name, "#8b93a7"))
+        label = LIB_LABELS.get(name, name)
+        kb = round(to_kb(data), 1)
+        is_self = name == "pygixml"
+        labels.append(label)
+        values.append(kb)
+        colors.append(LIB_COLORS.get(name, "#5a6274") if not is_self else LIB_COLORS["pygixml"])
+        # pygixml's own bar gets a visible border the rest don't, so it
+        # doesn't rely on hue alone to stand out from the pack.
+        borders.append("#ffffff" if is_self else "rgba(0,0,0,0)")
+        rows.append({
+            "label": label, "is_self": is_self, "kb": kb,
+            "version": data.get("version", "?"),
+            "capability": data.get("capability", ""),
+            "n_deps": len(data.get("dependencies", [])),
+        })
+    rows.sort(key=lambda r: r["kb"])
 
     chart_js = f"""
 new Chart(document.getElementById('chart-size'), {{
   type: 'bar',
   data: {{ labels: {json.dumps(labels)}, datasets: [{{
-    label: 'Install size (KB)', data: {json.dumps(values)}, backgroundColor: {json.dumps(colors)}
+    label: 'Installed size (KB, lower is better)', data: {json.dumps(values)},
+    backgroundColor: {json.dumps(colors)}, borderColor: {json.dumps(borders)}, borderWidth: 2
   }}] }},
   options: {{
     indexAxis: 'y',
     responsive: true, maintainAspectRatio: false,
-    scales: {{ x: {{ title: {{ display: true, text: 'KB (real wheel size, incl. deps)' }} }} }},
+    scales: {{ x: {{ title: {{ display: true, text: 'KB, real wheel size incl. dependencies -- lower is better' }} }} }},
     plugins: {{ legend: {{ display: false }} }}
   }}
 }});
 """
-    return {"chart_js": chart_js}
+    return {"chart_js": chart_js, "rows": rows}
+
+
+# ------------------------------------------------------------------- cli --
+# pygixml's own command-line tool against `xq` (from the `yq` PyPI
+# package) -- real subprocess invocations end to end, not in-process
+# calls, since that's how both are actually used at a shell.
+
+def _build_cli_section(cli):
+    if not cli or not cli.get("results"):
+        return {"chart_js": "", "trend_chart_js": "", "summary": "", "repeats": "?", "commands": {}}
+
+    rows = cli["results"]
+    repeats = cli.get("repeats", "?")
+    commands = cli.get("commands", {})
+
+    pairs = []
+    trend_pyg, trend_xq = [], []
+    for r in rows:
+        p = r.get("pygixml_cli", {})
+        x = r.get("xq", {})
+        if p.get("available") and x.get("available"):
+            pairs.append((p["seconds"], x["seconds"]))
+            mb = round(r["bytes"] / (1024 * 1024), 4)
+            trend_pyg.append({"x": mb, "y": round(p["seconds"] * 1000, 4)})
+            trend_xq.append({"x": mb, "y": round(x["seconds"] * 1000, 4)})
+
+    e_ratio = _e_ratio(pairs)
+    summary = ""
+    if e_ratio is not None:
+        direction = "as long as" if e_ratio >= 1 else "of the time"
+        summary = (
+            f"On average (E[time<sub>xq</sub>/time<sub>pygixml</sub>], mean of each corpus "
+            f"entry's own ratio): <strong>pygixml</strong>'s CLI takes <strong>{1/e_ratio:.1f}\u00d7</strong> "
+            f"xq's time, i.e. xq takes <strong>{e_ratio:.1f}\u00d7</strong> as long, across {len(pairs)} corpus entries."
+        )
+
+    trend_pyg.sort(key=lambda p: p["x"])
+    trend_xq.sort(key=lambda p: p["x"])
+    trend_chart_js = ""
+    if trend_pyg and trend_xq:
+        trend_chart_js = f"""
+new Chart(document.getElementById('chart-cli-trend'), {{
+  type: 'line',
+  data: {{ datasets: [
+    {{ label: 'pygixml jsonify', data: {json.dumps(trend_pyg)},
+       borderColor: '{LIB_COLORS["pygixml"]}', backgroundColor: '{LIB_COLORS["pygixml"]}',
+       pointStyle: 'circle', borderDash: [], showLine: true, tension: 0.25, pointRadius: 5, pointHoverRadius: 8 }},
+    {{ label: 'xq .', data: {json.dumps(trend_xq)},
+       borderColor: '#b98bff', backgroundColor: '#b98bff',
+       pointStyle: 'star', borderDash: [8, 3, 2, 3], showLine: true, tension: 0.25, pointRadius: 5, pointHoverRadius: 8 }}
+  ] }},
+  options: {{
+    responsive: true, maintainAspectRatio: false,
+    scales: {{
+      x: {{ type: 'logarithmic', title: {{ display: true, text: 'Input size (MB, log scale)' }} }},
+      y: {{ type: 'logarithmic', title: {{ display: true, text: 'Time (ms, log scale, lower is better)' }} }}
+    }},
+    plugins: {{ legend: {{ position: 'bottom' }} }}
+  }}
+}});
+"""
+
+    # One small linear bar chart per corpus entry -- same treatment as
+    # the throughput section's per-entry panels, tucked in <details>.
+    entries = []
+    for i, r in enumerate(rows):
+        cells = []
+        for lib_key, lib_label, color in (("pygixml_cli", "pygixml", LIB_COLORS["pygixml"]), ("xq", "xq", "#b98bff")):
+            c = r.get(lib_key, {})
+            if c.get("available"):
+                cells.append((lib_label, c["seconds"], color))
+        if not cells:
+            continue
+        cells.sort(key=lambda t: t[1])
+        bar_labels = [c[0] for c in cells]
+        bar_ms = [round(c[1] * 1000, 4) for c in cells]
+        bar_colors = [c[2] for c in cells]
+        values_text = "  \u00b7  ".join(f"{c[0]} {_fmt_ms(c[1] * 1000)}" for c in cells)
+        chart_js = f"""
+new Chart(document.getElementById('chart-cli-{i}'), {{
+  type: 'bar',
+  data: {{ labels: {json.dumps(bar_labels)}, datasets: [{{
+    data: {json.dumps(bar_ms)}, backgroundColor: {json.dumps(bar_colors)}
+  }}] }},
+  options: {{
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    scales: {{ x: {{ title: {{ display: true, text: 'ms' }} }}, y: {{ grid: {{ display: false }} }} }},
+    plugins: {{ legend: {{ display: false }} }}
+  }}
+}});
+"""
+        entries.append({"id": f"chart-cli-{i}", "label": f"{r.get('genre','?')}/{r.get('size','?')}",
+                         "chart_js": chart_js, "values_text": values_text})
+
+    return {"trend_chart_js": trend_chart_js, "summary": summary, "repeats": repeats,
+            "commands": commands, "entries": entries}
 
 
 def build(results_dir, output_path, chartjs_path):
@@ -844,12 +972,14 @@ def build(results_dir, output_path, chartjs_path):
     scaling = _load(os.path.join(results_dir, "scaling.json"))
     memory = _load(os.path.join(results_dir, "memory.json"))
     sizes = _load(os.path.join(results_dir, "sizes.json"))
+    cli = _load(os.path.join(results_dir, "cli.json"))
     system_info = _load(os.path.join(results_dir, "system_info.json"))
 
     mem = _build_memory_section(memory)
     scl = _build_scaling_section(scaling)
     thr = _build_throughput_section(throughput, throughput_memory)
     siz = _build_size_section(sizes)
+    cli_sec = _build_cli_section(cli)
 
     ops_by_key = thr["ops_by_key"]
     jsonify_narrative = _build_jsonify_narrative(ops_by_key.get("xml_to_json"), mem["o1_note"])
@@ -861,18 +991,20 @@ def build(results_dir, output_path, chartjs_path):
 
     embedded = {
         "throughput": throughput, "throughput_memory": throughput_memory, "scaling": scaling,
-        "memory": memory, "sizes": sizes, "system_info": system_info,
+        "memory": memory, "sizes": sizes, "cli": cli, "system_info": system_info,
     }
 
     headline = "pygixml, measured honestly"
     subhead = (
-        "Five independent ways to work with XML &mdash; raw pugixml parsing, yxml streaming, "
-        "jsonify, objectify, dictify &mdash; each measured on its own against its real, direct "
-        "competitor. JSON is one section among five, not the point of the exercise."
+        "Every independent way to work with XML this library offers &mdash; the core module, "
+        "objectify, dictify, jsonify (both JSON and JSON Lines), and the command-line tool "
+        "&mdash; each measured on its own against its real, direct competitor."
     )
 
     chart_scripts = [mem["chart_js"], mem["speed_chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"],
-                      dictify_mode_chart_js]
+                      dictify_mode_chart_js, cli_sec["trend_chart_js"]]
+    for entry in cli_sec["entries"]:
+        chart_scripts.append(entry["chart_js"])
     for op in thr["ops"]:
         for entry in op["entries"]:
             chart_scripts.append(entry["chart_js"])
@@ -899,6 +1031,7 @@ def build(results_dir, output_path, chartjs_path):
         op_parse=ops_by_key.get("parse"),
         op_iterparse=ops_by_key.get("iterparse"),
         op_jsonify=ops_by_key.get("xml_to_json"),
+        op_jsonl=ops_by_key.get("xml_to_jsonl"),
         op_objectify=ops_by_key.get("to_object"),
         op_dictify_dom=ops_by_key.get("dict_convert"),
         op_dictify_stream=ops_by_key.get("dict_stream"),
@@ -908,7 +1041,8 @@ def build(results_dir, output_path, chartjs_path):
         repeats=thr["repeats"],
         has_memory=bool(memory), has_scaling=bool(scaling), has_throughput=bool(throughput),
         has_throughput_memory=bool(throughput_memory),
-        has_sizes=bool(sizes),
+        has_sizes=bool(sizes), size_rows=siz["rows"],
+        has_cli=bool(cli_sec["entries"]), cli=cli_sec,
         system_info=system_info,
         chartjs_source=chartjs_source,
         embedded_json=json.dumps(embedded),

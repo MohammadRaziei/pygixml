@@ -260,6 +260,27 @@ add_custom_command(
 )
 add_custom_target(pygixml_bench_memory DEPENDS "${MEMORY_JSON}")
 
+# ------------------------------------------------------------------- cli --
+# pygixml's own command-line tool (`pygixml jsonify`) against its
+# closest real shell competitor, `xq` (from the `yq` PyPI package --
+# already in requirements.txt). Real subprocess invocations, not
+# in-process calls -- startup cost included on both sides, same as
+# someone actually typing the command.
+
+set(CLI_JSON "${RESULTS_DIR}/cli.json")
+
+add_custom_command(
+  OUTPUT "${CLI_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_cli.py" ${THROUGHPUT_MANIFESTS} "${CLI_JSON}"
+          --python "${VENV_PYTHON}" --xq "${VENV_DIR}/bin/xq"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_cli.py" "${CORPUS_MANIFEST}"
+          "$<$<BOOL:${PYGIXML_REAL_CORPUS_DIR}>:${REAL_CORPUS_MANIFEST}>"
+  COMMENT "pygixml benchmarks: cli -- pygixml jsonify vs xq"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_cli DEPENDS "${CLI_JSON}")
+add_dependencies(pygixml_bench_cli pygixml_bench_corpus pygixml_bench_real_corpus)
+
 # Note: the "what each library can actually do" feature matrix used to
 # be generated here (features.py -> features.json -> a table in the
 # report). It's static, hand-curated content -- nothing to run, no
@@ -287,5 +308,5 @@ set(PYGIXML_BENCH_RESULTS_SCRATCH_DIR "${RESULTS_DIR}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_PYTHON "${VENV_PYTHON}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_STAMP "${VENV_STAMP}" PARENT_SCOPE)
 set(PYGIXML_BENCH_ALL_RESULT_JSONS
-    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${SYSTEM_INFO_JSON}"
+    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${CLI_JSON}" "${SYSTEM_INFO_JSON}"
     PARENT_SCOPE)

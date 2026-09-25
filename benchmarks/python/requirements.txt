@@ -3,6 +3,8 @@
 lxml
 xmltodict
 xmljson
+yq                   # provides the `xq` command, benchmarked in bench_cli.py
+untangle             # objectify-style XML->object mapper, sizes-only comparison in bench_sizes.py
 
 # Benchmark tooling
 pip-size            # github.com/MohammadRaziei/pip-size -- real install-size comparison

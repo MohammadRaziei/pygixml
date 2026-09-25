@@ -55,6 +55,7 @@ add_dependencies(pygixml_bench_report
   pygixml_bench_scaling
   pygixml_bench_memory
   pygixml_bench_sizes
+  pygixml_bench_cli
   pygixml_bench_system_info
   pygixml_bench_chartjs
 )

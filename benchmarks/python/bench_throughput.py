@@ -148,6 +148,16 @@ def run(manifest, repeats=DEFAULT_REPEATS):
     def _consume_xmltodict_stream(xml_bytes, depth):
         xmltodict.parse(xml_bytes, item_depth=depth, item_callback=lambda *a: True)
 
+    def _consume_pygixml_iterjsonl(path, tag):
+        for _s in jsonify.iterjsonl(path, tag):
+            pass
+
+    def _consume_xmltodict_jsonl(xml_bytes, depth):
+        def _cb(_path, item):
+            json.dumps(item)
+            return True
+        xmltodict.parse(xml_bytes, item_depth=depth, item_callback=_cb)
+
     results = []
 
     for entry in tqdm(manifest, desc="bench_throughput", unit="file"):
@@ -227,16 +237,34 @@ def run(manifest, repeats=DEFAULT_REPEATS):
             )
         row["xml_to_json"] = x2j
 
+        # ---- xml_to_jsonl (streaming, one JSON string per record, needs a record tag) ----
+        # The JSON-Lines sibling of xml_to_json above: instead of one
+        # JSON value for the whole document, one JSON object per
+        # matched element, produced without ever materializing the
+        # whole document. xmltodict's own item_depth/item_callback
+        # streaming mode is the fair reference here too (same one
+        # dict_stream/xml_to_json already use) -- json.dumps happens
+        # per callback, same as pygixml emits per element.
+        x2jl = {}
+        if record_tag:
+            x2jl["pygixml"] = _try(
+                "xml_to_jsonl", lambda: _consume_pygixml_iterjsonl(entry["path"], record_tag), repeats)
+            if have_xmltodict:
+                x2jl["xmltodict"] = _try(
+                    "xml_to_jsonl", lambda: _consume_xmltodict_jsonl(xml_bytes, record_depth), repeats)
+        row["xml_to_jsonl"] = x2jl
+
         results.append(row)
 
     return {
         "operation_notes": {
-            "parse": "build a tree from the XML string, discard it (pugixml core)",
-            "iterparse": "stream every record element and discard it (yxml core); needs a uniformly repeated tag",
+            "parse": "build a tree from the XML string, discard it",
+            "iterparse": "stream every record element and discard it; needs a uniformly repeated tag",
             "dict_convert": "XML string in, plain dict out (same @attr/#text convention both sides)",
             "dict_stream": "same dict conversion, streamed one record at a time; needs a uniformly repeated tag",
             "to_object": "XML string in, lazy attribute-style object out",
             "xml_to_json": "XML string in, JSON string out, end to end",
+            "xml_to_jsonl": "XML in, one JSON object per record out (JSON Lines); needs a uniformly repeated tag",
         },
         "repeats": repeats,
         "metric": "best (min) wall-clock seconds over repeats",
@@ -269,7 +297,7 @@ if __name__ == "__main__":
     with open(args.output, "w", encoding="utf-8") as f:
         _json.dump(result, f, indent=2)
 
-    ops = ["parse", "iterparse", "dict_convert", "dict_stream", "to_object", "xml_to_json"]
+    ops = ["parse", "iterparse", "dict_convert", "dict_stream", "to_object", "xml_to_json", "xml_to_jsonl"]
     n_libs = len({lib for row in result["results"] for op in ops for lib in row[op]})
     print(f"bench_throughput: {len(result['results'])} corpus entries, "
           f"{n_libs} libraries, {len(ops)} operations -> {args.output}", file=sys.stderr)

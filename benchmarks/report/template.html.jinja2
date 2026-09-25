@@ -247,6 +247,32 @@ footer a:hover { text-decoration: underline; }
 
 .legend-note { font-size: 12.5px; color: var(--text-dim); margin-top: 10px; }
 code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px; border-radius: 5px; font-size: 0.92em; }
+
+/* ---- Major sections vs. subsections ---- */
+/* A visible rule + accent tick before every top-level section title is
+   the "where does a new topic start" cue; subsections nest under it
+   with an indent + left rail instead of a second hline, so the two
+   never read as the same level. */
+section.major { padding-top: 56px; }
+.section-rule {
+  width: 56px; height: 3px; border-radius: 2px;
+  background: var(--accent); margin-bottom: 22px;
+}
+.subsection {
+  margin: 36px 0 0 2px;
+  padding: 4px 0 4px 20px;
+  border-left: 2px solid var(--border);
+}
+.subsection:first-of-type { margin-top: 20px; }
+.subsection > h3.op-title { margin-top: 0; }
+.subsection-label {
+  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--accent-2); font-weight: 700; margin-bottom: 6px;
+}
+.size-table { margin-top: 20px; }
+.size-table tr.self-row td { color: var(--text); font-weight: 600; }
+.size-table tr.self-row { background: rgba(230, 114, 37, 0.08); }
+.size-table td.cap { color: var(--text-dim); font-size: 13px; font-weight: 400; }
 </style>
 </head>
 <body>
@@ -276,89 +302,6 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 
 <div class="wrap">
 
-{% if has_memory %}
-<!-- ========================= MEMORY ========================= -->
-<section id="memory">
-  <div class="kicker">Memory</div>
-  <h2>Peak RSS vs. input size</h2>
-  <p class="lede">
-    Every library here that builds a DOM (or an equivalent in-memory dict/tree)
-    uses more RAM as the input file grows. <strong>pygixml.jsonify.stream_dump</strong>
-    is the one approach that doesn't: it converts XML straight to JSON without ever
-    holding the whole tree in memory, so its curve is flat &mdash; O(1) against the
-    others' O(n). That's a difference in <em>growth rate</em>, not a fixed multiplier:
-    the gap widens as input grows, so no single "N&times; less memory" number at one
-    input size represents it fairly &mdash; the chart does.{{ memory_lede_extra }}
-  </p>
-
-  <div class="panel">
-    <h4>Peak RSS vs. input size</h4>
-    <p class="op-note">Log scale on both axes &mdash; a flat line here means constant memory; a line with the same slope as the others means it scales with input, same as everyone else.</p>
-    <div class="chart-box tall"><canvas id="chart-memory"></canvas></div>
-    {% if memory_complexity_note %}<p class="legend-note">{{ memory_complexity_note | safe }}</p>{% endif %}
-  </div>
-
-  {% if memory_has_speed %}
-  <div class="panel">
-    <h4>Speed vs. input size (same 4 approaches, same isolated-process runs)</h4>
-    <p class="op-note">
-      This is <code>stream_dump</code>'s own speed comparison &mdash; separate from the
-      <code>xml_to_json</code> panel further down, which only measures pygixml's DOM-based
-      <code>jsonify.dumps</code>. Best of 3 timed repeats per process, after one untimed
-      warm-up call.
-    </p>
-    <div class="chart-box tall"><canvas id="chart-memory-speed"></canvas></div>
-  </div>
-  {% endif %}
-
-  <div class="section-download">
-    <button class="dl-btn" onclick="downloadJSON('memory')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
-      memory.json
-    </button>
-  </div>
-</section>
-{% endif %}
-
-{% if has_scaling %}
-<!-- ========================= SCALING ========================= -->
-<section id="scaling">
-  <div class="kicker">Time complexity</div>
-  <h2>The shape that flatters us, and the one that doesn't</h2>
-  <p class="lede">
-    <strong>stream_dump</strong> writes optimistically and patches the output
-    file in place once it learns a tag repeats. For the shape almost all real
-    giant XML actually has &mdash; one repeated tag per nesting level, like
-    <code>&lt;orders&gt;&lt;order&gt;...&lt;/order&gt;...&lt;/orders&gt;</code>
-    &mdash; that's O(n). We also generate the one shape where it isn't: two
-    different tags repeating and interleaving at the same level. We're
-    showing that curve here on purpose, not just citing it in the docs.
-  </p>
-
-  <div class="panel">
-    <h4>Time vs. N, by shape</h4>
-    <p class="op-note">Same operation (<code>jsonify.stream_dump</code>), two different input shapes. Log-log, so a straight line means a power-law relationship &mdash; the slope tells you which power.</p>
-    <div class="chart-box tall"><canvas id="chart-scaling"></canvas></div>
-    <p class="legend-note">{{ scaling_note | safe }}</p>
-  </div>
-
-  {% if scaling_dom_available %}
-  <div class="panel">
-    <h4>Records-shape XML &rarr; JSON, DOM-based approaches</h4>
-    <p class="op-note">For reference: everyone's roughly-linear time on the realistic shape, at moderate N.</p>
-    <div class="chart-box"><canvas id="chart-scaling-dom"></canvas></div>
-  </div>
-  {% endif %}
-
-  <div class="section-download">
-    <button class="dl-btn" onclick="downloadJSON('scaling')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
-      scaling.json
-    </button>
-  </div>
-</section>
-{% endif %}
-
 {% macro op_body(op) %}
   {% if op.winner_summary %}<p class="op-winner">{{ op.winner_summary | safe }}</p>{% endif %}
   {% if op.memory_summary %}<p class="op-winner">{{ op.memory_summary | safe }}</p>{% endif %}
@@ -369,11 +312,11 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
       {% for entry in op.entries %}
       <div class="mini-panel">
         <div class="mini-label">{{ entry.label }}</div>
-        <div class="mini-subhead">Time (ms)</div>
+        <div class="mini-subhead">Time (ms, lower is better)</div>
         <div class="mini-chart-box"><canvas id="{{ entry.id }}"></canvas></div>
         <div class="mini-values">{{ entry.values_text }}</div>
         {% if entry.mem_id %}
-        <div class="mini-subhead mini-mem-subhead">Peak memory (MB)</div>
+        <div class="mini-subhead mini-mem-subhead">Peak memory (MB, lower is better)</div>
         <div class="mini-chart-box"><canvas id="{{ entry.mem_id }}"></canvas></div>
         <div class="mini-values">{{ entry.mem_text }}</div>
         {% endif %}
@@ -407,16 +350,84 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
   {% endif %}
 {% endmacro %}
 
+<div class="wrap">
+
+{% if has_sizes %}
+<!-- ========================= PACKAGE SIZE ========================= -->
+<section id="size" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">Package size</div>
+  <h2>What you actually download</h2>
+  <p class="lede">
+    Real wheel sizes for the current platform and Python, resolved through
+    <a href="https://github.com/MohammadRaziei/pip-size" style="color:var(--accent)">pip-size</a>'s
+    Python API &mdash; no downloads, no installs, just querying PyPI's index &mdash; summed across
+    every transitive dependency, not just the top-level package. ElementTree ships with Python
+    itself: 0 extra bytes.
+  </p>
+  <div class="panel">
+    <div class="chart-box tall"><canvas id="chart-size"></canvas></div>
+  </div>
+
+  <table class="size-table">
+    <thead>
+      <tr><th>Package</th><th class="num">Version</th><th class="num">Installed size</th><th class="num">Deps</th><th>Capability</th></tr>
+    </thead>
+    <tbody>
+      {% for row in size_rows %}
+      <tr{% if row.is_self %} class="self-row"{% endif %}>
+        <td>{{ row.label }}{% if row.is_self %} &#9733;{% endif %}</td>
+        <td class="num">{{ row.version }}</td>
+        <td class="num">{{ row.kb }} KB</td>
+        <td class="num">{{ row.n_deps }}</td>
+        <td class="cap">{{ row.capability }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="legend-note">Sizes measured with <code>pip-size</code> (lower is better). Deps count is transitive, flattened.</p>
+
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('sizes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      sizes.json
+    </button>
+  </div>
+</section>
+{% endif %}
+
 {% if has_throughput %}
 
-<!-- ========================= PARSE ========================= -->
-{% if op_parse %}
-<section id="op-parse">
-  <div class="kicker">1 of 5 &middot; pugixml core</div>
-  <h2>parse &mdash; build a tree from the XML string, discard it</h2>
-  <p class="lede">{{ op_parse.note }} Time per corpus entry (best of {{ repeats }} runs) and
-     peak memory (each measured in its own isolated process).</p>
-  {{ op_body(op_parse) }}
+<!-- ========================= CORE MODULE ========================= -->
+{% if op_parse or op_iterparse %}
+<section id="core-module" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">Core Module</div>
+  <h2>Building and streaming a tree</h2>
+  <p class="lede">
+    The two fundamental ways to read XML: load the whole thing into memory at once, or walk it
+    one element at a time without ever holding the whole document. Time per corpus entry (best
+    of {{ repeats }} runs) and peak memory (each measured in its own isolated process).
+  </p>
+
+  {% if op_parse %}
+  <div class="subsection">
+    <div class="subsection-label">Parsing</div>
+    <h3 class="op-title">parse &mdash; build a tree from the XML string, discard it</h3>
+    <p class="op-note">{{ op_parse.note }}</p>
+    {{ op_body(op_parse) }}
+  </div>
+  {% endif %}
+
+  {% if op_iterparse %}
+  <div class="subsection">
+    <div class="subsection-label">Streaming</div>
+    <h3 class="op-title">iterparse &mdash; stream every element, never hold the whole document</h3>
+    <p class="op-note">{{ op_iterparse.note }}</p>
+    {{ op_body(op_iterparse) }}
+  </div>
+  {% endif %}
+
   <div class="section-download">
     <button class="dl-btn" onclick="downloadJSON('throughput')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
@@ -432,42 +443,29 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 </section>
 {% endif %}
 
-<!-- ========================= ITERPARSE / STREAMING ========================= -->
-{% if op_iterparse %}
-<section id="op-iterparse">
-  <div class="kicker">2 of 5 &middot; yxml core</div>
-  <h2>iterparse &mdash; stream every element, never hold the whole document</h2>
-  <p class="lede">{{ op_iterparse.note }}</p>
-  {{ op_body(op_iterparse) }}
-</section>
-{% endif %}
-
-<!-- ========================= JSONIFY ========================= -->
-{% if op_jsonify %}
-<section id="op-jsonify">
-  <div class="kicker">3 of 5</div>
-  <h2>jsonify &mdash; XML to JSON, end to end</h2>
-  <p class="lede">{{ op_jsonify.note }}</p>
-  {% if jsonify_narrative %}{{ jsonify_narrative | safe }}{% endif %}
-  {{ op_body(op_jsonify) }}
-</section>
-{% endif %}
-
 <!-- ========================= OBJECTIFY ========================= -->
 {% if op_objectify %}
-<section id="op-objectify">
-  <div class="kicker">4 of 5</div>
-  <h2>objectify &mdash; lazy attribute-style access</h2>
+<section id="objectify" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">Objectify</div>
+  <h2>Lazy attribute-style access</h2>
   <p class="lede">{{ op_objectify.note }}</p>
   {{ op_body(op_objectify) }}
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('throughput')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      throughput.json
+    </button>
+  </div>
 </section>
 {% endif %}
 
 <!-- ========================= DICTIFY ========================= -->
 {% if op_dictify_dom %}
-<section id="op-dictify">
-  <div class="kicker">5 of 5</div>
-  <h2>dictify &mdash; XML to plain dict, DOM mode and streaming mode</h2>
+<section id="dictify" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">Dictify</div>
+  <h2>XML to a plain dict</h2>
   <p class="lede">
     Two independent comparisons, not one: dictify's regular (DOM) mode against
     <code>xmltodict.parse</code>, and its streaming mode (<code>dictify.iterdict</code>)
@@ -476,19 +474,25 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
     neither comparison is a DOM tool facing off against a streaming-only one.
   </p>
 
-  <h3 class="op-title">DOM mode</h3>
-  <p class="op-note">{{ op_dictify_dom.note }}</p>
-  {{ op_body(op_dictify_dom) }}
+  <div class="subsection">
+    <div class="subsection-label">DOM mode</div>
+    <h3 class="op-title">dictify.parse vs. xmltodict.parse</h3>
+    <p class="op-note">{{ op_dictify_dom.note }}</p>
+    {{ op_body(op_dictify_dom) }}
+  </div>
 
   {% if op_dictify_stream %}
-  <h3 class="op-title">Streaming mode</h3>
-  <p class="op-note">{{ op_dictify_stream.note }}</p>
-  {{ op_body(op_dictify_stream) }}
+  <div class="subsection">
+    <div class="subsection-label">Streaming mode</div>
+    <h3 class="op-title">dictify.iterdict vs. xmltodict's item_depth/item_callback</h3>
+    <p class="op-note">{{ op_dictify_stream.note }}</p>
+    {{ op_body(op_dictify_stream) }}
+  </div>
   {% endif %}
 
   {% if has_dictify_mode_chart %}
   <div class="panel" style="margin-top:18px;">
-    <h4>DOM vs. streaming, both libraries, same axes (ms, log scale)</h4>
+    <h4>DOM vs. streaming, both libraries, same axes (ms, log scale, lower is better)</h4>
     <p class="op-note">Solid line = streaming mode, dashed = DOM mode &mdash; is streaming actually worth it, and for whom?</p>
     <div class="chart-box tall"><canvas id="chart-dictify-modes"></canvas></div>
   </div>
@@ -509,27 +513,145 @@ code { font-family: var(--mono); background: var(--bg-panel-2); padding: 1px 6px
 </section>
 {% endif %}
 
-{% endif %}
-
-{% if has_sizes %}
-<!-- ========================= SIZE ========================= -->
-<section id="size">
-  <div class="kicker">Footprint</div>
-  <h2>What you actually download</h2>
+<!-- ========================= JSONIFY ========================= -->
+{% if op_jsonify %}
+<section id="jsonify" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">Jsonify</div>
+  <h2>XML to JSON</h2>
   <p class="lede">
-    Real wheel sizes for the current platform, resolved directly through
-    <a href="https://github.com/MohammadRaziei/pip-size" style="color:var(--accent)">pip-size</a>'s
-    Python API (not its CLI) &mdash; no downloads, no installs, just querying PyPI's index.
-    ElementTree needs nothing: it ships with Python itself.
+    Two independent output shapes, not one: a single JSON document for the whole input, or one
+    JSON object per record, streamed out as JSON Lines.
   </p>
-  <div class="panel">
-    <div class="chart-box"><canvas id="chart-size"></canvas></div>
+
+  <div class="subsection">
+    <div class="subsection-label">JSON</div>
+    <h3 class="op-title">jsonify.dumps &mdash; XML string in, one JSON document out</h3>
+    <p class="op-note">{{ op_jsonify.note }}</p>
+    {% if jsonify_narrative %}{{ jsonify_narrative | safe }}{% endif %}
+    {{ op_body(op_jsonify) }}
+
+    {% if memory_available %}
+    <div class="panel" style="margin-top:18px;">
+      <h4>Peak RSS vs. input size (MB, log scale, lower is better)</h4>
+      <p class="op-note">
+        The streaming variant of this same JSON output, <code>jsonify.stream_dump</code>, never
+        holds the whole document in memory: its curve stays flat &mdash; <strong>O(1)</strong>
+        against every DOM-based approach's O(n). That's a difference in <em>growth rate</em>, not
+        a fixed multiplier: no single "N&times; less memory" number at one input size represents
+        it fairly &mdash; the chart does.{{ memory_lede_extra }}
+      </p>
+      <div class="chart-box tall"><canvas id="chart-memory"></canvas></div>
+      {% if memory_complexity_note %}<p class="legend-note">{{ memory_complexity_note | safe }}</p>{% endif %}
+    </div>
+    {% if memory_has_speed %}
+    <div class="panel">
+      <h4>stream_dump speed vs. input size (log scale, lower is better)</h4>
+      <p class="op-note">Best of 3 timed repeats per process, after one untimed warm-up call.</p>
+      <div class="chart-box tall"><canvas id="chart-memory-speed"></canvas></div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if has_scaling %}
+    <div class="panel" style="margin-top:18px;">
+      <h4>stream_dump time vs. N, by input shape (log-log, lower is better)</h4>
+      <p class="op-note">
+        <code>stream_dump</code> writes optimistically and patches the output file in place once
+        it learns a tag repeats &mdash; O(n) for the shape almost all real giant XML actually has
+        (one repeated tag per nesting level). We also generate the one shape where it isn't: two
+        different tags repeating and interleaving at the same level, shown here on purpose, not
+        just cited in the docs.
+      </p>
+      <div class="chart-box tall"><canvas id="chart-scaling"></canvas></div>
+      <p class="legend-note">{{ scaling_note | safe }}</p>
+    </div>
+    {% if scaling_dom_available %}
+    <div class="panel">
+      <h4>Records-shape XML &rarr; JSON, DOM-based approaches, for reference</h4>
+      <p class="op-note">Everyone's roughly-linear time on the realistic shape, at moderate N.</p>
+      <div class="chart-box"><canvas id="chart-scaling-dom"></canvas></div>
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 
+  {% if op_jsonl %}
+  <div class="subsection">
+    <div class="subsection-label">JSON Lines</div>
+    <h3 class="op-title">jsonify.iterjsonl &mdash; one JSON object per record, streamed</h3>
+    <p class="op-note">{{ op_jsonl.note }}</p>
+    {{ op_body(op_jsonl) }}
+  </div>
+  {% endif %}
+
   <div class="section-download">
-    <button class="dl-btn" onclick="downloadJSON('sizes')">
+    <button class="dl-btn" onclick="downloadJSON('throughput')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
-      sizes.json
+      throughput.json
+    </button>
+    {% if has_throughput_memory %}
+    <button class="dl-btn" onclick="downloadJSON('throughput_memory')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      throughput_memory.json
+    </button>
+    {% endif %}
+    {% if memory_available %}
+    <button class="dl-btn" onclick="downloadJSON('memory')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      memory.json
+    </button>
+    {% endif %}
+    {% if has_scaling %}
+    <button class="dl-btn" onclick="downloadJSON('scaling')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      scaling.json
+    </button>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% endif %}
+
+{% if has_cli %}
+<!-- ========================= CLI ========================= -->
+<section id="cli" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">Command line</div>
+  <h2>pygixml vs. xq, at the shell</h2>
+  <p class="lede">
+    <code>{{ cli.commands.pygixml_cli }}</code> against <code>{{ cli.commands.xq }}</code>
+    (installed by <code>pip install yq</code>) &mdash; real subprocess invocations end to end,
+    process startup included on both sides, best of {{ cli.repeats }} runs.
+  </p>
+  {% if cli.summary %}<p class="op-winner">{{ cli.summary | safe }}</p>{% endif %}
+
+  <details class="mini-details">
+    <summary>See per-entry detail ({{ cli.entries|length }} corpus entries)</summary>
+    <div class="mini-grid">
+      {% for entry in cli.entries %}
+      <div class="mini-panel">
+        <div class="mini-label">{{ entry.label }}</div>
+        <div class="mini-subhead">Time (ms, lower is better)</div>
+        <div class="mini-chart-box"><canvas id="{{ entry.id }}"></canvas></div>
+        <div class="mini-values">{{ entry.values_text }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+
+  {% if cli.trend_chart_js %}
+  <div class="panel" style="margin-top:18px;">
+    <h4>Time vs. input size (ms, log scale, lower is better)</h4>
+    <div class="chart-box tall"><canvas id="chart-cli-trend"></canvas></div>
+  </div>
+  {% endif %}
+
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('cli')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      cli.json
     </button>
   </div>
 </section>
