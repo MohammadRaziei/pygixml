@@ -59,3 +59,36 @@ add_dependencies(pygixml_bench_report
   pygixml_bench_system_info
   pygixml_bench_chartjs
 )
+
+# ------------------------------------------------------- docs deploy --
+# The one target in this whole directory that breaks the "fully
+# self-contained, copyable elsewhere" rule on purpose: it reaches into
+# ../../docs/, which only exists inside a full pygixml checkout, not a
+# standalone copy of benchmarks/ elsewhere -- refreshing the docs
+# site's embedded copy of the report IS a full-checkout operation.
+#
+#   cmake --build build --target pygixml_benchmark_report
+#
+# depends on pygixml_bench_report by name (same target-dependency style
+# as pygixml_benchmark below -- a file-level OUTPUT dependency on
+# REPORT_HTML across the python/ <-> report/ directory boundary hits a
+# Unix-Makefiles-generator quirk where the cross-directory rule isn't
+# always visible from a build invoked directly at this target), which
+# in turn already depends on the entire suite. So this one target runs
+# everything and then copies the freshly generated report straight into
+# docs/source/_static/benchmark-report.html -- no separate manual
+# script invocation afterward.
+set(DOCS_UPDATE_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/update_benchmark_report.py")
+
+if(EXISTS "${DOCS_UPDATE_SCRIPT}")
+  add_custom_target(pygixml_benchmark_report
+    COMMAND "${PYGIXML_BENCH_VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${DOCS_UPDATE_SCRIPT}"
+    DEPENDS pygixml_bench_report
+    COMMENT "pygixml benchmarks: copying report.html into docs/source/_static/"
+    USES_TERMINAL
+  )
+else()
+  message(STATUS "pygixml benchmarks: ${DOCS_UPDATE_SCRIPT} not found -- "
+                  "skipping the pygixml_benchmark_report target (this looks like a "
+                  "standalone copy of benchmarks/, not a full pygixml checkout)")
+endif()

@@ -6,23 +6,34 @@ to show.
 
 IMPORTANT: this is NOT part of the regular docs build (cmake.yml's
 build_docs job, which runs on every PR on shared/noisy CI runners --
-exactly where you don't want a performance benchmark running). This
-script only runs in two places:
+exactly where you don't want a performance benchmark running), and
+there is deliberately no CI workflow that runs it automatically either
+-- a real benchmark run has no business happening on a shared runner
+on a schedule. This is a manual, local-only step, and it's one CMake
+target, not two separate commands -- this script is what that target
+runs, you never invoke it directly:
 
-  1. Locally, by a contributor, after running the benchmark suite
-     themselves (see benchmarks/README.md), to preview their changes.
-  2. In .github/workflows/benchmark.yml -- a SEPARATE, infrequent
-     workflow (manual dispatch or a weekly schedule, not on every PR)
-     that runs the real benchmark once and commits the refreshed
-     docs/source/_static/benchmark-report.html straight into the repo.
+      cmake -S benchmarks -B benchmarks/build
+      cmake --build benchmarks/build --target pygixml_benchmark_report
+
+  That alone runs the entire benchmark suite (throughput, memory,
+  scaling, sizes, cli -- everything, as a real file-level CMake
+  dependency, not just "usually run first") and copies the result into
+  docs/source/_static/benchmark-report.html for you. Then commit that
+  file yourself, same as any other source change.
+
+  (pygixml_benchmark, without _report, is the same suite without the
+  docs copy -- useful if you only want benchmarks/results/report.html
+  and don't touch this repo's docs/ at all.)
 
 Either way, the file this script produces is committed to git (it is
 NOT gitignored) -- the regular PR/deploy docs build just uses whatever
-was last committed, so the frequent path never runs a benchmark, never
-depends on the runner it happens to land on, and docs builds stay fast
-and reproducible. The trade-off, stated plainly: the embedded numbers
-can be up to a week stale (or however often benchmark.yml runs), not
-live-per-commit. See performance.rst for how that's disclosed to readers.
+was last committed, so it never runs a benchmark, never depends on the
+runner it happens to land on, and docs builds stay fast and
+reproducible. The trade-off, stated plainly: the embedded numbers are
+exactly as fresh as the last time someone ran the steps above and
+committed the result -- not live-per-commit. See performance.rst for
+how that's disclosed to readers.
 """
 import shutil
 import sys
@@ -54,9 +65,9 @@ def main():
         print(f"update_benchmark_report: copied {SOURCE} -> {DEST}")
     elif not DEST.exists():
         # Only write the placeholder if nothing is committed yet (a
-        # fresh clone, before benchmark.yml has ever run) -- never
-        # clobber an already-committed real report just because this
-        # particular checkout hasn't run the benchmark locally.
+        # fresh clone where no one has run the steps above yet) --
+        # never clobber an already-committed real report just because
+        # this particular checkout hasn't run the benchmark locally.
         DEST.write_text(PLACEHOLDER, encoding="utf-8")
         print(f"update_benchmark_report: {SOURCE} not found and nothing committed yet, "
               f"wrote placeholder to {DEST}", file=sys.stderr)
