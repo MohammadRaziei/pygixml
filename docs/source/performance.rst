@@ -8,12 +8,14 @@ documents) through Cython.
 Benchmarks
 ----------
 
-The numbers below come from the full benchmark suite in ``benchmarks/`` --
+The numbers come from the full benchmark suite in ``benchmarks/`` --
 parsing, ``dictify``, ``objectify``, and ``jsonify`` measured against lxml,
 ElementTree, xmltodict, and xmljson, plus memory-at-scale and install
-footprint. It's embedded below as the real interactive report rather than
-copied in as a static table, so nothing here was manually transcribed or
-rounded off.
+footprint. Nothing here is manually transcribed or rounded off: the
+interactive report is generated straight from those runs.
+
+That full interactive report lives at its own page, not embedded here --
+`see the benchmark report <../benchmarks/index.html>`_.
 
 The report itself is refreshed on a schedule
 (``.github/workflows/benchmark.yml``, weekly, plus on-demand), not on every
@@ -22,35 +24,6 @@ which a shared per-PR CI runner isn't. So this can lag the very latest commit
 by up to a week; it won't ever be wildly out of date, but if you changed
 something performance-sensitive today, don't expect to see it reflected here
 yet.
-
-.. raw:: html
-
-   <div class="benchmark-embed-card">
-     <div class="benchmark-embed-toolbar">
-       <span>Live benchmark report</span>
-       <a href="_static/benchmark-report.html" target="_blank" rel="noopener">Open full report &#8599;</a>
-     </div>
-     <iframe id="pygixml-benchmark-iframe" class="benchmark-embed-frame"
-             src="_static/benchmark-report.html" title="pygixml benchmark report"
-             loading="lazy"></iframe>
-   </div>
-   <script>
-   (function () {
-     var frame = document.getElementById('pygixml-benchmark-iframe');
-     function fit() {
-       try {
-         var doc = frame.contentWindow.document;
-         var h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
-         if (h > 0) { frame.style.height = h + 'px'; }
-       } catch (e) { /* cross-origin fallback: keep the CSS default height */ }
-     }
-     frame.addEventListener('load', function () {
-       fit();
-       setTimeout(fit, 300);   // charts finish laying out a beat after load
-     });
-     window.addEventListener('resize', fit);
-   })();
-   </script>
 
 Reproducing or updating these numbers is one CMake build away -- see
 `benchmarks/README.md <https://github.com/MohammadRaziei/pygixml/blob/master/benchmarks/README.md>`_

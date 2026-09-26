@@ -12,11 +12,10 @@ project(PygixmlBenchmarks LANGUAGES NONE)
 #
 # See README.md in this directory for the full rundown, and every
 # individual target below for what it does on its own
-# (`cmake --build build --target help` lists them all). One target
-# reaches outside this directory on purpose: pygixml_benchmark_report
-# (see report/CMakeLists.txt) additionally copies the result into
-# ../docs/source/_static/ -- that one only works inside a full pygixml
-# checkout, not a standalone copy of benchmarks/ elsewhere.
+# (`cmake --build build --target help` lists them all). This directory
+# is fully self-contained: nothing here writes outside of results/ --
+# the root project's `pygixml_site` target reads results/report.html
+# directly to publish the public benchmarks page.
 #
 # To benchmark a local, not-yet-published patch instead of whatever is
 # on GitHub, override this at configure time rather than editing it

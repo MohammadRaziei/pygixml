@@ -285,7 +285,7 @@ add_dependencies(pygixml_bench_cli pygixml_bench_corpus pygixml_bench_real_corpu
 # be generated here (features.py -> features.json -> a table in the
 # report). It's static, hand-curated content -- nothing to run, no
 # JSON worth round-tripping -- so it now lives as a plain HTML table on
-# the landing page instead (docs/landing/index.html.in), not as a
+# the landing page instead (docs/site/index.html.in), not as a
 # benchmark pipeline step.
 
 # --------------------------------------------------------- system info --

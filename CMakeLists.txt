@@ -181,12 +181,14 @@ add_custom_target(sphinx_docs
 # things that already exist (Sphinx docs, the benchmark report), the
 # same way ctoon's docs/index.html.in routes into its per-language
 # references. configure_file() substitutes @PROJECT_VERSION@; the CSS
-# just gets copied alongside it.
+# just gets copied alongside it. Source lives in docs/site/ (mirrors
+# the SITE_OUT build-output name below); not to be confused with
+# docs/source/, which is Sphinx's own input directory.
 
 set(SITE_OUT ${CMAKE_CURRENT_BINARY_DIR}/site)
 
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/docs/landing/index.html.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/docs/site/index.html.in
     ${SITE_OUT}/index.html
     @ONLY
 )
@@ -194,9 +196,9 @@ configure_file(
 add_custom_command(
     OUTPUT ${SITE_OUT}/landing.css
     COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_CURRENT_SOURCE_DIR}/docs/landing/landing.css
+        ${CMAKE_CURRENT_SOURCE_DIR}/docs/site/landing.css
         ${SITE_OUT}/landing.css
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/docs/landing/landing.css
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/docs/site/landing.css
     COMMENT "Copying landing page styles"
 )
 
@@ -204,15 +206,16 @@ add_custom_target(pygixml_landing DEPENDS ${SITE_OUT}/index.html ${SITE_OUT}/lan
 
 # Assembles the full public site tree: site/{index.html, docs/, benchmarks/}.
 # Depends on sphinx_docs (Sphinx's own output) and expects
-# docs/source/_static/benchmark-report.html to already exist (see
-# docs/update_benchmark_report.py -- it's a committed file, refreshed by
-# the separate benchmark.yml workflow, not regenerated here).
+# benchmarks/results/report.html to already exist (see benchmarks/README.md
+# -- it's a committed file, refreshed manually/on a schedule, not
+# regenerated here). Read directly from benchmarks/results/ -- there is
+# no separate copy of it living under docs/ anymore.
 add_custom_target(pygixml_site
     COMMAND ${CMAKE_COMMAND} -E make_directory ${SITE_OUT}
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/docs ${SITE_OUT}/docs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${SITE_OUT}/benchmarks
     COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_CURRENT_SOURCE_DIR}/docs/source/_static/benchmark-report.html
+        ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results/report.html
         ${SITE_OUT}/benchmarks/index.html
     COMMENT "Assembling pygixml site: landing + docs + benchmarks -> ${SITE_OUT}"
     VERBATIM

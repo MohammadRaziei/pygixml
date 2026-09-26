@@ -86,7 +86,7 @@ five independent layers, not just JSON:
 Plus memory use at scale and install
 footprint. The static feature matrix (XPath, XSLT, schema validation,
 streaming, CLI tools, and so on — things a speed number can't capture)
-lives on the [landing page](../docs/landing/index.html.in) instead of
+lives on the [landing page](../docs/site/index.html.in) instead of
 here: it's hand-curated fact, not something worth running code to
 regenerate.
 
