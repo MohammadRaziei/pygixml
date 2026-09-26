@@ -1334,49 +1334,75 @@ cdef class StreamElement:
     """
 
     cdef public str tag
-    cdef public dict attrib
+    cdef dict _attrib
     cdef public object text
     cdef public object tail
     cdef list _children
 
     def __cinit__(self, str tag, dict attrib=None):
         self.tag = tag
-        self.attrib = attrib if attrib is not None else {}
+        # Both left as None (no allocation) until something actually
+        # needs them -- most streamed elements are attribute-less leaf
+        # text nodes, and this is the single biggest allocation cost
+        # per element once it's actually worth building one at all.
+        self._attrib = attrib
         self.text = None
         self.tail = None
-        self._children = []
+        self._children = None
+
+    property attrib:
+        """This element's attributes, as a ``dict`` (created on first
+        access/assignment -- an attribute-less element never pays for
+        one)."""
+        def __get__(self):
+            if self._attrib is None:
+                self._attrib = {}
+            return self._attrib
+
+        def __set__(self, dict value):
+            self._attrib = value if value is not None else {}
 
     def __repr__(self):
-        return f"<StreamElement {self.tag!r} ({len(self._children)} children) at 0x{id(self):x}>"
+        return f"<StreamElement {self.tag!r} ({len(self._children or ())} children) at 0x{id(self):x}>"
 
     def __len__(self):
-        return len(self._children)
+        return len(self._children) if self._children is not None else 0
 
     def __bool__(self):
-        return len(self._children) > 0
+        return self._children is not None and len(self._children) > 0
 
     def __iter__(self):
-        return iter(self._children)
+        return iter(self._children) if self._children is not None else iter(())
 
     def __getitem__(self, index):
+        if self._children is None:
+            raise IndexError("StreamElement index out of range")
         return self._children[index]
 
     @property
     def children(self):
         """The list of direct child :class:`StreamElement` nodes."""
+        if self._children is None:
+            self._children = []
         return self._children
 
     def get(self, str key, default=None):
         """Return ``attrib.get(key, default)``."""
-        return self.attrib.get(key, default)
+        if self._attrib is None:
+            return default
+        return self._attrib.get(key, default)
 
     def keys(self):
         """Return the attribute names (a view over :attr:`attrib`)."""
-        return self.attrib.keys()
+        if self._attrib is None:
+            return ()
+        return self._attrib.keys()
 
     def items(self):
         """Return the ``(name, value)`` attribute pairs."""
-        return self.attrib.items()
+        if self._attrib is None:
+            return ()
+        return self._attrib.items()
 
     def iter(self, str tag=None):
         """Depth-first iterate this element and all its descendants,
@@ -1384,8 +1410,9 @@ cdef class StreamElement:
         matches everything)."""
         if tag is None or tag == "*" or self.tag == tag:
             yield self
-        for child in self._children:
-            yield from (<StreamElement>child).iter(tag)
+        if self._children is not None:
+            for child in self._children:
+                yield from (<StreamElement>child).iter(tag)
 
     def findall(self, str path):
         """Find descendants matching ``path``.
@@ -1406,6 +1433,8 @@ cdef class StreamElement:
         for part in path.split("/"):
             nxt = []
             for el in current:
+                if (<StreamElement>el)._children is None:
+                    continue
                 for child in (<StreamElement>el)._children:
                     if part == "*" or (<StreamElement>child).tag == part:
                         nxt.append(child)
@@ -1430,10 +1459,10 @@ cdef class StreamElement:
         """Drop this element's attributes, text, tail and children,
         freeing the memory they hold (the element itself, e.g. as an
         already-appended child of its parent, is left in place)."""
-        self.attrib = {}
+        self._attrib = None
         self.text = None
         self.tail = None
-        self._children = []
+        self._children = None
 
     def to_dict(self, str attr_prefix="@", str cdata_key="#text",
                 object force_list=None):
@@ -1468,26 +1497,28 @@ cdef class StreamElement:
         cdef str tag
         cdef list group
         cdef dict counts = {}
-        cdef bint has_attrs = (len(self.attrib) > 0)
-        cdef bint has_children = (len(self._children) > 0)
+        cdef list children = self._children if self._children is not None else []
+        cdef bint has_attrs = (self._attrib is not None and len(self._attrib) > 0)
+        cdef bint has_children = (len(children) > 0)
         cdef bint has_text = (self.text is not None and not self.text.isspace())
 
         if not has_attrs and not has_children:
             return self.text if has_text else None
 
         result = {}
-        for k, v in self.attrib.items():
-            result[attr_prefix + k] = v
+        if self._attrib is not None:
+            for k, v in self._attrib.items():
+                result[attr_prefix + k] = v
 
         if has_text and (has_attrs or has_children):
             result[cdata_key] = self.text
 
-        for child in self._children:
+        for child in children:
             tag = child.tag
             counts[tag] = counts.get(tag, 0) + 1
 
         cdef dict seen_as_list = {}
-        for child in self._children:
+        for child in children:
             tag = child.tag
             value = child._to_dict(attr_prefix, cdata_key, force_all, force_set)
             as_list = (counts[tag] > 1) or force_all or \
@@ -1531,8 +1562,9 @@ cdef class StreamElement:
         cdef StreamElement child
         cdef str tag
         cdef dict counts = {}
-        cdef bint has_attrs = (len(self.attrib) > 0)
-        cdef bint has_children = (len(self._children) > 0)
+        cdef list children = self._children if self._children is not None else []
+        cdef bint has_attrs = (self._attrib is not None and len(self._attrib) > 0)
+        cdef bint has_children = (len(children) > 0)
         cdef bint has_text = (self.text is not None and not self.text.isspace())
         cdef bint first
         cdef bint as_list
@@ -1548,13 +1580,14 @@ cdef class StreamElement:
         parts.append("{")
         first = True
 
-        for k, v in self.attrib.items():
-            if not first:
-                parts.append(",")
-            first = False
-            parts.append(_json_escape_str(attr_prefix + k))
-            parts.append(":")
-            parts.append(_json_escape_str(v))
+        if self._attrib is not None:
+            for k, v in self._attrib.items():
+                if not first:
+                    parts.append(",")
+                first = False
+                parts.append(_json_escape_str(attr_prefix + k))
+                parts.append(":")
+                parts.append(_json_escape_str(v))
 
         if has_text and (has_attrs or has_children):
             if not first:
@@ -1564,12 +1597,12 @@ cdef class StreamElement:
             parts.append(":")
             parts.append(_json_escape_str(self.text))
 
-        for child in self._children:
+        for child in children:
             tag = child.tag
             counts[tag] = counts.get(tag, 0) + 1
 
         cdef set emitted = set()
-        for child in self._children:
+        for child in children:
             tag = child.tag
             if tag in emitted:
                 continue
@@ -1587,7 +1620,7 @@ cdef class StreamElement:
             if as_list:
                 parts.append("[")
                 first_item = True
-                for sib in self._children:
+                for sib in children:
                     if (<StreamElement>sib).tag != tag:
                         continue
                     if not first_item:
@@ -1730,13 +1763,18 @@ cdef class PullParser:
     cdef inline void _finalize_pending(self):
         cdef StreamElement elem
         cdef object top
+        cdef StreamElement parent
         if self._pending is not None:
             elem = <StreamElement>self._pending
             self._pending = None
             if self._elem_stack:
                 top = self._elem_stack[len(self._elem_stack) - 1]
                 if top is not None:
-                    (<StreamElement>top)._children.append(elem)
+                    parent = <StreamElement>top
+                    if parent._children is None:
+                        parent._children = [elem]
+                    else:
+                        parent._children.append(elem)
             if self._want_start and (self._tag_filter is None or elem.tag == self._tag_filter):
                 self._queue.append(("start", elem))
             self._elem_stack.append(elem)
