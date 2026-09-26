@@ -317,7 +317,7 @@ XPath lets you navigate the tree using path expressions:
    * - ``sum(book/price) div count(book)``
      - Average book price
 
-pygixml supports the full XPath 1.0 specification.  See :doc:`xpath` for
+pygixml supports the full XPath 1.0 specification.  See :doc:`/guide/xpath` for
 a detailed guide.
 
 

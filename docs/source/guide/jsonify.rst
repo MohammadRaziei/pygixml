@@ -323,13 +323,13 @@ Choosing the right entry point
    * - One record per line, kept as Python ``str`` objects
      - :func:`~pygixml.jsonify.iterjsonl`
      - *(inherently produces a Python object per line — see*
-       :doc:`streaming` *for the all-C++ alternative when that's not
+       :doc:`/guide/streaming` *for the all-C++ alternative when that's not
        needed)*
    * - Already-parsed ``ObjectifiedElement`` / ``XMLNode``
      - :func:`~pygixml.jsonify.dumps_obj` /
        :func:`~pygixml.jsonify.dumps_node`
      - *(n/a — already in memory)*
 
-See :doc:`streaming` for ``iterjsonl`` and the rest of the underlying
+See :doc:`/guide/streaming` for ``iterjsonl`` and the rest of the underlying
 constant-memory parsing layer that ``stream_dump`` and
 ``stream_jsonl`` are built on top of.

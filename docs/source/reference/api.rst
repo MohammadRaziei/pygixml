@@ -2,9 +2,9 @@ API Reference
 =============
 
 This page documents every public class, method, property, and function in
-pygixml.  For high-level usage guides see :doc:`quickstart`, :doc:`objectify`,
-and :doc:`dictify`; for the command-line tools built on top of this API, see
-:doc:`cli`.
+pygixml.  For high-level usage guides see :doc:`/getting-started/quickstart`, :doc:`/guide/objectify`,
+and :doc:`/guide/dictify`; for the command-line tools built on top of this API, see
+:doc:`/guide/cli`.
 
 ----
 

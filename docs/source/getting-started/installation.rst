@@ -24,7 +24,7 @@ Optional Extras
 ----------------
 
 Everything above works out of the box with zero dependencies. A few
-things in the :doc:`command-line tools <cli>` are opt-in, on top:
+things in the :doc:`command-line tools </guide/cli>` are opt-in, on top:
 
 .. code-block:: bash
 

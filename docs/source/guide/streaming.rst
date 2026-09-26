@@ -3,7 +3,7 @@
 Streaming — Constant-Memory Parsing for Big XML
 ================================================
 
-Everything covered so far (:doc:`objectify`, :doc:`dictify`, XPath) is built
+Everything covered so far (:doc:`/guide/objectify`, :doc:`/guide/dictify`, XPath) is built
 on pugixml's in-memory DOM — fast, but the whole document has to fit in
 RAM. ``pygixml``'s streaming layer is a second, independent engine: a
 self-contained, inlined `yxml <https://dev.yorhel.nl/yxml>`_ push parser
@@ -37,7 +37,7 @@ Three layers build on top of each other, from lowest- to highest-level:
 
 And for the common "convert the whole file" case, :mod:`pygixml.jsonify`
 adds two endpoints that skip Python objects entirely and write straight
-to disk — see :doc:`jsonify`.
+to disk — see :doc:`/guide/jsonify`.
 
 
 ``iterparse`` / ``iterfind``
@@ -241,7 +241,7 @@ Wrapping every loop in ``elem.to_dict()`` / ``elem.to_json()`` /
    If the destination really is just a ``.jsonl`` file and you don't
    need the records in Python at all, :func:`pygixml.jsonify.stream_jsonl`
    does the same job without creating a single Python object per
-   element — see :doc:`jsonify`.
+   element — see :doc:`/guide/jsonify`.
 
 
 Sources accepted everywhere

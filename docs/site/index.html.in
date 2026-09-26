@@ -104,7 +104,7 @@
     <code class="font-mono bg-muted rounded px-1.5 py-0.5 text-[0.9em]">jsonify</code>, and a CLI.
   </p>
   <div class="flex gap-3.5 justify-center flex-wrap mb-11">
-    <a href="docs/quickstart.html" class="inline-flex items-center gap-2 btn-gradient text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:-translate-y-0.5">
+    <a href="docs/getting-started/quickstart.html" class="inline-flex items-center gap-2 btn-gradient text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:-translate-y-0.5">
       Get started
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
@@ -443,7 +443,7 @@ pygixml convert data.xml data.json</code></pre>
 <section class="text-center py-16 px-6 bg-card border-y border-hairline hero-glow">
   <h2 class="text-2xl font-bold mb-3">Ready to try it?</h2>
   <p class="text-dim mb-7">One <code class="font-mono bg-muted rounded px-1.5 py-0.5">pip install</code>, no compiler needed on the common platforms.</p>
-  <a href="docs/installation.html" class="inline-flex btn-gradient text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:-translate-y-0.5">Installation guide</a>
+  <a href="docs/getting-started/installation.html" class="inline-flex btn-gradient text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:-translate-y-0.5">Installation guide</a>
 </section>
 
 <footer class="max-w-6xl mx-auto px-6 py-12 flex flex-wrap justify-between gap-8">

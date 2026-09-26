@@ -5,19 +5,19 @@ Welcome to pygixml
 
 **pygixml** (*Python Giant XML*) is a high-performance Cython framework
 bridging two specialized C++ engines: `pugixml <https://pugixml.org/>`_
-for its in-memory DOM parser (full XPath 1.0, :doc:`objectify`,
-:doc:`dictify`), and an inlined `yxml <https://dev.yorhel.nl/yxml>`_
-push parser for true constant-memory :doc:`streaming <streaming>`. The
+for its in-memory DOM parser (full XPath 1.0, :doc:`/guide/objectify`,
+:doc:`/guide/dictify`), and an inlined `yxml <https://dev.yorhel.nl/yxml>`_
+push parser for true constant-memory :doc:`streaming </guide/streaming>`. The
 result is a faster, constant-memory alternative to
 `lxml <https://lxml.de/>`_ and
 `xmltodict <https://github.com/martinblech/xmltodict>`_ — everything
 they do, plus a streaming layer neither of them has, which is what
 makes pygixml the package to reach for once a dataset gets *massive*.
-It also ships a full set of :doc:`command-line tools <cli>` --
+It also ships a full set of :doc:`command-line tools </guide/cli>` --
 ``pygixml cat``/``query``/``jsonify``/``stream``/``convert`` -- so a
 lot of this is available without writing any Python at all.
 
-New to XML?  Start with :doc:`xml_basics` for a primer on the format, its
+New to XML?  Start with :doc:`/getting-started/xml_basics` for a primer on the format, its
 structure, and real-world applications.
 
 .. note::
@@ -41,7 +41,7 @@ brings that speed directly to Python:
 +-------------------------+------------+------------------------+
 
 (Benchmark: parsing a document with 5 000 elements.  See
-:doc:`performance` for the full comparison.)
+:doc:`/performance` for the full comparison.)
 
 Features
 --------
@@ -53,9 +53,9 @@ Features
 * **objectify** — lxml.objectify-style dotted navigation (``root.user.name``)
 * **dictify** — xmltodict-compatible XML → dict conversion
 * **jsonify** — direct XML → JSON, in memory or streamed straight to disk
-  in constant memory (see :doc:`jsonify`)
+  in constant memory (see :doc:`/guide/jsonify`)
 * **Streaming** — constant-memory, ``ElementTree``-style incremental
-  parsing for documents too big to load whole (see :doc:`streaming`)
+  parsing for documents too big to load whole (see :doc:`/guide/streaming`)
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -118,7 +118,7 @@ Quick Example
 Core Classes
 ------------
 
-See the :doc:`api` for the complete reference.
+See the :doc:`/reference/api` for the complete reference.
 
 .. list-table::
    :widths: 25 75
@@ -138,13 +138,13 @@ See the :doc:`api` for the complete reference.
      - Single XPath result (wraps a node or attribute)
    * - :py:class:`~pygixml.XPathNodeSet`
      - Collection of XPath results
-   * - :doc:`objectify <objectify>`
+   * - :doc:`objectify </guide/objectify>`
      - lxml.objectify-style dotted navigation
-   * - :doc:`dictify <dictify>`
+   * - :doc:`dictify </guide/dictify>`
      - xmltodict-compatible XML → dict conversion
-   * - :doc:`jsonify <jsonify>`
+   * - :doc:`jsonify </guide/jsonify>`
      - Direct XML → JSON, in memory or streamed to disk in constant memory
-   * - :doc:`streaming <streaming>`
+   * - :doc:`streaming </guide/streaming>`
      - ``iterparse``/``iterfind`` — constant-memory parsing for big XML
 
 Pythonic Extensions
@@ -166,11 +166,11 @@ beyond what the C++ library provides:
   node, ideal for caching and dictionary-based lookups.
 * :meth:`~pygixml.XMLNode.to_string` — customizable XML serialization with
   string or integer indentation.
-* :doc:`objectify <objectify>` — navigate XML like a Python object tree.
-* :doc:`dictify <dictify>` — convert XML to dict / JSON with one call.
-* :doc:`jsonify <jsonify>` — convert XML straight to JSON, in memory or
+* :doc:`objectify </guide/objectify>` — navigate XML like a Python object tree.
+* :doc:`dictify </guide/dictify>` — convert XML to dict / JSON with one call.
+* :doc:`jsonify </guide/jsonify>` — convert XML straight to JSON, in memory or
   streamed file-to-file in constant memory.
-* :doc:`streaming <streaming>` — ``iterparse``/``iterfind`` for documents
+* :doc:`streaming </guide/streaming>` — ``iterparse``/``iterfind`` for documents
   too large to ever load as a full DOM tree.
 
 .. note::
@@ -202,7 +202,7 @@ pygixml exposes pugixml's full XPath 1.0 engine:
   ``+``, ``-``, ``*``, ``div``, ``mod``
 * **Wildcards:** ``*``, ``@*``, ``node()``
 
-See :doc:`xpath` for a detailed walkthrough.
+See :doc:`/guide/xpath` for a detailed walkthrough.
 
 Installation
 ------------
@@ -225,21 +225,31 @@ Documentation Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
+   :caption: Getting Started
 
-   installation
-   xml_basics
-   quickstart
-   objectify
-   dictify
-   jsonify
-   streaming
-   xpath
-   cli
-   advanced
-   examples
+   getting-started/installation
+   getting-started/xml_basics
+   getting-started/quickstart
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Guide
+
+   guide/objectify
+   guide/dictify
+   guide/jsonify
+   guide/streaming
+   guide/xpath
+   guide/cli
+   guide/advanced
+   guide/examples
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference
+
    performance
-   api
+   reference/api
 
 
 Indices and tables

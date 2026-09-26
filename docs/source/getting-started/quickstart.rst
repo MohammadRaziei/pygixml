@@ -184,7 +184,7 @@ All parsing errors raise :py:class:`~pygixml.PygiXMLError`:
 Next Steps
 ----------
 
-- Dive into :doc:`XPath capabilities <xpath>`
-- Browse the full :doc:`API reference <api>`
-- See :doc:`practical examples <examples>`
-- Learn about :doc:`performance <performance>`
+- Dive into :doc:`XPath capabilities </guide/xpath>`
+- Browse the full :doc:`API reference </reference/api>`
+- See :doc:`practical examples </guide/examples>`
+- Learn about :doc:`performance </performance>`

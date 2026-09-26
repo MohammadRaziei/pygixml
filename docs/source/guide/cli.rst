@@ -45,9 +45,9 @@ If you're not sure which one you need: ``cat``/``query``/``convert``
 load the whole document, same as :func:`pygixml.parse_file` would —
 fine for anything that comfortably fits in RAM. ``jsonify`` switches to
 a constant-memory streamed conversion automatically once a file crosses
-64MB (see :doc:`jsonify`). ``stream`` never loads more than one matched
+64MB (see :doc:`/guide/jsonify`). ``stream`` never loads more than one matched
 element at a time, so it's the only one of the five safe for a file
-that's genuinely too large to fit in memory — see :doc:`streaming` for
+that's genuinely too large to fit in memory — see :doc:`/guide/streaming` for
 the underlying constant-memory parsing layer it's built on.
 
 ----
@@ -105,7 +105,7 @@ source even though pugixml's own serializer doesn't round-trip it.
 
 Query an XML file with either XPath or a ``lxml.objectify``-style
 dotted path — a ``jq``/``xq`` for XML you can fit in memory. See
-:doc:`xpath` and :doc:`objectify` for the underlying query languages.
+:doc:`/guide/xpath` and :doc:`/guide/objectify` for the underlying query languages.
 
 .. code-block:: bash
 
@@ -199,7 +199,7 @@ same subcommand.
        automatic size-based choice below.
 
 Automatically switches to :func:`~pygixml.jsonify.stream_dump`
-(constant memory — see :doc:`jsonify` for its complexity
+(constant memory — see :doc:`/guide/jsonify` for its complexity
 characteristics) for files over 64MB; ``--stream``/``--no-stream``
 force one mode or the other regardless of size. Both modes produce
 byte-identical output for the same input and options.
