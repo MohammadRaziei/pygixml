@@ -5,19 +5,19 @@ Welcome to pygixml
 
 **pygixml** (*Python Giant XML*) is a high-performance Cython framework
 bridging two specialized C++ engines: `pugixml <https://pugixml.org/>`_
-for its in-memory DOM parser (full XPath 1.0, :doc:`/guide/objectify`,
-:doc:`/guide/dictify`), and an inlined `yxml <https://dev.yorhel.nl/yxml>`_
-push parser for true constant-memory :doc:`streaming </guide/streaming>`. The
+for its in-memory DOM parser (full XPath 1.0, :doc:`/modules/objectify`,
+:doc:`/modules/dictify`), and an inlined `yxml <https://dev.yorhel.nl/yxml>`_
+push parser for true constant-memory :doc:`streaming </core/stream-parser>`. The
 result is a faster, constant-memory alternative to
 `lxml <https://lxml.de/>`_ and
 `xmltodict <https://github.com/martinblech/xmltodict>`_ — everything
 they do, plus a streaming layer neither of them has, which is what
 makes pygixml the package to reach for once a dataset gets *massive*.
-It also ships a full set of :doc:`command-line tools </guide/cli>` --
+It also ships a full set of :doc:`command-line tools </cli>` --
 ``pygixml cat``/``query``/``jsonify``/``stream``/``convert`` -- so a
 lot of this is available without writing any Python at all.
 
-New to XML?  Start with :doc:`/getting-started/xml_basics` for a primer on the format, its
+New to XML?  Start with :doc:`/core/dom-parser` for a primer on the format, its
 structure, and real-world applications.
 
 .. note::
@@ -53,9 +53,9 @@ Features
 * **objectify** — lxml.objectify-style dotted navigation (``root.user.name``)
 * **dictify** — xmltodict-compatible XML → dict conversion
 * **jsonify** — direct XML → JSON, in memory or streamed straight to disk
-  in constant memory (see :doc:`/guide/jsonify`)
+  in constant memory (see :doc:`/modules/jsonify`)
 * **Streaming** — constant-memory, ``ElementTree``-style incremental
-  parsing for documents too big to load whole (see :doc:`/guide/streaming`)
+  parsing for documents too big to load whole (see :doc:`/core/stream-parser`)
 * **Cross-platform** — Windows, Linux, macOS
 * **Text extraction** — recursive text gathering with configurable joins
 * **XML serialization** — output with custom indentation
@@ -138,13 +138,13 @@ See the :doc:`/reference/api` for the complete reference.
      - Single XPath result (wraps a node or attribute)
    * - :py:class:`~pygixml.XPathNodeSet`
      - Collection of XPath results
-   * - :doc:`objectify </guide/objectify>`
+   * - :doc:`objectify </modules/objectify>`
      - lxml.objectify-style dotted navigation
-   * - :doc:`dictify </guide/dictify>`
+   * - :doc:`dictify </modules/dictify>`
      - xmltodict-compatible XML → dict conversion
-   * - :doc:`jsonify </guide/jsonify>`
+   * - :doc:`jsonify </modules/jsonify>`
      - Direct XML → JSON, in memory or streamed to disk in constant memory
-   * - :doc:`streaming </guide/streaming>`
+   * - :doc:`streaming </core/stream-parser>`
      - ``iterparse``/``iterfind`` — constant-memory parsing for big XML
 
 Pythonic Extensions
@@ -166,11 +166,11 @@ beyond what the C++ library provides:
   node, ideal for caching and dictionary-based lookups.
 * :meth:`~pygixml.XMLNode.to_string` — customizable XML serialization with
   string or integer indentation.
-* :doc:`objectify </guide/objectify>` — navigate XML like a Python object tree.
-* :doc:`dictify </guide/dictify>` — convert XML to dict / JSON with one call.
-* :doc:`jsonify </guide/jsonify>` — convert XML straight to JSON, in memory or
+* :doc:`objectify </modules/objectify>` — navigate XML like a Python object tree.
+* :doc:`dictify </modules/dictify>` — convert XML to dict / JSON with one call.
+* :doc:`jsonify </modules/jsonify>` — convert XML straight to JSON, in memory or
   streamed file-to-file in constant memory.
-* :doc:`streaming </guide/streaming>` — ``iterparse``/``iterfind`` for documents
+* :doc:`streaming </core/stream-parser>` — ``iterparse``/``iterfind`` for documents
   too large to ever load as a full DOM tree.
 
 .. note::
@@ -202,7 +202,7 @@ pygixml exposes pugixml's full XPath 1.0 engine:
   ``+``, ``-``, ``*``, ``div``, ``mod``
 * **Wildcards:** ``*``, ``@*``, ``node()``
 
-See :doc:`/guide/xpath` for a detailed walkthrough.
+See :doc:`/core/dom-parser` for a detailed walkthrough.
 
 Installation
 ------------
@@ -228,27 +228,36 @@ Documentation Contents
    :caption: Getting Started
 
    getting-started/installation
-   getting-started/xml_basics
    getting-started/quickstart
 
 .. toctree::
    :maxdepth: 2
-   :caption: Guide
+   :caption: Core
 
-   guide/objectify
-   guide/dictify
-   guide/jsonify
-   guide/streaming
-   guide/xpath
-   guide/cli
-   guide/advanced
-   guide/examples
+   core/dom-parser
+   core/stream-parser
+   core/advanced
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules
+
+   modules/objectify
+   modules/dictify
+   modules/jsonify
+
+.. toctree::
+   :maxdepth: 2
+   :caption: CLI
+
+   cli
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference
 
    performance
+   examples
    reference/api
 
 
