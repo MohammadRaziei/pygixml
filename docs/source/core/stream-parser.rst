@@ -1,16 +1,16 @@
 .. _streaming:
 
-Streaming — Constant-Memory Parsing for Big XML
+Streaming: Constant-Memory Parsing for Big XML
 ================================================
 
 Everything covered so far (:doc:`/modules/objectify`, :doc:`/modules/dictify`, XPath) is built
-on pugixml's in-memory DOM — fast, but the whole document has to fit in
-RAM. ``pygixml``'s streaming layer is a second, independent engine: a
+on pugixml's in-memory DOM (fast, but the whole document has to fit in
+RAM). ``pygixml``'s streaming layer is a second, independent engine: a
 self-contained, inlined `yxml <https://dev.yorhel.nl/yxml>`_ push parser
 that reads an XML file (or string, or file-like object) one chunk at a
 time and lets you process matching elements **without ever holding the
 full document in memory**. This is the layer to reach for once a file is
-too big — or you simply don't want — to load whole.
+too big (or you simply don't want) to load whole.
 
 .. code-block:: python
 
@@ -29,7 +29,7 @@ Three layers build on top of each other, from lowest- to highest-level:
    * - Function
      - What it gives you
    * - :func:`pygixml.iterparse`
-     - ``(event, elem)`` pairs, ``ElementTree``-style — full control
+     - ``(event, elem)`` pairs, ``ElementTree``-style: full control
    * - :func:`pygixml.iterfind`
      - Just the matched :class:`~pygixml.StreamElement` objects
    * - :func:`pygixml.dictify.iterdict` / :func:`pygixml.jsonify.iterjsonl`
@@ -37,7 +37,7 @@ Three layers build on top of each other, from lowest- to highest-level:
 
 And for the common "convert the whole file" case, :mod:`pygixml.jsonify`
 adds two endpoints that skip Python objects entirely and write straight
-to disk — see :doc:`/modules/jsonify`.
+to disk (see :doc:`/modules/jsonify`).
 
 
 ``iterparse`` / ``iterfind``
@@ -60,7 +60,7 @@ to disk — see :doc:`/modules/jsonify`.
       attributes but no children or text yet.
    :type events: tuple[str, ...]
    :param tag: If given, only elements with this tag name produce
-      events — everything else is skipped without allocating a
+      events: everything else is skipped without allocating a
       :class:`~pygixml.StreamElement` for it.
    :type tag: str or None
    :param stack_size: Size (bytes) of yxml's internal element/attribute
@@ -89,8 +89,8 @@ to disk — see :doc:`/modules/jsonify`.
    :no-index:
 
    Shortcut for ``iterparse(source, events=("end",), tag=tag)`` that
-   yields :class:`~pygixml.StreamElement` objects directly — no
-   ``(event, elem)`` tuple to unpack.
+   yields :class:`~pygixml.StreamElement` objects directly (no
+   ``(event, elem)`` tuple to unpack).
 
    :param source: Same as :func:`~pygixml.iterparse`.
    :param tag: Tag name of the elements to yield. Matches at any depth,
@@ -113,7 +113,7 @@ to disk — see :doc:`/modules/jsonify`.
    :no-index:
 
    A small, ``ElementTree``-like element produced while streaming. It is
-   **not** connected to a pugixml document — it's a standalone tree of
+   **not** connected to a pugixml document: it's a standalone tree of
    plain Python objects (built once, for this one match, then thrown
    away), with a ``tag``, an ``attrib`` dict, optional ``text``/``tail``
    strings, and child ``StreamElement`` nodes.
@@ -175,7 +175,7 @@ to disk — see :doc:`/modules/jsonify`.
 
       Drop this element's attributes, text, tail, and children, freeing
       the memory they hold. **Call this after processing each element**
-      yielded by :func:`~pygixml.iterfind` — it's what keeps peak memory
+      yielded by :func:`~pygixml.iterfind`: it's what keeps peak memory
       flat across millions of elements.
 
    .. method:: to_dict(attr_prefix="@", cdata_key="#text", force_list=None)
@@ -226,7 +226,7 @@ Wrapping every loop in ``elem.to_dict()`` / ``elem.to_json()`` /
 
    Generator yielding :meth:`~pygixml.StreamElement.to_json` (one JSON
    object string per match) for every element matching ``tag``. Each
-   yielded line is independently parseable JSON — write them to a
+   yielded line is independently parseable JSON: write them to a
    ``.jsonl`` file yourself, forward them over a socket, push them onto
    a queue, whatever fits:
 
@@ -241,7 +241,7 @@ Wrapping every loop in ``elem.to_dict()`` / ``elem.to_json()`` /
    If the destination really is just a ``.jsonl`` file and you don't
    need the records in Python at all, :func:`pygixml.jsonify.stream_jsonl`
    does the same job without creating a single Python object per
-   element — see :doc:`/modules/jsonify`.
+   element (see :doc:`/modules/jsonify`).
 
 
 Sources accepted everywhere
@@ -262,12 +262,12 @@ all accept the same set of ``source`` types:
    * - ``bytes`` / ``bytearray``
      - Treated as XML *content* (not a path) and read from memory.
    * - File-like object
-     - Anything with a ``.read()`` method — sockets, ``io.BytesIO``,
+     - Anything with a ``.read()`` method: sockets, ``io.BytesIO``,
        already-open file handles, decompression streams, etc.
 
 .. note::
-   A plain ``str`` is always treated as a **path**, never as XML content
-   — pass ``bytes`` (e.g. ``xml.encode()``) if you have an XML string in
+   A plain ``str`` is always treated as a **path**, never as XML content.
+   Pass ``bytes`` (e.g. ``xml.encode()``) if you have an XML string in
    memory and want to stream it without writing it to a file first.
 
 
@@ -277,7 +277,7 @@ Memory model
 Peak memory while streaming is bounded by the size of **one matched
 element's own subtree**, not the document. A 10 GB XML file with
 millions of small, flat ``<record>`` elements streams in roughly the
-same peak memory as a 10 KB one — only the *time* scales with the file
+same peak memory as a 10 KB one: only the *time* scales with the file
 size, not the memory.
 
 .. code-block:: python

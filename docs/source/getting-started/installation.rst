@@ -10,7 +10,7 @@ Just install from PyPI:
 
    pip install pygixml
 
-That's it.  No build tools required — pre-compiled wheels are provided for
+That's it.  No build tools required: pre-compiled wheels are provided for
 Windows, Linux, and macOS.
 
 Verify the installation:
@@ -34,8 +34,8 @@ This pulls in `colorama <https://pypi.org/project/colorama/>`_ (for
 ``pygixml cat``'s syntax coloring), `PyYAML
 <https://pypi.org/project/PyYAML/>`_, and `ctoon
 <https://pypi.org/project/ctoon/>`_ (both for ``pygixml convert``'s
-YAML/TOON support). None of them are required for anything else —
-asking for a format or feature you don't have the package for gives a
+YAML/TOON support). None of them are required for anything else.
+Asking for a format or feature you don't have the package for gives a
 clear error telling you what to install, not a crash.
 
 For Developers
