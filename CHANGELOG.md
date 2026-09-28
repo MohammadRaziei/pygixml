@@ -12,17 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `pygixml` CLI, with five subcommands (also runnable as
   `python -m pygixml <subcommand>`):
-  - `pygixml cat` — pretty-print (and, with `colorama` installed,
+  - `pygixml cat`: pretty-print (and, with `colorama` installed,
     colorize) an XML file for the terminal.
-  - `pygixml query` — XPath / dotted-path queries from the shell.
-  - `pygixml jsonify` (`json` alias) — convert XML to JSON; streams
+  - `pygixml query`: XPath / dotted-path queries from the shell.
+  - `pygixml jsonify` (`json` alias): convert XML to JSON; streams
     automatically for files over 64MB.
-  - `pygixml stream` — filter matching elements out of a file too
+  - `pygixml stream`: filter matching elements out of a file too
     large to load, in bounded (one-record) memory, with a simple
     `--where` expression language.
-  - `pygixml convert` — convert between XML, JSON, YAML, and TOON in
+  - `pygixml convert`: convert between XML, JSON, YAML, and TOON in
     any direction.
-- `pygixml.formats.FormatDocument` — a small class wrapping a plain
+- `pygixml.formats.FormatDocument`: a small class wrapping a plain
   dict with `to_json`/`to_xml`/`to_yaml`/`to_toon` and matching
   `from_*` classmethods; YAML/TOON deps (`PyYAML`/`ctoon`) are
   imported lazily inside each method, with a clear
@@ -44,11 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `jsonify.stream_dump`: converting a field to an array patched only a
   single byte (`[`) instead of the full `[` + newline + indent
   sequence, so the first array item landed on the wrong line in
-  pretty mode, and — when that first item was itself a nested object —
+  pretty mode, and (when that first item was itself a nested object)
   its interior kept the wrong (too-shallow) indentation.
 - `jsonify.stream_dump`: a closed level's own indentation was computed
   from the raw XML nesting-stack depth instead of the level's actual
-  recorded depth, which diverges for array items (one level deeper) —
+  recorded depth, which diverges for array items (one level deeper),
   causing misindented closing braces.
 - `jsonify.dumps_file`/`jsonify.dumps`: the root object's own indent in
   pretty mode was hardcoded to two spaces regardless of the requested
@@ -59,16 +59,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pygixq` CLI: dotted queries (`.database.entry...`) always returned
   nothing, because the first segment (naming the document root) was
   treated as a real child-descent step instead of an anchor.
-- `pygixml stream --limit 0`: printed one match instead of none — the
+- `pygixml stream --limit 0`: printed one match instead of none: the
   limit was checked *after* emitting a match instead of before.
 - `--indent`/`--limit` accepted negative values silently instead of
   rejecting them with a clear error.
 
 ### Changed
 
-- Removed the standalone `pygixq` entry point — use `pygixml query`
+- Removed the standalone `pygixq` entry point: use `pygixml query`
   (or `python -m pygixml query`) instead.
-- Removed the standalone `pygixml-json`/`pygixml-stream` entry points —
+- Removed the standalone `pygixml-json`/`pygixml-stream` entry points:
   use `pygixml jsonify`/`pygixml stream` instead.
 - The `json` CLI subcommand is now `jsonify` (a verb, matching the
   underlying `pygixml.jsonify` module); `json` remains as a short
@@ -91,17 +91,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### `pygixml.jsonify` — direct XML → JSON serialization
+#### `pygixml.jsonify`: direct XML → JSON serialization
 - New module `jsonify` (compiled into `pygixml_cy.so` via `jsonify.pxi`).
 - C++ inline serializer (`xml_node_to_json`) that traverses the pugixml
-  node tree and writes directly into a `std::string` buffer — **no Python
+  node tree and writes directly into a `std::string` buffer: **no Python
   dict, list, or intermediate str is allocated during traversal**.  Only
   one Python `str` object is created at the very end.
-- `jsonify.dumps(xml, ...)` — parse XML string and serialize directly to
+- `jsonify.dumps(xml, ...)`: parse XML string and serialize directly to
   JSON string.
-- `jsonify.dumps_file(path, ...)` — parse XML file and serialize directly
+- `jsonify.dumps_file(path, ...)`: parse XML file and serialize directly
   to JSON string.
-- `jsonify.dumps_node(elem, ...)` — serialize an already-parsed
+- `jsonify.dumps_node(elem, ...)`: serialize an already-parsed
   `ObjectifiedElement` subtree to JSON without re-parsing.
 - Follows the same conventions as `dictify.parse`:
   - Attributes prefixed with `attr_prefix` (default `"@"`).
@@ -112,86 +112,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pretty` and `indent` options for formatted output.
 - C++ `json_escape()` handles all JSON string escaping including control
   characters, `\n`, `\r`, `\t`, `\"`, `\\`.
-- Output is consistent with `dictify.parse` + `json.dumps` — the
+- Output is consistent with `dictify.parse` + `json.dumps`: the
   `TestConsistencyWithDictify` test class verifies this.
 
 #### Namespace support for `pygixml.objectify`
 - New `namespace.pxi` compiled into `pygixml_cy.so` (include after
   `objectify.pxi`).
-- `NamespacedElement` — `cdef class` extending `ObjectifiedElement` with a
+- `NamespacedElement`: `cdef class` extending `ObjectifiedElement` with a
   `_ns_map` C-level field storing `{prefix: uri}`.
-- **Auto-detection** — `objectify_from_string` and `objectify_from_file` now
+- **Auto-detection**: `objectify_from_string` and `objectify_from_file` now
   automatically extract all `xmlns` declarations from the document (via
   `_extract_ns_map_recursive`) and return a `NamespacedElement` when any are
   found.  Plain XML without namespaces continues to return a plain
-  `ObjectifiedElement` — fully backward compatible.
+  `ObjectifiedElement`: fully backward compatible.
 - **Three lookup styles** supported simultaneously:
   - Clark notation: `root.find("{http://ns.com}item")`
   - Prefix notation: `root.find("ns:item")`
   - Dotted access: `root.ns_item` (underscore→colon mapping via
     `_ns_candidate_names`)
-- `NamespacedElement.ns_map` property — exposes the active namespace map for
+- `NamespacedElement.ns_map` property: exposes the active namespace map for
   inspection and debugging.
-- `namespaces` parameter on `objectify_from_string` and `objectify_from_file`
-  — allows callers to supply or override prefix→URI mappings.
-- `auto_ns=False` parameter — opt out of automatic namespace extraction and
+- `namespaces` parameter on `objectify_from_string` and `objectify_from_file`:
+  allows callers to supply or override prefix→URI mappings.
+- `auto_ns=False` parameter: opt out of automatic namespace extraction and
   get a plain `ObjectifiedElement`.
 - `ns_map` is inherited by every child, `find()`, and `findall()` result
-  automatically — no manual propagation needed.
-- `_extract_ns_map(xml_node)` — C-level helper extracting `xmlns` attributes
+  automatically: no manual propagation needed.
+- `_extract_ns_map(xml_node)`: C-level helper extracting `xmlns` attributes
   from a single node.
-- `_extract_ns_map_recursive(xml_node)` — C-level helper walking the full
+- `_extract_ns_map_recursive(xml_node)`: C-level helper walking the full
   subtree.
-- `_ns_candidate_names(str, dict)` — C-level helper expanding a Python
+- `_ns_candidate_names(str, dict)`: C-level helper expanding a Python
   identifier into Clark / prefix / hyphen candidates.
-- `_ns_collect_siblings` and `_ns_find_all` — namespace-aware variants of
+- `_ns_collect_siblings` and `_ns_find_all`: namespace-aware variants of
   the sibling collection and search helpers.
 
 #### Streaming XML → dict/JSON (`stream.pxi`, `iterfind`, `iterdict`, `iterjsonl`, `stream_dump`, `stream_to_jsonl`)
-- New `stream.pxi` compiled into `pygixml_cy.so` — a self-contained,
+- New `stream.pxi` compiled into `pygixml_cy.so`: a self-contained,
   inlined [yxml](https://dev.yorhel.nl/yxml) push parser (no external
   dependency) driving `pygixml.iterparse(source, events=..., tag=...)`,
   an `ElementTree`-style incremental parser over a path, file-like
   object, `str`, or `bytes`/`bytearray` source.
-- `pygixml.iterfind(source, tag, ...)` — shortcut for
+- `pygixml.iterfind(source, tag, ...)`: shortcut for
   `iterparse(source, events=("end",), tag=tag)` that yields
   `StreamElement` objects directly, one per matching tag, in constant
   memory regardless of document size.
-- `StreamElement` — a small, `ElementTree`-like element produced while
+- `StreamElement`: a small, `ElementTree`-like element produced while
   streaming, with `.tag`, `.attrib`, `.text`, children access, and
   `.clear()` to drop a finished element's memory before the next one
   arrives.
 - `StreamElement.to_dict(attr_prefix="@", cdata_key="#text", force_list=None)`
-  and `StreamElement.to_json(...)` — convert one streamed element to the
+  and `StreamElement.to_json(...)`: convert one streamed element to the
   same `attr_prefix`/`cdata_key`/repeated-sibling-as-array conventions
   used by `dictify.parse` and `jsonify.dumps`.
-- `pygixml.dictify.iterdict(source, tag, ...)` — generator yielding
+- `pygixml.dictify.iterdict(source, tag, ...)`: generator yielding
   `StreamElement.to_dict()` for every match, for processing huge XML
   files as a stream of plain dicts without ever holding the whole
   document (or its full dict form) in memory.
-- `pygixml.jsonify.iterjsonl(source, tag, ...)` — generator yielding
+- `pygixml.jsonify.iterjsonl(source, tag, ...)`: generator yielding
   `StreamElement.to_json()` (one JSON object string per match) for
   every match; intended for building a `.jsonl` file or stream by
   joining yielded lines with `\n` yourself, or forwarding each line
   elsewhere (socket, queue, etc.) without writing to disk at all.
-- `pygixml.jsonify.stream_dump(xml_path, json_path, indent=None)` — the
+- `pygixml.jsonify.stream_dump(xml_path, json_path, indent=None)`: the
   *whole-document* counterpart: streams an entire XML file straight to
   a single valid JSON file on disk, entirely in C++, using an
   in-place seek-and-patch trick on the output file so repeated sibling
   tags still collapse into JSON arrays without buffering whole subtrees
   in memory first.
-- `pygixml.jsonify.stream_to_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536)` —
+- `pygixml.jsonify.stream_to_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536)`:
   the per-tag, **JSON Lines** counterpart to `stream_dump`: streams an
   XML file straight to a `.jsonl` file (one matched element per line),
   entirely in C++. Unlike `iterjsonl`, no `StreamElement` and no
   Python `str`/`dict`/`list` is ever created for the matched elements
-  themselves — each element's JSON object is assembled in a small
+  themselves: each element's JSON object is assembled in a small
   in-memory buffer (bounded by that one element's own subtree, reusing
   the same array/object/repeated-tag bookkeeping as `stream_dump`) and
   written straight to the file. Returns the number of records written.
   Nested same-tag elements (a `tag` appearing *inside* an
   already-matched `tag`) are folded into the outer match as an
-  ordinary nested field rather than emitted as a second record — this
+  ordinary nested field rather than emitted as a second record: this
   only matters for genuinely self-nested tags.
 
 ### Changed
@@ -205,21 +205,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the generator yields JSON *Lines*-shaped output (one independent
   JSON value per matched element), not a single parsed JSON document.
 - `objectify_from_string` and `objectify_from_file` signatures extended with
-  `namespaces=None` and `auto_ns=True` — fully backward compatible.
+  `namespaces=None` and `auto_ns=True`: fully backward compatible.
 - `objectify.py` shim exports `NamespacedElement`.
 - `pygixml/__init__.py` exports `NamespacedElement`.
 
 ### Testing
-- Added `tests/test_jsonify.py` — 9 test classes, ~40 tests covering:
+- Added `tests/test_jsonify.py`: 9 test classes, ~40 tests covering:
   basic structure, valid JSON output, options, `force_list`, pretty printing,
   `dumps_file`, `dumps_node`, consistency with dictify, and edge cases.
-- Added `tests/test_namespace.py` — 7 test classes, ~40 tests covering:
+- Added `tests/test_namespace.py`: 7 test classes, ~40 tests covering:
   auto-detection, dotted access, Clark notation, prefix notation, `findall`,
   ns_map inheritance, real-world Atom feed, and backward compatibility.
 - Added `tests/test_stream.py` covering `iterparse`/`iterfind`/`StreamElement`
   over path, file-like, `str`, and `bytes` sources, including large-document
   constant-memory smoke tests.
-- Added `tests/test_stream_json.py` — `StreamElement.to_dict()`/`to_json()`,
+- Added `tests/test_stream_json.py`: `StreamElement.to_dict()`/`to_json()`,
   `iterdict`, `iterjsonl`, and `stream_to_jsonl`: generator behavior,
   consistency between `iterjsonl`/`iterdict`/`to_json`/`to_dict`,
   `force_list`, custom `attr_prefix`/`cdata_key`, missing-tag and
@@ -230,101 +230,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### `pygixml.objectify` — lxml.objectify-style interface
+#### `pygixml.objectify`: lxml.objectify-style interface
 - New module `objectify` (compiled into `pygixml_cy.so` via `objectify.pxi`)
   providing an lxml.objectify-inspired API for navigating XML with plain Python
   attribute access.
 - `objectify.from_string(xml)` and `objectify.from_file(path)` entry points
   returning an `ObjectifiedElement` wrapping the document root.
-- `ObjectifiedElement` — `cdef class` storing the pugixml `xml_node` struct
+- `ObjectifiedElement`: `cdef class` storing the pugixml `xml_node` struct
   directly at the C level (zero Python wrapper allocation per access).
-- `NodeSequence` — `cdef class` returned when multiple direct siblings share
+- `NodeSequence`: `cdef class` returned when multiple direct siblings share
   a tag; supports indexing (including negative), iteration, and `len()`.
-- **Dotted navigation** — `root.child_tag` finds `<child_tag>` or falls back
+- **Dotted navigation**: `root.child_tag` finds `<child_tag>` or falls back
   to `<child-tag>` (underscore→hyphen mapping).
 - **Automatic type inference** for attribute values and leaf-node text:
   `"true"`/`"false"` → `bool`, integer strings → `int`, decimal/scientific
   strings → `float`, everything else → `str`.
-- **Text access** — `str(elem)` returns raw text (always `str`); calling
+- **Text access**: `str(elem)` returns raw text (always `str`); calling
   `elem()` returns type-inferred text content.
-- **Conflict resolution** — child elements take priority over same-named
+- **Conflict resolution**: child elements take priority over same-named
   attributes in both read and write operations.
-- `elem.get(name, default=None)` — safe attribute read that never raises;
+- `elem.get(name, default=None)`: safe attribute read that never raises;
   mirrors `dict.get()`.
-- `elem.find(tag, recursive=True)` — returns the first matching descendant
+- `elem.find(tag, recursive=True)`: returns the first matching descendant
   element or `None`; hyphen mapping applies.
-- `elem.findall(tag, recursive=True)` — returns all matching descendants in
+- `elem.findall(tag, recursive=True)`: returns all matching descendants in
   document order; hyphen mapping applies.
 - **Write support** via `__setattr__`:
   - Assigns to an existing child element's text content (via `node_pcdata`).
   - Updates an existing attribute value in-place.
   - Creates a new child element when neither exists.
-- **Delete support** via `__delattr__` — removes child elements or attributes
+- **Delete support** via `__delattr__`: removes child elements or attributes
   by name; raises `AttributeError` when not found.
-- `elem.tag` — XML tag name property.
-- `elem.attrib` — all attributes as a `{name: typed_value}` dict; walks the
+- `elem.tag`: XML tag name property.
+- `elem.attrib`: all attributes as a `{name: typed_value}` dict; walks the
   C-level attribute linked list directly.
-- `elem.text_content` — raw text content property, always `str`.
-- `elem.xml` — serialised XML of the node and its subtree.
-- Document lifetime safety — `_doc_ref` slot keeps the owning `XMLDocument`
+- `elem.text_content`: raw text content property, always `str`.
+- `elem.xml`: serialised XML of the node and its subtree.
+- Document lifetime safety: `_doc_ref` slot keeps the owning `XMLDocument`
   alive for the lifetime of any `ObjectifiedElement` wrapper.
 
-#### `pygixml.dictify` — xmltodict-compatible interface
+#### `pygixml.dictify`: xmltodict-compatible interface
 - New module `dictify` (compiled into `pygixml_cy.so` via `dictify.pxi`)
   providing an API compatible with the `xmltodict` library.
-- `dictify.parse(xml, attr_prefix, cdata_key, force_list)` — parses an XML
+- `dictify.parse(xml, attr_prefix, cdata_key, force_list)`: parses an XML
   string into a nested dict following xmltodict conventions:
   - Attributes prefixed with `"@"` (configurable via `attr_prefix`).
   - Text content in mixed nodes stored under `"#text"` (configurable via
     `cdata_key`).
   - Repeated sibling elements automatically collapsed into a list.
   - Empty and whitespace-only elements become `None`.
-  - `force_list` — set of tag names (or `True`) always wrapped in a list.
-- `dictify.parse_file(path, ...)` — same semantics, reads from a file.
-- `dictify.unparse(input_dict, pretty, indent, encoding, ...)` — converts a
+  - `force_list`: set of tag names (or `True`) always wrapped in a list.
+- `dictify.parse_file(path, ...)`: same semantics, reads from a file.
+- `dictify.unparse(input_dict, pretty, indent, encoding, ...)`: converts a
   dict back to an XML string; round-trip compatible with `dictify.parse`.
 
 #### Internal helpers (C-level, not public API)
-- `_node_is_null(xml_node)` — inline null check via `type() == node_null`.
-- `_attr_is_null(xml_attribute)` — inline null check via `name().empty()`
+- `_node_is_null(xml_node)`: inline null check via `type() == node_null`.
+- `_attr_is_null(xml_attribute)`: inline null check via `name().empty()`
   with correct `std::string` copy to avoid `const char*` comparison issues.
-- `_obj_candidate_names(str)` — generates exact + hyphen-form name candidates.
-- `_obj_collect_siblings(xml_node, bytes, doc_ref)` — collects same-tag
+- `_obj_candidate_names(str)`: generates exact + hyphen-form name candidates.
+- `_obj_collect_siblings(xml_node, bytes, doc_ref)`: collects same-tag
   direct siblings using `std::string` comparison for correctness.
-- `_find_first(xml_node, list, bint)` — breadth-first then recursive search.
-- `_find_all(xml_node, list, bint, list, doc_ref)` — collects all matches in
+- `_find_first(xml_node, list, bint)`: breadth-first then recursive search.
+- `_find_all(xml_node, list, bint, list, doc_ref)`: collects all matches in
   document order.
-- `_node_to_obj(xml_node, ...)` — recursive dict builder for `dictify`.
+- `_node_to_obj(xml_node, ...)`: recursive dict builder for `dictify`.
 
 ### Changed
-- `pygixml/__init__.py` — exports `objectify` and `dictify` modules, and
+- `pygixml/__init__.py`: exports `objectify` and `dictify` modules, and
   exposes `ObjectifiedElement`, `NodeSequence`, `objectify_from_string`,
   `objectify_from_file`, `dictify_parse`, `dictify_parse_file`,
   `dictify_unparse` at the package level.
 
 ### Testing
-- Added `tests/test_objectify.py` — 18 test classes, ~210 tests covering:
+- Added `tests/test_objectify.py`: 18 test classes, ~210 tests covering:
   entry points, dotted navigation, hyphen mapping, attribute access, type
   inference, text access, sequence handling, conflict resolution, element
   properties, iteration, equality, GC safety, edge cases, `get()`, `find()`,
   `findall()`, `__setattr__`, and `__delattr__`.
-- Added `tests/test_dictify.py` — 9 test classes, ~40 tests covering:
+- Added `tests/test_dictify.py`: 9 test classes, ~40 tests covering:
   basic structure, attributes, mixed content, repeated siblings, `force_list`,
   CDATA, edge cases, `parse_file`, and `unparse` with roundtrip verification.
 - All **277 tests** passing.
 
 ### Documentation
-- Added `docs/source/objectify.rst` — full Sphinx reference for the objectify
+- Added `docs/source/objectify.rst`: full Sphinx reference for the objectify
   module including type inference table, identifier mapping rules, priority
   rules, write support, and performance notes.
-- Added `docs/source/dictify.rst` — full Sphinx reference for the dictify
+- Added `docs/source/dictify.rst`: full Sphinx reference for the dictify
   module including conversion rules table, `force_list` guide, round-trip
   documentation, and comparison with objectify.
-- Updated `docs/source/index.rst` — objectify and dictify added to features
+- Updated `docs/source/index.rst`: objectify and dictify added to features
   list, core classes table, and toctree.
-- Updated `docs/source/api.rst` — added objectify and dictify automodule
+- Updated `docs/source/api.rst`: added objectify and dictify automodule
   sections.
-- Updated `README.md` — added objectify and dictify sections with full API
+- Updated `README.md`: added objectify and dictify sections with full API
   tables and examples.
 
 

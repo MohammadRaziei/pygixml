@@ -1480,7 +1480,7 @@ cdef class StreamElement:
         * An element with no attributes, no children, and no text
           becomes ``None``.
 
-        This only ever builds ``dict``/``list``/``str`` — no JSON text
+        This only ever builds ``dict``/``list``/``str``: no JSON text
         is produced. See :meth:`to_json` for a direct-to-string version
         that skips building this dict entirely.
         """
@@ -1536,7 +1536,7 @@ cdef class StreamElement:
     def to_json(self, str attr_prefix="@", str cdata_key="#text",
                 object force_list=None):
         """Serialize this element (and its subtree) directly to a JSON
-        ``str`` — **without** ever constructing an intermediate ``dict``
+        ``str``: **without** ever constructing an intermediate ``dict``
         or ``list``, and without using the ``json`` module. Uses the
         same conventions as :meth:`to_dict`/:func:`jsonify.dumps`.
 

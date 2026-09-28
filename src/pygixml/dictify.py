@@ -1,5 +1,5 @@
 """
-pygixml.dictify — XML to dict interface, compatible with xmltodict.
+pygixml.dictify: XML to dict interface, compatible with xmltodict.
 
 All logic lives in dictify.pxi, compiled into pygixml_cy.so.
 

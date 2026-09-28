@@ -1,5 +1,5 @@
 """
-bench_sizes.py — real install footprint (download size, including
+bench_sizes.py: real install footprint (download size, including
 dependencies) for pygixml vs. the competitors this suite benchmarks,
 using pip-size's own Python API directly
 (github.com/MohammadRaziei/pip-size) -- no subprocess, no CLI
@@ -29,7 +29,7 @@ PACKAGES = {
     "lxml":      ("lxml",      "dom, streaming iterparse, objectify"),
     "xmltodict": ("xmltodict", "dom → dict (+ streaming callback mode)"),
     "xmljson":   ("xmljson",   "lxml/ElementTree tree → dict adapter"),
-    "yq":        ("yq",        "cli — jq-style query/convert (installs the `xq` XML binary used below)"),
+    "yq":        ("yq",        "cli: jq-style query/convert (installs the `xq` XML binary used below)"),
     "untangle":  ("untangle",  "dom → lazy attribute-style object (read-only)"),
 }
 

@@ -1,5 +1,5 @@
 """
-generate_report.py — combine every benchmarks/python/*.json result into
+generate_report.py: combine every benchmarks/python/*.json result into
 one standalone HTML report: Chart.js and all the raw JSON data are
 embedded directly in the file (via the vendored
 benchmarks/report/vendor/chart.umd.min.js and inline <script> tags),
@@ -303,7 +303,7 @@ new Chart(document.getElementById('chart-scaling'), {{
         i_ratio = interleaved[-1]["seconds"] / interleaved[0]["seconds"]
         note = (f"N grew {n_ratio:.0f}\u00d7 ({records[0]['n']:,} \u2192 {records[-1]['n']:,}): "
                 f"records-shape time grew {r_ratio:.1f}\u00d7 (linear, tracks N); "
-                f"interleaved-shape time grew {i_ratio:.1f}\u00d7 (superlinear \u2014 approaching the "
+                f"interleaved-shape time grew {i_ratio:.1f}\u00d7 (superlinear, approaching the "
                 f"documented O(n\u00b2) case). The slope, not a single ratio, is the finding.")
 
     dom = scaling.get("dom_competitors_records_shape", {})
@@ -356,14 +356,14 @@ new Chart(document.getElementById('chart-scaling-dom'), {{
 OP_META = [
     {
         "key": "parse",
-        "title": "parse — build a tree from the XML string, discard it",
+        "title": "parse: build a tree from the XML string, discard it",
         "note": "Directly building an in-memory tree from the XML text. xmltodict/xmljson have "
                 "no separate \u201cparse to a "
                 "tree\u201d step distinct from \u201cparse straight to dict\u201d, so they don't appear here.",
     },
     {
         "key": "iterparse",
-        "title": "iterparse — stream every element, never hold the whole document",
+        "title": "iterparse: stream every element, never hold the whole document",
         "note": "Streamed via pygixml.iterfind, against lxml's and ElementTree's own "
                 "iterparse -- real streaming APIs on both sides. Only runs on corpus entries "
                 "with one uniformly repeated element (a config-tree genre genuinely has none, "
@@ -371,13 +371,13 @@ OP_META = [
     },
     {
         "key": "xml_to_json",
-        "title": "JSON — pygixml.jsonify vs the field, one document out",
+        "title": "JSON: pygixml.jsonify vs the field, one document out",
         "note": "XML string in, one JSON document out. ElementTree has no built-in dict/JSON "
                 "conversion at all -- a real gap for it, not an oversight in this chart.",
     },
     {
         "key": "xml_to_jsonl",
-        "title": "JSON Lines — one JSON object per record, streamed",
+        "title": "JSON Lines: one JSON object per record, streamed",
         "note": "The streaming sibling of the panel above: instead of one JSON value for the "
                 "whole document, one JSON object per matching element, read one at a time. "
                 "xmltodict's own item_depth/item_callback streaming mode is the fair reference "
@@ -386,21 +386,21 @@ OP_META = [
     },
     {
         "key": "to_object",
-        "title": "objectify — pygixml.objectify vs lxml.objectify",
+        "title": "objectify: pygixml.objectify vs lxml.objectify",
         "note": "Lazy attribute-style access (root.child.grandchild), matched against lxml's "
                 "own objectify submodule -- a real feature both libraries ship, not an "
                 "improvised comparison.",
     },
     {
         "key": "dict_convert",
-        "title": "dictify (DOM mode) — pygixml.dictify.parse vs xmltodict.parse",
+        "title": "dictify (DOM mode): pygixml.dictify.parse vs xmltodict.parse",
         "note": "Both sides use the same convention (@-prefixed attributes, #text for mixed "
                 "content) so the dicts they produce are structurally identical, not just "
                 "\u201cboth happen to be a dict.\u201d",
     },
     {
         "key": "dict_stream",
-        "title": "dictify (streaming mode) — pygixml.dictify.iterdict vs xmltodict's own item_depth streaming",
+        "title": "dictify (streaming mode): pygixml.dictify.iterdict vs xmltodict's own item_depth streaming",
         "note": "xmltodict genuinely supports streaming too (item_depth + item_callback), not "
                 "just a DOM-only tool being compared unfairly against a streaming one. Same "
                 "record-tag restriction as iterparse.",

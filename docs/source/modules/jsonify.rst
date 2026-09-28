@@ -1,12 +1,12 @@
 .. _jsonify:
 
-Jsonify — XML to JSON
+Jsonify: XML to JSON
 ======================
 
 ``pygixml.jsonify`` serializes XML directly to JSON. "Directly" is the
 operative word: the in-memory entry points (:func:`~pygixml.jsonify.dumps`
 and friends) traverse the pugixml DOM in C++ and write straight into a
-JSON string buffer — no intermediate Python ``dict``/``list`` is ever
+JSON string buffer: no intermediate Python ``dict``/``list`` is ever
 built, unlike going through :func:`pygixml.dictify.parse` followed by
 :func:`json.dumps`. The streaming entry points
 (:func:`~pygixml.jsonify.stream_dump`,
@@ -16,7 +16,7 @@ roughly constant memory.
 
 The output shape matches :func:`pygixml.dictify.parse` exactly (same
 ``@``-prefixed attributes, ``#text`` for mixed content, repeated
-siblings collapsed into arrays) — ``jsonify.dumps(xml)`` is equivalent
+siblings collapsed into arrays): ``jsonify.dumps(xml)`` is equivalent
 to, but faster than, ``json.dumps(dictify.parse(xml))``.
 
 .. code-block:: python
@@ -46,7 +46,7 @@ In-memory entry points
 .. function:: pygixml.jsonify.dumps(source, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8")
    :no-index:
 
-   Smart dispatcher — serializes XML to JSON regardless of what form the
+   Smart dispatcher: serializes XML to JSON regardless of what form the
    XML is already in:
 
    * ``str`` starting with ``<``  →  parsed and serialized (same as
@@ -77,11 +77,11 @@ In-memory entry points
    :raises PygiXMLError: If the XML is malformed.
    :raises TypeError: If ``source``'s type isn't recognized.
    :raises ValueError: If ``source`` is a ``str`` that doesn't look like
-      XML (file paths are rejected here on purpose — use
+      XML (file paths are rejected here on purpose: use
       :func:`~pygixml.jsonify.dumps_file` explicitly for files).
 
    .. note::
-      File input is intentionally excluded from the dispatcher — call
+      File input is intentionally excluded from the dispatcher: call
       :func:`~pygixml.jsonify.dumps_file` directly for a path, so it's
       always unambiguous whether a ``str`` argument is XML content or a
       file path.
@@ -146,7 +146,7 @@ Streaming entry points: constant memory, files in and out
 -------------------------------------------------------------
 
 The functions above all hold the *result* (and, except for
-``dumps_obj``/``dumps_node``, the parsed DOM too) in memory — fine for
+``dumps_obj``/``dumps_node``, the parsed DOM too) in memory: fine for
 documents that fit comfortably in RAM. For documents that don't,
 ``jsonify`` has two streaming converters that go file-to-file, entirely
 in C++, with no pugixml DOM, no Python ``dict``/``list``/``str`` for
@@ -156,7 +156,7 @@ individual elements, and no ``json`` module anywhere in the call chain.
    :no-index:
 
    Convert a (potentially gigantic) XML **file** into a single,
-   standard, valid JSON **file** — in roughly constant memory. Produces
+   standard, valid JSON **file**: in roughly constant memory. Produces
    exactly what :func:`~pygixml.jsonify.dumps_file` would produce (one
    JSON value mirroring the whole document, loadable with a plain
    ``json.load``), just without ever holding the document, or the
@@ -193,21 +193,21 @@ individual elements, and no ``json`` module anywhere in the call chain.
 
    **How it stays constant-memory while still producing valid JSON
    syntax.** A JSON array needs to know, before its closing ``]``,
-   whether more items follow — but the parser only finds that out when
+   whether more items follow: but the parser only finds that out when
    (and if) a second same-tag sibling actually shows up. Rather than
    buffer whole subtrees to be safe, the engine writes optimistically
    and *patches the output file in place* once it learns more:
 
    * The first time a child tag is seen under some parent, nothing
-     extra is written at all — just its value, as a plain (non-array)
+     extra is written at all: just its value, as a plain (non-array)
      field. No placeholder, no reserved byte; a tag that never repeats
      costs nothing beyond its own content.
    * A second sibling with the same tag arrives:
 
      - If it's *adjacent* to the first (the common case for
-       record-oriented XML — same-tag siblings next to each other in
+       record-oriented XML: same-tag siblings next to each other in
        the source), the engine inserts the opening ``[`` and the new
-       value right where the first value ended — an O(1) operation,
+       value right where the first value ended: an O(1) operation,
        and the only one this case ever needs.
      - If a *different* child tag was interleaved in between, the
        engine splices: it shifts the interleaved bytes forward (in
@@ -216,21 +216,21 @@ individual elements, and no ``json`` module anywhere in the call chain.
        time*, not to the file size.
 
    **Time complexity in practice.** For the shape almost all
-   record-oriented giant XML actually has — one repeated tag per
-   nesting level, as in ``<orders><order>...</order>...</orders>`` —
+   record-oriented giant XML actually has: one repeated tag per
+   nesting level, as in ``<orders><order>...</order>...</orders>``:
    every sibling after the first lands via the O(1) adjacent case
    above, so the whole conversion is O(n). It degrades towards O(n²)
    only in an adversarial shape: two or more *different* tags
    repeating and interleaving at the *same* level for many iterations
    (e.g. ``<a>1</a><b>1</b><a>2</a><b>2</b>...`` with no wrapping
-   element around each pair) — there, every catch-up splice for one
+   element around each pair): there, every catch-up splice for one
    tag has to shift past the other tag's *entire, still-growing*
    field, and that cost compounds across iterations. If that's
    genuinely your data's shape, :func:`~pygixml.jsonify.stream_jsonl`
    below sidesteps the problem entirely by not trying to preserve a
-   single JSON document at all. Memory stays O(1) — a small fixed
+   single JSON document at all. Memory stays O(1): a small fixed
    scratch buffer plus one bookkeeping entry per currently-open
-   distinct tag — regardless of which case applies; only the *time*
+   distinct tag: regardless of which case applies; only the *time*
    bound changes.
 
    .. code-block:: python
@@ -255,7 +255,7 @@ individual elements, and no ``json`` module anywhere in the call chain.
    :func:`~pygixml.jsonify.iterjsonl`, no
    :class:`~pygixml.StreamElement` and no Python
    ``str``/``dict``/``list`` is ever created for the matched elements
-   themselves — each element's JSON object is assembled in a small
+   themselves: each element's JSON object is assembled in a small
    in-memory buffer (bounded by that one element's own subtree, the
    same constant-memory model as :func:`~pygixml.iterfind`) and written
    straight to the file.
@@ -284,7 +284,7 @@ individual elements, and no ``json`` module anywhere in the call chain.
       If ``tag`` appears *nested inside* an already-matched element,
       that inner occurrence is folded into the outer match as an
       ordinary nested field (under its own tag-name key) rather than
-      written as a second, separate line — only the outermost
+      written as a second, separate line: only the outermost
       occurrence of a match starts a new JSONL record. This only
       matters for genuinely self-nested tags; a flat list of repeated
       sibling records (the common case) is unaffected.
@@ -322,13 +322,13 @@ Choosing the right entry point
      - :func:`~pygixml.jsonify.stream_jsonl`
    * - One record per line, kept as Python ``str`` objects
      - :func:`~pygixml.jsonify.iterjsonl`
-     - *(inherently produces a Python object per line — see*
+     - *(inherently produces a Python object per line: see*
        :doc:`/core/stream-parser` *for the all-C++ alternative when that's not
        needed)*
    * - Already-parsed ``ObjectifiedElement`` / ``XMLNode``
      - :func:`~pygixml.jsonify.dumps_obj` /
        :func:`~pygixml.jsonify.dumps_node`
-     - *(n/a — already in memory)*
+     - *(n/a: already in memory)*
 
 See :doc:`/core/stream-parser` for ``iterjsonl`` and the rest of the underlying
 constant-memory parsing layer that ``stream_dump`` and

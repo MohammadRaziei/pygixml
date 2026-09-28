@@ -1,5 +1,5 @@
 """
-real_corpus_manifest.py — turn a directory of real-world XML files
+real_corpus_manifest.py: turn a directory of real-world XML files
 (fetched by CMake, see benchmarks/cmake/FetchRealCorpus.cmake) into a
 manifest.json in the same shape corpus.py's synthetic corpus uses, so
 bench_throughput.py can run against real and synthetic data through

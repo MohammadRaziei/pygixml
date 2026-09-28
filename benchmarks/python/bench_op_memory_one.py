@@ -1,5 +1,5 @@
 """
-bench_op_memory_one.py — measure peak RSS for ONE (operation, library,
+bench_op_memory_one.py: measure peak RSS for ONE (operation, library,
 corpus file) combination, in THIS process, and print one JSON line to
 stdout. This is the "worker" half of the pair with
 bench_op_memory_driver.py: it never reads the manifest, never loops,

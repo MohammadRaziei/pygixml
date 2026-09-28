@@ -1,7 +1,7 @@
 # jsonify.pxi
 # -----------
 # Converts an xml_node tree directly to a JSON string via a C++ string
-# buffer — no Python dict/list/str is allocated during traversal.
+# buffer: no Python dict/list/str is allocated during traversal.
 # Only one Python str object is created at the very end.
 #
 # Public API:
@@ -38,7 +38,7 @@ cdef extern from *:
                 case '\\t': out += "\\\\t";  break;
                 default:
                     if (c < 0x20) {
-                        // control character — emit \\\\uXXXX
+                        // control character: emit \\\\uXXXX
                         char buf[8];
                         snprintf(buf, sizeof(buf), "\\\\u%04x", c);
                         out += buf;
@@ -139,7 +139,7 @@ cdef extern from *:
             json_escape(text, buf);
         }
 
-        // child elements — track which tags have been emitted
+        // child elements: track which tags have been emitted
         std::unordered_set<std::string> emitted;
         for (pugi::xml_node c = node.first_child(); c; c = c.next_sibling()) {
             if (c.type() != pugi::node_element) continue;
@@ -188,7 +188,7 @@ cdef extern from *:
     }
 
     // ---------------------------------------------------------------------------
-    // Top-level entry — wraps root in {"tag": ...}
+    // Top-level entry: wraps root in {"tag": ...}
     // ---------------------------------------------------------------------------
     static std::string xml_node_to_json(
         pugi::xml_node     root,
@@ -225,7 +225,7 @@ cdef extern from *:
         return buf;
     }
 
-    // xml_node_to_json_with_set — accepts Python set directly via CPython API
+    // xml_node_to_json_with_set: accepts Python set directly via CPython API
     static std::string xml_node_to_json_with_set(
         pugi::xml_node root,
         const char*    attr_prefix,
@@ -1040,7 +1040,7 @@ cdef extern from *:
         const char* indent
     ) except +
 
-    # direct overload with pre-built set — used by _do_jsonify
+    # direct overload with pre-built set: used by _do_jsonify
     string xml_node_to_json_set "xml_node_to_json_with_set"(
         xml_node    root,
         const char* attr_prefix,
@@ -1076,7 +1076,7 @@ cdef extern from *:
 # Reuses PJLevel / PJChildSlot / pgj_is_ws / pgj_all_ws from the block
 # above (same translation unit, so they're already visible here) and adds
 # only what differs from xml_stream_to_json_file:
-#   * PJStrEditor — an in-memory analog of PJFileEditor. Each matched
+#   * PJStrEditor: an in-memory analog of PJFileEditor. Each matched
 #     element's own JSON object is assembled in ONE std::string (bounded
 #     by that single element's subtree, not the whole document), using
 #     the exact same array/object/repeated-tag bookkeeping as the
@@ -1514,7 +1514,7 @@ cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
     """Call the C++ serializer and return a Python str.
 
     *doc_ref* keeps the owning XMLDocument alive for the duration of the
-    C++ serialization call — pass it whenever root comes from an
+    C++ serialization call: pass it whenever root comes from an
     ObjectifiedElement or NamespacedElement.
     """
     cdef bytes ap_b      = attr_prefix.encode(encoding)
@@ -1635,7 +1635,7 @@ def jsonify_dumps_node(object node,
             f"expected XMLNode, got {type(node).__name__!r}"
         )
     cdef xml_node raw = (<XMLNode>node)._node
-    # Note: XMLNode does not hold a doc_ref — caller must keep XMLDocument alive
+    # Note: XMLNode does not hold a doc_ref: caller must keep XMLDocument alive
     return _do_jsonify(raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
 
 
@@ -1646,7 +1646,7 @@ def jsonify_dumps(object source,
                   bint   pretty      = False,
                   str    indent      = u"\t",
                   str    encoding    = u"utf-8"):
-    """Serialize XML to JSON — smart dispatcher.
+    """Serialize XML to JSON: smart dispatcher.
 
     Routes automatically based on *source* type:
 
@@ -1655,7 +1655,7 @@ def jsonify_dumps(object source,
     * :class:`pygixml.XMLNode`                   →  :func:`jsonify_dumps_node`
 
     .. note::
-        File input is intentionally excluded from the dispatcher —
+        File input is intentionally excluded from the dispatcher:
         use :func:`jsonify_dumps_file` explicitly for files.
 
     Args:
@@ -1681,7 +1681,7 @@ def jsonify_dumps(object source,
         jsonify.dumps("<root id=\'1\'><item>x</item></root>")
         jsonify.dumps(root.user_profile)   # ObjectifiedElement
         jsonify.dumps(doc.root)            # XMLNode
-        jsonify.dumps_file("data.xml")     # file — explicit
+        jsonify.dumps_file("data.xml")     # file: explicit
     """
     if isinstance(source, ObjectifiedElement):
         return jsonify_dumps_obj(source, attr_prefix, cdata_key,
@@ -1698,8 +1698,8 @@ def jsonify_dumps(object source,
             f"For files use jsonify.dumps_file() explicitly."
         )
     raise TypeError(
-        f"jsonify.dumps() expects str, ObjectifiedElement, or XMLNode "
-        f"— got {type(source).__name__!r}. "
+        f"jsonify.dumps() expects str, ObjectifiedElement, or XMLNode, "
+        f"got {type(source).__name__!r}. "
         f"For files use jsonify.dumps_file() explicitly."
     )
 
@@ -1716,16 +1716,16 @@ def jsonify_stream_dump(
     size_t io_buf_size=65536,
 ):
     """Convert a (potentially gigantic) XML file to a single, **standard,
-    valid JSON document** — in roughly constant memory.
+    valid JSON document**: in roughly constant memory.
 
-    Unlike :func:`stream_jsonl` (which writes JSON *Lines* — one
+    Unlike :func:`stream_jsonl` (which writes JSON *Lines*: one
     independent object per line, by design, to sidestep the
     "do I need an array bracket" problem), this function produces exactly
     what :func:`dumps`/:func:`dumps_file` would produce: one JSON value
     (an object, mirroring the XML root) that round-trips through a
     normal ``json.load`` like any other JSON file. No pugixml DOM, no
-    Python ``dict``/``list``, and no ``json`` module are used internally
-    — every byte is hand-emitted in C++, the same as
+    Python ``dict``/``list``, and no ``json`` module are used internally:
+    every byte is hand-emitted in C++, the same as
     :func:`stream_jsonl`.
 
     How it stays (mostly) constant-memory while still producing valid
@@ -1739,7 +1739,7 @@ def jsonify_stream_dump(
       written as a plain (non-array) value.
     * If a second sibling with the same tag shows up, that one
       placeholder byte is overwritten with ``[`` (an O(1) patch), and the
-      new value is appended right after the first — this is the common
+      new value is appended right after the first: this is the common
       case when same-tag siblings are adjacent in the XML, and it never
       needs to move any bytes around.
     * If XML interleaves a different child in between two same-tag
@@ -1751,7 +1751,7 @@ def jsonify_stream_dump(
 
     Because of that splice fallback, worst-case time can exceed
     :func:`stream_jsonl`'s for documents where repeated sibling
-    tags are heavily interleaved with unrelated children — for typical
+    tags are heavily interleaved with unrelated children: for typical
     record-oriented XML (where ``<tag>`` repeats appear consecutively)
     this never triggers and the function runs at full streaming speed.
 
@@ -1771,7 +1771,7 @@ def jsonify_stream_dump(
         when only one sibling exists for a given parent. Pass ``True``
         to force *every* child tag into an array. Default *None*
         (a tag becomes an array only when more than one sibling with
-        that name actually appears under the same parent) — matching
+        that name actually appears under the same parent): matching
         :func:`dumps`'s default behaviour.
     indent : int
         Number of spaces to indent nested structures with, following

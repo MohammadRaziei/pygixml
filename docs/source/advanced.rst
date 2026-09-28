@@ -20,7 +20,7 @@ Quick Example
 
    import pygixml
 
-   # Fastest possible parse — skip everything optional
+   # Fastest possible parse: skip everything optional
    doc = pygixml.parse_string(xml, pygixml.ParseFlags.MINIMAL)
 
    # Combine specific flags with bitwise OR
@@ -41,7 +41,7 @@ Available Flags
    * - Flag
      - What it enables
    * - ``ParseFlags.MINIMAL``
-     - No optional processing — fastest parse.  Skips escapes, EOL
+     - No optional processing: fastest parse.  Skips escapes, EOL
        normalization, and all whitespace handling.
    * - ``ParseFlags.COMMENTS``
      - Parse ``<!--comment-->`` nodes.  Without this flag, comments are
@@ -83,7 +83,7 @@ Available Flags
      - All standard processing enabled.  This is the default when no flag
        is specified.
    * - ``ParseFlags.FULL``
-     - Same as ``DEFAULT`` — full XML compliance.
+     - Same as ``DEFAULT``: full XML compliance.
 
 When to Use MINIMAL
 ~~~~~~~~~~~~~~~~~~~
@@ -134,14 +134,14 @@ Reading Text Content
 
 Depending on how much of the tree you need to read, choose the right accessor:
 
-``value`` — direct access
+``value``: direct access
    Returns the raw value of the node. For **text nodes**, this is the content. For **element nodes**, this returns the value of the first text/CDATA child (or ``None`` if no text exists). This is a convenient shortcut that shadows the underlying child-access.
 
    .. code-block:: python
 
       item.value  # Returns "Hello" (from first text child)
 
-``child_value()`` — targeted single child
+``child_value()``: targeted single child
    Returns the text of the first child element, or the child with a specific tag. It does **not** recurse. Best for simple key-value XML where elements hold a single text node.
 
    .. code-block:: python
@@ -149,7 +149,7 @@ Depending on how much of the tree you need to read, choose the right accessor:
       doc.root.child_value()          # "Hello"
       doc.root.child_value("title")   # "Python 101"
 
-``text()`` — full recursive extraction
+``text()``: full recursive extraction
    Walks the entire subtree, collecting **all** text and CDATA nodes, and joins them. Use this when you need to extract all text from mixed content.
 
    .. code-block:: python
@@ -276,13 +276,13 @@ biggest impact on traversal speed.
 Node Identity and Fast Lookup
 -----------------------------
 
-Each :class:`~pygixml.XMLNode` exposes a :attr:`~pygixml.XMLNode.mem_id` —
+Each :class:`~pygixml.XMLNode` exposes a :attr:`~pygixml.XMLNode.mem_id`:
 a unique numeric identifier derived from the node's internal address.
 Unlike pugixml, which works exclusively with C++ object references, pygixml
 makes this identifier available as a plain Python integer.
 
-Because ``mem_id`` is hashable, it is **ideal for use as a dictionary key**
-— a common pattern when building indexes, caches, or associating extra data
+Because ``mem_id`` is hashable, it is **ideal for use as a dictionary key**,
+a common pattern when building indexes, caches, or associating extra data
 with specific nodes:
 
 .. code-block:: python
@@ -297,7 +297,7 @@ with specific nodes:
 
 There are two ways to look up a node by its identifier:
 
-:meth:`~pygixml.XMLNode.find_mem_id` — safe, **O(n)**
+:meth:`~pygixml.XMLNode.find_mem_id`: safe, **O(n)**
    Walks the tree from the current node, comparing identifiers.  Returns
    ``None`` if the node is not found.
 
@@ -306,9 +306,9 @@ There are two ways to look up a node by its identifier:
       node_id = item.mem_id
       found = root.find_mem_id(node_id)   # safe, but O(n)
 
-:meth:`~pygixml.XMLNode.from_mem_id_unsafe` — instant, **O(1)**
+:meth:`~pygixml.XMLNode.from_mem_id_unsafe`: instant, **O(1)**
    Reconstructs an ``XMLNode`` directly from the identifier.  No tree
-   traversal — the lookup is instantaneous.
+   traversal: the lookup is instantaneous.
 
    .. code-block:: python
 
@@ -320,7 +320,7 @@ There are two ways to look up a node by its identifier:
    segmentation fault**.  Use this only when you are certain the identifier
    still belongs to a live node.
 
-**Which to choose?**  For most code, ``find_mem_id`` is the right choice —
+**Which to choose?**  For most code, ``find_mem_id`` is the right choice:
 it's safe and fast enough for typical use.  ``from_mem_id_unsafe`` is
 reserved for performance-critical hot paths where you've profiled and
 confirmed that the **O(n)** tree walk is a bottleneck.

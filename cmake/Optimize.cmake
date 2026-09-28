@@ -39,7 +39,7 @@ elseif(MSVC)
         /GL          # Whole-program optimization
     )
 
-# Unknown compiler — use conservative defaults
+# Unknown compiler: use conservative defaults
 else()
     message(STATUS "Optimize: unknown compiler '${CMAKE_CXX_COMPILER_ID}', using safe defaults")
     set(OPT_FLAGS_RELEASE -O2 -DNDEBUG)

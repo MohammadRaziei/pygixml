@@ -1,5 +1,5 @@
 """
-bench_throughput.py — parse and conversion throughput, across every
+bench_throughput.py: parse and conversion throughput, across every
 genre/size in the corpus, for every library that's installed.
 
 pygixml is not "a JSON library" -- it's a set of independent

@@ -1,5 +1,5 @@
 """
-corpus.py — deterministic XML corpus generator for the pygixml
+corpus.py: deterministic XML corpus generator for the pygixml
 benchmark suite.
 
 Methodology note (documented here, and in benchmarks/README.md): this
@@ -10,7 +10,7 @@ trees, flat record lists) at several sizes, plus a wide N-sweep used
 specifically for the scaling/memory story. We chose synthetic
 generation over fetching an external corpus so every genre's shape
 (nesting depth, attribute density, repetition pattern) is known and
-controllable — which matters here specifically because pygixml's
+controllable: which matters here specifically because pygixml's
 complexity characteristics (see docs/source/jsonify.rst) depend on
 *shape*, not just size, and a benchmark that can't control shape can't
 tell that story. Nothing here is tuned to make pygixml look good; the

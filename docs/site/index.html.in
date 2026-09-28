@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>pygixml — the Python Giant XML framework</title>
+<title>pygixml: the Python Giant XML framework</title>
 <meta name="description" content="pugixml's C++ DOM, an inlined yxml streaming parser, and Cython. dictify, objectify, jsonify, and a CLI, all in one extension.">
 <link rel="icon" href="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml-ico.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">

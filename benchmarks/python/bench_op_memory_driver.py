@@ -1,5 +1,5 @@
 """
-bench_op_memory_driver.py — orchestrate bench_op_memory_one.py across
+bench_op_memory_driver.py: orchestrate bench_op_memory_one.py across
 every (corpus entry, operation, library) combination and combine the
 results into throughput_memory.json.
 

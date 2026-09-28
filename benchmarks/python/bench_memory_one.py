@@ -1,5 +1,5 @@
 """
-bench_memory_one.py — measure ONE (approach, input file) memory AND
+bench_memory_one.py: measure ONE (approach, input file) memory AND
 speed data point, in THIS process, and write ONE small result JSON.
 
 Deliberately does not loop over sizes or spawn subprocesses itself --

@@ -440,7 +440,7 @@ class TestEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# 14. get() — safe attribute access
+# 14. get(): safe attribute access
 # ---------------------------------------------------------------------------
 
 class TestGet:
@@ -485,7 +485,7 @@ class TestGet:
 
 
 # ---------------------------------------------------------------------------
-# 15. find() — first matching descendant
+# 15. find(): first matching descendant
 # ---------------------------------------------------------------------------
 
 class TestFind:
@@ -529,7 +529,7 @@ class TestFind:
 
 
 # ---------------------------------------------------------------------------
-# 16. findall() — all matching descendants
+# 16. findall(): all matching descendants
 # ---------------------------------------------------------------------------
 
 class TestFindAll:
@@ -567,7 +567,7 @@ class TestFindAll:
 
 
 # ---------------------------------------------------------------------------
-# 17. __setattr__ — write support
+# 17. __setattr__: write support
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
@@ -604,7 +604,7 @@ class TestSetAttr:
 
     def test_set_existing_attribute(self, mutable):
         mutable.version = "2.0"
-        # type inference converts "2.0" back to float on read — that's correct
+        # type inference converts "2.0" back to float on read: that's correct
         assert mutable.attrib['version']() == 2.0
 
     def test_set_attribute_int_stored_as_string(self, mutable):
@@ -624,7 +624,7 @@ class TestSetAttr:
         assert str(mutable.user_profile.first_name) == "Ali"
 
     def test_set_hyphen_tag(self, mutable):
-        # user_profile → <user-profile>, sets its text? No — sets child text.
+        # user_profile → <user-profile>, sets its text? No: sets child text.
         # Here we test that hyphen mapping works for attribute set
         mutable.user_profile.id = 999
         assert mutable.user_profile.attrib['id']() == 999
@@ -644,13 +644,13 @@ class TestSetAttr:
         assert str(mutable.host) == "second"
 
     def test_set_reserved_names_do_not_touch_xml(self, mutable):
-        # _node and _doc_ref are cdef fields — setting them via __setattr__
+        # _node and _doc_ref are cdef fields: setting them via __setattr__
         # must not forward to XML. Verify by checking no XML child is created.
         before_len = len(mutable)
         try:
             mutable._doc_ref = None   # should go to object, not XML
         except (AttributeError, TypeError):
-            pass  # cdef class may reject it — that's also fine
+            pass  # cdef class may reject it: that's also fine
         assert len(mutable) == before_len   # no new child was created
 
     def test_xml_reflects_change(self, mutable):
@@ -664,7 +664,7 @@ class TestSetAttr:
 
 
 # ---------------------------------------------------------------------------
-# 18. __delattr__ — delete support
+# 18. __delattr__: delete support
 # ---------------------------------------------------------------------------
 
 class TestDelAttr:
@@ -826,7 +826,7 @@ class TestNamespace:
 
 
 # ---------------------------------------------------------------------------
-# 19. AttributeValue — lazy wrapper
+# 19. AttributeValue: lazy wrapper
 # ---------------------------------------------------------------------------
 
 class TestAttributeValue:
@@ -856,7 +856,7 @@ class TestAttributeValue:
         assert str(r.attrib["city"]) == "تهران"
 
     def test_raw_returns_bytes(self, root):
-        # attrib returns typed values — raw bytes not needed
+        # attrib returns typed values: raw bytes not needed
         assert root.attrib["name"] == "users_db"
 
     def test_repr(self, root):
@@ -882,7 +882,7 @@ class TestAttributeValue:
 
 
 # ---------------------------------------------------------------------------
-# 20. AttributeMap — dict-like view
+# 20. AttributeMap: dict-like view
 # ---------------------------------------------------------------------------
 
 class TestAttributeMap:
@@ -977,7 +977,7 @@ class TestAttributeMap:
 class TestNoAttributeFallback:
 
     def test_dotted_access_only_children(self, root):
-        # root.name should raise now — no child <name>, no fallback to attr
+        # root.name should raise now: no child <name>, no fallback to attr
         with pytest.raises(AttributeError):
             root.name   # attribute "name" exists but no child <name>
 
@@ -998,7 +998,7 @@ class TestNoAttributeFallback:
 
 
 # ---------------------------------------------------------------------------
-# 22. from_node — wrap XMLNode as ObjectifiedElement
+# 22. from_node: wrap XMLNode as ObjectifiedElement
 # ---------------------------------------------------------------------------
 
 class TestFromNode:

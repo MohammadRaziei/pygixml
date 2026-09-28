@@ -3,7 +3,7 @@
 Command Line Tools
 ===================
 
-pygixml installs one entry point, ``pygixml``, with five subcommands —
+pygixml installs one entry point, ``pygixml``, with five subcommands:
 no Python code required for one-off queries, conversions, pretty-printing,
 or filtering giant files from a shell pipeline. Every subcommand also
 works spelled out as ``python -m pygixml <subcommand>``, which is handy
@@ -24,11 +24,11 @@ haven't activated).
      - Use it for
    * - ``pygixml cat``
      - full DOM
-     - pretty-print (and colorize) an XML file for the terminal — the
+     - pretty-print (and colorize) an XML file for the terminal: the
        XML analog of ``bat``/``jq -C``
    * - ``pygixml query``
      - full DOM
-     - ad-hoc XPath / dotted queries — a ``jq``/``xq``-style tool for
+     - ad-hoc XPath / dotted queries: a ``jq``/``xq``-style tool for
        XML you can fit in memory
    * - ``pygixml jsonify`` (``json`` alias)
      - DOM *or* streamed
@@ -42,12 +42,12 @@ haven't activated).
        memory
 
 If you're not sure which one you need: ``cat``/``query``/``convert``
-load the whole document, same as :func:`pygixml.parse_file` would —
+load the whole document, same as :func:`pygixml.parse_file` would:
 fine for anything that comfortably fits in RAM. ``jsonify`` switches to
 a constant-memory streamed conversion automatically once a file crosses
 64MB (see :doc:`/modules/jsonify`). ``stream`` never loads more than one matched
 element at a time, so it's the only one of the five safe for a file
-that's genuinely too large to fit in memory — see :doc:`/core/stream-parser` for
+that's genuinely too large to fit in memory: see :doc:`/core/stream-parser` for
 the underlying constant-memory parsing layer it's built on.
 
 ----
@@ -57,7 +57,7 @@ the underlying constant-memory parsing layer it's built on.
 
 Pretty-print an XML file, with syntax coloring on a real terminal if
 `colorama <https://pypi.org/project/colorama/>`_ is installed. This is
-the XML analog of tools like ``bat`` or ``jq -C`` — you're looking at a
+the XML analog of tools like ``bat`` or ``jq -C``: you're looking at a
 file, not piping it into something else.
 
 .. code-block:: bash
@@ -91,7 +91,7 @@ file, not piping it into something else.
      - Write the result here instead of stdout.
 
 If colorama isn't installed, ``cat`` still works exactly the same,
-just without color — plain, pretty-printed XML, same as
+just without color: plain, pretty-printed XML, same as
 ``--color never``. Install it (along with YAML/TOON support for
 ``convert``) with ``pip install pygixml[all]``.
 
@@ -104,7 +104,7 @@ source even though pugixml's own serializer doesn't round-trip it.
 ------------------
 
 Query an XML file with either XPath or a ``lxml.objectify``-style
-dotted path — a ``jq``/``xq`` for XML you can fit in memory. See
+dotted path: a ``jq``/``xq`` for XML you can fit in memory. See
 :doc:`/core/dom-parser` and :doc:`/modules/objectify` for the underlying query languages.
 
 .. code-block:: bash
@@ -154,7 +154,7 @@ dotted path — a ``jq``/``xq`` for XML you can fit in memory. See
      - Suppress per-file error messages (still reflected in the exit code).
 
 Exit code is ``0`` if at least one match was found (across all files),
-``1`` otherwise — the same convention as ``grep``.
+``1`` otherwise: the same convention as ``grep``.
 
 ----
 
@@ -199,7 +199,7 @@ same subcommand.
        automatic size-based choice below.
 
 Automatically switches to :func:`~pygixml.jsonify.stream_dump`
-(constant memory — see :doc:`/modules/jsonify` for its complexity
+(constant memory: see :doc:`/modules/jsonify` for its complexity
 characteristics) for files over 64MB; ``--stream``/``--no-stream``
 force one mode or the other regardless of size. Both modes produce
 byte-identical output for the same input and options.
@@ -210,7 +210,7 @@ byte-identical output for the same input and options.
 -------------------
 
 Read a (possibly giant) file once, tag by tag, via
-:func:`pygixml.iterparse`, and emit matching elements as JSON — never
+:func:`pygixml.iterparse`, and emit matching elements as JSON: never
 holding more than one matched element's subtree in memory at a time.
 This is the tool for a file too large for ``pygixml query``/``jsonify``'s
 DOM mode.
@@ -252,7 +252,7 @@ DOM mode.
      - Filter, e.g. ``"price>10"`` or ``"@status=shipped"``. Repeatable;
        all conditions must hold (AND). Supports ``=``, ``!=``, ``>``,
        ``<``, ``>=``, ``<=``. The left-hand side is either ``@attr`` or
-       a child path (``customer``, ``items/item/sku`` — same syntax as
+       a child path (``customer``, ``items/item/sku``: same syntax as
        :meth:`pygixml.StreamElement.findtext`).
    * - ``--format {jsonl,array}``, ``-f``
      - ``jsonl`` (default): one JSON object per line. ``array``: a

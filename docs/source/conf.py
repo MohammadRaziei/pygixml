@@ -50,6 +50,12 @@ extensions = [
 # Usually you set "language" from the command line for these cases.
 language = 'en'
 
+# Render "--" / "---" as literal hyphens instead of auto-converting them to
+# en/em dashes: this project's style avoids dash characters entirely, and
+# without this docutils' smart-dashes transform would silently reintroduce
+# them into every rendered page regardless of what's in the .rst source.
+smartquotes_action = 'qe'
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.

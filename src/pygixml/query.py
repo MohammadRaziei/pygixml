@@ -1,5 +1,5 @@
 """
-pygixml.query — command-line XML query tool.
+pygixml.query: command-line XML query tool.
 
 Supports two query syntaxes:
 
@@ -47,11 +47,11 @@ def _parse_dotted(query: str) -> list:
     """Parse a dotted query string into a list of steps.
 
     Each step is one of:
-      ('child',  'tag_name')       — child element
-      ('attr',   'attr_name')      — attribute (prefixed with @)
-      ('index',  int)              — [N] indexing (0-based)
-      ('all',    None)             — [*] all siblings
-      ('text',   None)             — text() content
+      ('child',  'tag_name')       : child element
+      ('attr',   'attr_name')      : attribute (prefixed with @)
+      ('index',  int)              : [N] indexing (0-based)
+      ('all',    None)             : [*] all siblings
+      ('text',   None)             : text() content
 
     Example:
       ".database.user_profile.@id"
@@ -64,7 +64,7 @@ def _parse_dotted(query: str) -> list:
         raise ValueError(f"Dotted query must start with '.', got {query!r}")
 
     steps = []
-    # strip leading dot and split on '.' — but preserve [n] suffixes
+    # strip leading dot and split on '.': but preserve [n] suffixes
     parts = query[1:].split(".")
     for part in parts:
         if not part:
@@ -95,7 +95,7 @@ def _parse_dotted(query: str) -> list:
 def _execute_dotted(root, steps: list) -> list:
     """Execute parsed dotted steps against an ObjectifiedElement root.
 
-    Returns a flat list of results — each item is either:
+    Returns a flat list of results: each item is either:
       - an ObjectifiedElement (for child/all steps)
       - a scalar (str/int/float/bool) for @attr or text() steps
     """
@@ -152,7 +152,7 @@ def _execute_dotted(root, steps: list) -> list:
 
 
 def _last_child_name(node) -> str:
-    """Return the tag name of the last accessed child — used for [N] indexing.
+    """Return the tag name of the last accessed child: used for [N] indexing.
 
     Since we process steps sequentially, the index step follows a child step,
     so we re-access via the tag collected in the previous step.
@@ -305,9 +305,9 @@ def query(
 
     Args:
         source (str): XML file path, ``"-"`` for stdin, or XML string.
-        q (str): Query — XPath (starting with ``/``) or dotted
+        q (str): Query: XPath (starting with ``/``) or dotted
             (starting with ``.``).
-        fmt (str): Output format — ``"value"`` (default), ``"xml"``,
+        fmt (str): Output format: ``"value"`` (default), ``"xml"``,
             ``"json"``, ``"text"``.
         pretty (bool): Pretty-print JSON or XML output.
         encoding (str): File encoding. Default ``"utf-8"``.
@@ -428,7 +428,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--quiet", "-q",
         action="store_true",
         default=False,
-        help="Suppress errors — exit 1 on no results, 0 on match.",
+        help="Suppress errors: exit 1 on no results, 0 on match.",
     )
     return p
 
@@ -437,7 +437,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
 
     # Special case: last positional is the query, rest are files.
-    # argparse can't do this natively — we split manually.
+    # argparse can't do this natively: we split manually.
     args = parser.parse_args(argv)
 
     files = args.files

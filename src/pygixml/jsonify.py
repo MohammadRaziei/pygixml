@@ -1,15 +1,15 @@
 """
-pygixml.jsonify — direct XML → JSON serialization.
+pygixml.jsonify: direct XML → JSON serialization.
 
 All heavy lifting is done in C++ (jsonify.pxi compiled into pygixml_cy.so).
-No Python dict/list is allocated during traversal — only one str at the end
+No Python dict/list is allocated during traversal: only one str at the end
 (or, for the streaming entry point below, not even that).
 
 Usage::
 
     from pygixml import jsonify
 
-    # smart dispatcher — str or ObjectifiedElement or XMLNode
+    # smart dispatcher: str or ObjectifiedElement or XMLNode
     jsonify.dumps("<root/>")
     jsonify.dumps(root.user_profile)          # ObjectifiedElement
     jsonify.dumps(doc.root)                   # XMLNode
@@ -26,11 +26,11 @@ Usage::
     jsonify.dumps(xml, force_list={"item"})
 
     # streaming, constant-memory conversion for gigantic files:
-    # pure C++ (yxml + hand-written JSON writer) — no pugixml DOM, no
+    # pure C++ (yxml + hand-written JSON writer): no pugixml DOM, no
     # Python dict/list, no `json` module, anywhere in the call chain.
 
     # -> JSON Lines / streaming: use jsonify.iterjsonl() (a generator) instead
-    #    of a file-based function — write the file yourself if you need one:
+    #    of a file-based function: write the file yourself if you need one:
     #        with open("out.jsonl", "w") as f:
     #            for line in jsonify.iterjsonl("huge.xml", "record"):
     #                f.write(line + "\\n")

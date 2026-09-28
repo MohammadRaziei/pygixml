@@ -1,5 +1,5 @@
 """
-bench_memory_gen.py — write the N-sweep of record-shaped XML files
+bench_memory_gen.py: write the N-sweep of record-shaped XML files
 used by the memory benchmark, and nothing else.
 
 This is deliberately a separate script from bench_memory_one.py (the

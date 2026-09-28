@@ -1,5 +1,5 @@
 """
-pygixml.formats — convert structured data between XML, JSON, YAML, and
+pygixml.formats: convert structured data between XML, JSON, YAML, and
 TOON, all through one common representation: a plain Python dict, in
 the same shape :func:`pygixml.dictify.parse` produces (``@attr`` /
 ``#text`` / repeated-siblings-as-list).

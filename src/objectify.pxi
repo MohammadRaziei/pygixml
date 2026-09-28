@@ -13,7 +13,7 @@
 #       objectify_from_file   as from_file)
 
 # ---------------------------------------------------------------------------
-# Encoding support — maps Python strings to pugixml xml_encoding enum
+# Encoding support: maps Python strings to pugixml xml_encoding enum
 # ---------------------------------------------------------------------------
 
 cdef extern from "pugixml.hpp" namespace "pugi":
@@ -85,7 +85,7 @@ cdef xml_encoding _str_to_encoding(str enc):
         return encoding_latin1
     if e == "wchar":
         return encoding_wchar
-    # default — auto-detect from BOM / XML declaration
+    # default: auto-detect from BOM / XML declaration
     return encoding_auto
 
 
@@ -231,9 +231,9 @@ cdef list _resolve_tag(str tag, dict nsmap):
             if prefix:
                 return [f"{prefix}:{local}"]
             else:
-                return [local]          # default namespace — no prefix in pugixml
-        return [local]                  # uri not in map — fall back to local name
-    # Not Clark notation — use normal candidate expansion
+                return [local]          # default namespace: no prefix in pugixml
+        return [local]                  # uri not in map: fall back to local name
+    # Not Clark notation: use normal candidate expansion
     return _obj_candidate_names(tag, nsmap)
 
 
@@ -312,25 +312,25 @@ _OBJ_RESERVED = frozenset({"_node", "_doc_ref", "_nsmap"})
 
 
 # ---------------------------------------------------------------------------
-# AttributeValue — lazy wrapper around a single xml_attribute
+# AttributeValue: lazy wrapper around a single xml_attribute
 # ---------------------------------------------------------------------------
 
 cdef class AttributeValue:
     """Lazy wrapper around a single XML attribute.
 
-    Holds the C-level ``xml_attribute`` struct directly — no string copy
+    Holds the C-level ``xml_attribute`` struct directly: no string copy
     or type conversion is performed until explicitly requested.
 
     Access patterns
     ---------------
-    * ``str(av)``      — raw value as ``str`` (cheap: one UTF-8 decode)
-    * ``av()``         — type-inferred value (bool > int > float > str)
-    * ``av.str()``     — explicit ``str``
-    * ``av.int()``     — explicit ``int``
-    * ``av.float()``   — explicit ``float``
-    * ``av.bool()``    — explicit ``bool``
-    * ``av.name``      — attribute name as ``str``
-    * ``av.raw``       — raw bytes (no decode — zero-cost)
+    * ``str(av)``      : raw value as ``str`` (cheap: one UTF-8 decode)
+    * ``av()``         : type-inferred value (bool > int > float > str)
+    * ``av.str()``     : explicit ``str``
+    * ``av.int()``     : explicit ``int``
+    * ``av.float()``   : explicit ``float``
+    * ``av.bool()``    : explicit ``bool``
+    * ``av.name``      : attribute name as ``str``
+    * ``av.raw``       : raw bytes (no decode: zero-cost)
 
     All conversion methods accept an optional *encoding* parameter
     (default ``"utf-8"``).
@@ -397,36 +397,36 @@ cdef class AttributeValue:
 
     @property
     def raw(self):
-        """Raw attribute value as ``bytes`` — zero-cost, no decode."""
+        """Raw attribute value as ``bytes``: zero-cost, no decode."""
         cdef string v = self._attr.value()
         return bytes(v)
 
 
 # ---------------------------------------------------------------------------
-# AttributeMap — dict-like view of all attributes on a node
+# AttributeMap: dict-like view of all attributes on a node
 # ---------------------------------------------------------------------------
 
 cdef class AttributeMap:
     """Dict-like view of all XML attributes on a node.
 
     Provides attribute access via dotted notation, indexing, iteration,
-    and safe ``get()``.  Each access returns a lazy :class:`AttributeValue`
-    — no string conversion until you ask for it.
+    and safe ``get()``.  Each access returns a lazy :class:`AttributeValue`:
+    no string conversion until you ask for it.
 
     Access patterns
     ---------------
-    * ``am.id``              — ``AttributeValue`` for attribute ``id``
-    * ``am["id"]``           — same via ``__getitem__``
-    * ``am.get("id")``       — ``AttributeValue`` or *default*
-    * ``str(am.id)``         — raw string value
-    * ``am.id()``            — type-inferred value
-    * ``for av in am``       — iterate all attributes as ``AttributeValue``
-    * ``len(am)``            — number of attributes
-    * ``"id" in am``         — membership test
-    * ``am.keys()``          — list of attribute names
-    * ``am.values()``        — list of ``AttributeValue`` objects
-    * ``am.items()``         — list of ``(name, AttributeValue)`` tuples
-    * ``dict(am)``           — ``{name: str_value}`` plain dict
+    * ``am.id``              : ``AttributeValue`` for attribute ``id``
+    * ``am["id"]``           : same via ``__getitem__``
+    * ``am.get("id")``       : ``AttributeValue`` or *default*
+    * ``str(am.id)``         : raw string value
+    * ``am.id()``            : type-inferred value
+    * ``for av in am``       : iterate all attributes as ``AttributeValue``
+    * ``len(am)``            : number of attributes
+    * ``"id" in am``         : membership test
+    * ``am.keys()``          : list of attribute names
+    * ``am.values()``        : list of ``AttributeValue`` objects
+    * ``am.items()``         : list of ``(name, AttributeValue)`` tuples
+    * ``dict(am)``           : ``{name: str_value}`` plain dict
     """
 
     cdef xml_node  _node
@@ -483,8 +483,8 @@ cdef class AttributeMap:
     def __iter__(self):
         """Iterate all attributes as :class:`AttributeValue` objects.
 
-        ``xmlns`` / ``xmlns:*`` namespace declarations are excluded —
-        use :attr:`ObjectifiedElement.nsmap` for those.
+        ``xmlns`` / ``xmlns:*`` namespace declarations are excluded.
+        Use :attr:`ObjectifiedElement.nsmap` for those.
         """
         cdef xml_attribute a = self._node.first_attribute()
         while not _attr_is_null(a):
@@ -625,7 +625,7 @@ cdef class ObjectifiedElement:
 
     cdef xml_node _node
     cdef object   _doc_ref
-    cdef dict     _nsmap      # {prefix: uri, uri: prefix} — may be empty dict
+    cdef dict     _nsmap      # {prefix: uri, uri: prefix}: may be empty dict
 
     def __cinit__(self):
         self._nsmap = {}
@@ -705,7 +705,7 @@ cdef class ObjectifiedElement:
 
         if found_tag is not None:
             # pugixml's xml_node.set_value() only works on pcdata/cdata/
-            # comment/pi/doctype nodes — it is a no-op on node_element.
+            # comment/pi/doctype nodes: it is a no-op on node_element.
             # Replicate XMLNode.value's setter behaviour here: replace the
             # existing text child if there is one, otherwise create one.
             text_node = probe.first_child()
@@ -812,9 +812,9 @@ cdef class ObjectifiedElement:
 
         Accepts three tag formats:
 
-        * ``"item"``               — plain tag name
-        * ``"ns:item"``            — prefixed tag name
-        * ``"{http://ns.com}item"``— Clark notation (resolved via nsmap)
+        * ``"item"``               : plain tag name
+        * ``"ns:item"``            : prefixed tag name
+        * ``"{http://ns.com}item"``: Clark notation (resolved via nsmap)
 
         Args:
             tag (str): Tag to search for.
@@ -952,7 +952,7 @@ cdef class ObjectifiedElement:
         """
         cdef str pfx = self.prefix
         if pfx is None:
-            # check default namespace — stored under "" key
+            # check default namespace: stored under "" key
             default = self._nsmap.get("", None)
             return default if default and "://" in default else None
         val = self._nsmap.get(pfx, None)
@@ -969,7 +969,7 @@ cdef class ObjectifiedElement:
     def attrib(self):
         """All attributes as an :class:`AttributeMap`.
 
-        xmlns declarations are excluded — use :attr:`nsmap` for those.
+        xmlns declarations are excluded: use :attr:`nsmap` for those.
 
         Example::
 
@@ -997,7 +997,7 @@ cdef dict _extract_ns_map(xml_node node):
     Returns a dict mapping prefix → URI:
       {"": "http://default.com", "ns": "http://ns.com"}
 
-    Only inspects the given node — callers should pass the root element
+    Only inspects the given node: callers should pass the root element
     so the most common case (all xmlns on root) is handled in one call.
     For documents that scatter xmlns across multiple elements, use
     _extract_ns_map_recursive.
@@ -1083,7 +1083,7 @@ cdef list _ns_candidate_names(str py_name, dict ns_map):
 
 
 # ---------------------------------------------------------------------------
-# NamespacedElement — ObjectifiedElement with namespace awareness
+# NamespacedElement: ObjectifiedElement with namespace awareness
 # ---------------------------------------------------------------------------
 
 cdef class NamespacedElement(ObjectifiedElement):
@@ -1107,11 +1107,11 @@ cdef class NamespacedElement(ObjectifiedElement):
        # Dotted access with registered prefix
        root.ns_item          # expands to <ns:item>
 
-    The *ns_map* is inherited by every child element automatically —
+    The *ns_map* is inherited by every child element automatically,
     you never need to pass it manually.
     """
 
-    cdef dict _ns_map   # {prefix: uri}  — shared across the tree
+    cdef dict _ns_map   # {prefix: uri}  : shared across the tree
 
     @staticmethod
     cdef NamespacedElement _from_raw_ns(xml_node node, object doc_ref,
@@ -1121,7 +1121,7 @@ cdef class NamespacedElement(ObjectifiedElement):
         obj._doc_ref = doc_ref
         obj._ns_map  = ns_map
         # Keep the inherited ObjectifiedElement._nsmap in sync so that
-        # inherited properties (namespace, nsmap) — which read _nsmap —
+        # inherited properties (namespace, nsmap), which read _nsmap,
         # resolve prefixes/URIs correctly for namespaced elements too.
         obj._nsmap   = ns_map
         return obj
@@ -1193,7 +1193,7 @@ cdef class NamespacedElement(ObjectifiedElement):
         return result
 
     # ------------------------------------------------------------------
-    # ns_map property — expose for inspection / debugging
+    # ns_map property: expose for inspection / debugging
     # ------------------------------------------------------------------
 
     @property
@@ -1243,7 +1243,7 @@ cdef void _ns_find_all(xml_node parent, list tag_bytes, bint recursive,
 
 
 # ---------------------------------------------------------------------------
-# Updated entry points — replace objectify_from_string / objectify_from_file
+# Updated entry points: replace objectify_from_string / objectify_from_file
 # ---------------------------------------------------------------------------
 
 
@@ -1256,7 +1256,7 @@ def objectify_from_node(object node,
                          bint auto_ns=True):
     """Wrap an existing :class:`XMLNode` as an :class:`ObjectifiedElement`.
 
-    No re-parsing is done — the node's owning document stays alive via
+    No re-parsing is done: the node's owning document stays alive via
     the node's own reference.  Useful when you already have a parsed tree
     and want to switch to the objectify navigation API for a subtree.
 
@@ -1294,7 +1294,7 @@ def objectify_from_node(object node,
 
     # Use the XMLNode's parent document as doc_ref to keep it alive.
     # We don't have direct access to the XMLDocument here, so we keep
-    # the XMLNode itself as the ref — it holds its own document reference.
+    # the XMLNode itself as the ref: it holds its own document reference.
     cdef object doc_ref = node
 
     cdef dict ns_map = {}

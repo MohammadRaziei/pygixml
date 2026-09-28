@@ -1,5 +1,5 @@
 """
-pygixml.jsoncmd — command-line XML -> JSON converter.
+pygixml.jsoncmd: command-line XML -> JSON converter.
 
 Usage::
 

@@ -264,7 +264,7 @@ class ParseFlags(_IntFlag):
     processing enabled).
 
     Use ``ParseFlags.MINIMAL`` when you only care about element structure
-    and want the fastest possible parse — it skips escape processing,
+    and want the fastest possible parse: it skips escape processing,
     EOL normalization, and all whitespace handling.
 
     Example::
@@ -467,7 +467,7 @@ cdef class XMLDocument:
 
             >>> doc = pygixml.parse_string('<root>content</root>')
             >>> doc.reset()
-            >>> doc.root  # None — document is empty
+            >>> doc.root  # None: document is empty
         """
         self._doc.reset()
     
@@ -532,7 +532,7 @@ cdef class XMLDocument:
         """Serialize the document to an XML string.
 
         Args:
-            indent (str | int): Indentation — either a string
+            indent (str | int): Indentation, either a string
                 (e.g. ``'    '``) or a number of spaces (e.g. ``4``).
                 Defaults to two spaces.
 
@@ -602,12 +602,12 @@ cdef class XMLNode:
 
     The most commonly used members are:
 
-    - :attr:`name` / :attr:`value` — tag name and text value
-    - :meth:`child` — first child with a given tag
-    - :meth:`children` — iterate direct child elements
-    - :meth:`text` — combined text content
-    - :meth:`select_nodes` / :meth:`select_node` — XPath selection
-    - :attr:`xml` — serialized XML of this node and its subtree
+    - :attr:`name` / :attr:`value`: tag name and text value
+    - :meth:`child`: first child with a given tag
+    - :meth:`children`: iterate direct child elements
+    - :meth:`text`: combined text content
+    - :meth:`select_nodes` / :meth:`select_node`: XPath selection
+    - :attr:`xml`: serialized XML of this node and its subtree
 
     Example::
 
@@ -703,12 +703,12 @@ cdef class XMLNode:
 
         Example::
 
-            # Text node — returns raw value
+            # Text node: returns raw value
             >>> doc = pygixml.parse_string('<root><item>hello</item></root>')
             >>> doc.root.child('item').first_child().value
             'hello'
 
-            # Element node — returns first text child's value
+            # Element node: returns first text child's value
             >>> doc.root.child('item').value
             'hello'
         """
@@ -783,7 +783,7 @@ cdef class XMLNode:
         For text, CDATA, and comment nodes, sets the raw value directly.
 
         For **element** nodes, this is a convenience shortcut that creates
-        or replaces the first text-node child — equivalent to::
+        or replaces the first text-node child, equivalent to::
 
             text_node = node.first_child()
             if text_node and text_node.type in ('pcdata', 'cdata'):
@@ -793,10 +793,10 @@ cdef class XMLNode:
 
         Example::
 
-            # Text node — sets raw value
+            # Text node: sets raw value
             text_node.value = 'hello'
 
-            # Element node — creates/replaces text child
+            # Element node: creates/replaces text child
             element.value = 'hello'   # <element>hello</element>
         """
         cdef bytes value_bytes = value.encode('utf-8')
@@ -1163,7 +1163,7 @@ cdef class XMLNode:
 
         .. note::
            This is a **pygixml-specific feature**.  pugixml does not
-           provide XPath generation natively — pygixml implements a custom
+           provide XPath generation natively, so pygixml implements a custom
            O(depth) algorithm that walks from the node up to the root,
            counting same-name siblings to produce accurate positional
            predicates.
@@ -1216,7 +1216,7 @@ cdef class XMLNode:
 
     @property
     def xml(self):
-        """Shorthand for ``self.to_string()`` — serialized XML with
+        """Shorthand for ``self.to_string()``: serialized XML with
         default two-space indentation.
 
         .. note::
@@ -1231,7 +1231,7 @@ cdef class XMLNode:
 
         .. note::
            This is a **pygixml-specific feature**.  pugixml has no
-           equivalent — pygixml walks the descendant tree in DFS order
+           equivalent: pygixml walks the descendant tree in DFS order
            comparing node addresses until a match is found.
 
         Returns:
@@ -1262,7 +1262,7 @@ cdef class XMLNode:
             XMLNode: A wrapper for the node at the given identifier.
 
         Complexity:
-            **O(1)** — direct lookup, no tree traversal.
+            **O(1)**: direct lookup, no tree traversal.
             Compare with :meth:`find_mem_id` which is **O(n)**.
 
         Example::
@@ -1315,7 +1315,7 @@ cdef class XMLNode:
            This is a **pygixml-specific feature**.  pugixml provides
            ``first_child()`` and ``next_sibling()`` for manual traversal,
            but ``children()`` offers a Pythonic one-liner for iterating
-           direct child elements — or all descendants with
+           direct child elements, or all descendants with
            ``recursive=True``.
 
         Text, comment, and processing-instruction nodes are skipped.

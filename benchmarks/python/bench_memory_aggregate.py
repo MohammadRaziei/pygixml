@@ -1,5 +1,5 @@
 """
-bench_memory_aggregate.py — combine the per-data-point result JSONs
+bench_memory_aggregate.py: combine the per-data-point result JSONs
 written by many separate bench_memory_one.py invocations into the
 single memory.json the report generator reads.
 

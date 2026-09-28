@@ -1,5 +1,5 @@
 """
-Tests for pygixml.jsonify — typed entry points + smart dispatcher.
+Tests for pygixml.jsonify: typed entry points + smart dispatcher.
 
 Run with:
     pytest tests/test_jsonify.py -v
@@ -196,7 +196,7 @@ class TestDumpsNode:
             jsonify.dumps_node("not a node")
 
     def test_wrong_type_objectified_raises(self, root):
-        # ObjectifiedElement is not XMLNode — use dumps_obj for that
+        # ObjectifiedElement is not XMLNode: use dumps_obj for that
         with pytest.raises(TypeError):
             jsonify.dumps_node(root)
 
@@ -207,7 +207,7 @@ class TestDumpsNode:
 
 
 # ---------------------------------------------------------------------------
-# 5. dumps — smart dispatcher
+# 5. dumps: smart dispatcher
 # ---------------------------------------------------------------------------
 
 class TestDumpsDispatcher:
@@ -237,7 +237,7 @@ class TestDumpsDispatcher:
             jsonify.dumps(12345)
 
     def test_file_not_routed_through_dumps(self, xml_full):
-        # dumps does NOT accept file paths — must use dumps_file
+        # dumps does NOT accept file paths: must use dumps_file
         with pytest.raises((ValueError, TypeError)):
             jsonify.dumps("data.xml")
 

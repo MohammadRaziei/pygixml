@@ -1,12 +1,12 @@
 .. _dictify:
 
-Dictify — XML to Dict
+Dictify: XML to Dict
 =====================
 
 ``pygixml.dictify`` converts XML to a nested Python ``dict``, fully
 compatible with the `xmltodict <https://github.com/martinblech/xmltodict>`_
 library.  Drop ``import xmltodict`` and replace it with
-``from pygixml import dictify`` — the API is identical.
+``from pygixml import dictify``: the API is identical.
 
 .. code-block:: python
 
@@ -72,7 +72,7 @@ Entry Points
 
    .. code-block:: python
 
-      # Default — attributes prefixed with '@'
+      # Default: attributes prefixed with '@'
       d = dictify.parse('<root id="1"><item>x</item></root>')
       # {'root': {'@id': '1', 'item': 'x'}}
 
@@ -158,7 +158,7 @@ The conversion rules match the ``xmltodict`` library exactly:
 .. note::
 
    Unlike :mod:`pygixml.objectify`, ``dictify`` does **not** perform type
-   inference — all values remain as strings, exactly as ``xmltodict`` behaves.
+   inference: all values remain as strings, exactly as ``xmltodict`` behaves.
    This preserves round-trip fidelity with :func:`~pygixml.dictify.unparse`.
 
 
@@ -166,18 +166,18 @@ force_list
 ----------
 
 By default, a tag that appears only once is stored as a scalar value.  Use
-``force_list`` to always produce a list — useful when your code always expects
+``force_list`` to always produce a list: useful when your code always expects
 a list regardless of how many elements are present:
 
 .. code-block:: python
 
    xml = '<catalog><item>only one</item></catalog>'
 
-   # Without force_list — scalar
+   # Without force_list: scalar
    d = dictify.parse(xml)
    d['catalog']['item']              # 'only one'  (str)
 
-   # With force_list — always a list
+   # With force_list: always a list
    d = dictify.parse(xml, force_list={'item'})
    d['catalog']['item']              # ['only one']  (list)
 
@@ -190,7 +190,7 @@ Round-trip
 ----------
 
 :func:`~pygixml.dictify.parse` and :func:`~pygixml.dictify.unparse` are
-round-trip compatible — parsing the output of ``unparse`` produces the same
+round-trip compatible: parsing the output of ``unparse`` produces the same
 dict:
 
 .. code-block:: python
@@ -218,13 +218,13 @@ Comparison with objectify
      - ``root.user_profile.id``
      - ``d['root']['user-profile']['@id']``
    * - Type inference
-     - Yes — ``int``, ``float``, ``bool``
-     - No — all values are ``str``
+     - Yes: ``int``, ``float``, ``bool``
+     - No: all values are ``str``
    * - Repeated siblings
      - :class:`~pygixml.NodeSequence`, indexable
      - Python ``list``
    * - Memory
-     - Wraps the live DOM — no copy
+     - Wraps the live DOM: no copy
      - Full copy into Python dicts
    * - Best for
      - Navigating and reading XML

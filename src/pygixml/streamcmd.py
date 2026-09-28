@@ -1,5 +1,5 @@
 """
-pygixml.streamcmd — stream matching elements out of a (possibly
+pygixml.streamcmd: stream matching elements out of a (possibly
 giant) XML file as JSON, with bounded ("one record") memory.
 
 Unlike ``pygixml query`` (which loads the whole document), this reads

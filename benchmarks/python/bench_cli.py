@@ -1,5 +1,5 @@
 """
-bench_cli.py — pygixml's own command-line tool against its closest
+bench_cli.py: pygixml's own command-line tool against its closest
 real competitor at the shell: `xq` (installed by the `yq` PyPI
 package), the closest thing the ecosystem has to a `jq`-for-XML.
 

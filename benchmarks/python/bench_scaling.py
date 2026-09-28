@@ -1,5 +1,5 @@
 """
-bench_scaling.py — time vs input size (N), not just one fixed size.
+bench_scaling.py: time vs input size (N), not just one fixed size.
 
 Two things this is trying to show, honestly, including the case that
 doesn't flatter pygixml:

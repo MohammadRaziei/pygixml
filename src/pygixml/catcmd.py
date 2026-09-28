@@ -1,5 +1,5 @@
 """
-pygixml.catcmd — pretty-print (and, if colorama is installed,
+pygixml.catcmd: pretty-print (and, if colorama is installed,
 colorize) an XML file for the terminal. The XML analog of
 ``cat data.json | jq`` -- except we produce XML, not consume it, so
 this reads XML and shows it nicely instead.

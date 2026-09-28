@@ -1,5 +1,5 @@
 """
-Tests for pygixml.dictify — dictify-compatible interface.
+Tests for pygixml.dictify: dictify-compatible interface.
 
 Run with:
     pytest tests/test_dictify.py -v
@@ -14,7 +14,7 @@ from pygixml import dictify
 
 
 # ---------------------------------------------------------------------------
-# 1. dictify.parse — basic structure
+# 1. dictify.parse: basic structure
 # ---------------------------------------------------------------------------
 
 class TestParseBasic:
@@ -62,7 +62,7 @@ class TestParseBasic:
 
 
 # ---------------------------------------------------------------------------
-# 2. dictify.parse — attributes
+# 2. dictify.parse: attributes
 # ---------------------------------------------------------------------------
 
 class TestParseAttributes:
@@ -86,7 +86,7 @@ class TestParseAttributes:
 
 
 # ---------------------------------------------------------------------------
-# 3. dictify.parse — mixed content (attrs + text)
+# 3. dictify.parse: mixed content (attrs + text)
 # ---------------------------------------------------------------------------
 
 class TestParseMixed:
@@ -110,7 +110,7 @@ class TestParseMixed:
 
 
 # ---------------------------------------------------------------------------
-# 4. dictify.parse — repeated siblings → list
+# 4. dictify.parse: repeated siblings → list
 # ---------------------------------------------------------------------------
 
 class TestParseRepeated:
@@ -134,7 +134,7 @@ class TestParseRepeated:
 
 
 # ---------------------------------------------------------------------------
-# 5. dictify.parse — force_list
+# 5. dictify.parse: force_list
 # ---------------------------------------------------------------------------
 
 class TestParseForceList:
@@ -159,7 +159,7 @@ class TestParseForceList:
 
 
 # ---------------------------------------------------------------------------
-# 6. dictify.parse — CDATA
+# 6. dictify.parse: CDATA
 # ---------------------------------------------------------------------------
 
 class TestParseCDATA:
@@ -174,7 +174,7 @@ class TestParseCDATA:
 
 
 # ---------------------------------------------------------------------------
-# 7. dictify.parse — edge cases
+# 7. dictify.parse: edge cases
 # ---------------------------------------------------------------------------
 
 class TestParseEdgeCases:
@@ -197,7 +197,7 @@ class TestParseEdgeCases:
         assert "ns:x" in d["r"]
 
     def test_numeric_attribute_stays_string(self):
-        # dictify does not type-infer — values stay as strings
+        # dictify does not type-infer: values stay as strings
         d = dictify.parse('<r n="42"/>')
         assert d["r"]["@n"] == "42"
         assert isinstance(d["r"]["@n"], str)
@@ -229,7 +229,7 @@ class TestParseFile:
 
 
 # ---------------------------------------------------------------------------
-# 9. dictify.unparse — basic
+# 9. dictify.unparse: basic
 # ---------------------------------------------------------------------------
 
 class TestUnparseBasic:

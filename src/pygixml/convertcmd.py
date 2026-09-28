@@ -1,5 +1,5 @@
 """
-pygixml.convertcmd — convert a file between XML, JSON, YAML, and TOON.
+pygixml.convertcmd: convert a file between XML, JSON, YAML, and TOON.
 
 Usage::
 

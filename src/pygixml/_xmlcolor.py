@@ -1,5 +1,5 @@
 """
-pygixml._xmlcolor — a small regex-based XML syntax highlighter for
+pygixml._xmlcolor: a small regex-based XML syntax highlighter for
 terminal output, used by ``pygixml cat``.
 
 Design goal: this is a *display* helper, not a parser -- it only has

@@ -307,7 +307,7 @@ cdef object _node_to_obj(xml_node node,
             val = _node_to_obj(child, attr_prefix, cdata_key, force_list)
 
             if tag in result:
-                # already seen — ensure it's a list
+                # already seen: ensure it's a list
                 if not isinstance(result[tag], list):
                     result[tag] = [result[tag]]
                 result[tag].append(val)
@@ -439,7 +439,7 @@ def dictify_unparse(object input_dict,
                     bint pretty=False):
     """Emit an XML string from a dict produced by :func:`dictify_parse`.
 
-    Implemented entirely in C++ — no Python list, string concatenation, or
+    Implemented entirely in C++: no Python list, string concatenation, or
     f-string formatting during serialization.  Only one Python ``str`` is
     created at the very end.
 

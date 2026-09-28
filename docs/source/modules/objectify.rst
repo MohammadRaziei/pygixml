@@ -1,11 +1,11 @@
 .. _objectify:
 
-Objectify — Dotted Navigation
+Objectify: Dotted Navigation
 ==============================
 
 ``pygixml.objectify`` provides an `lxml.objectify
 <https://lxml.de/objectify.html>`_-inspired interface that lets you navigate
-XML with plain Python attribute access — no ``.child()`` or ``.attribute()``
+XML with plain Python attribute access: no ``.child()`` or ``.attribute()``
 calls needed.
 
 .. code-block:: python
@@ -83,7 +83,7 @@ ObjectifiedElement
    Wraps a single XML element node and provides attribute-style navigation.
 
    Stores the underlying pugixml ``xml_node`` struct directly as a C-level
-   field — no Python wrapper is allocated per access.  A ``_doc_ref`` slot
+   field: no Python wrapper is allocated per access.  A ``_doc_ref`` slot
    keeps the owning :class:`~pygixml.XMLDocument` alive for the lifetime of
    the wrapper.
 
@@ -109,7 +109,7 @@ ObjectifiedElement
    .. method:: get(name, default=None)
 
       Return the value of attribute *name*, or *default* if absent.  Never
-      raises — behaves like ``dict.get()``.  Only attributes are searched;
+      raises: behaves like ``dict.get()``.  Only attributes are searched;
       child elements are not considered.
 
       :param name: Attribute name (underscores map to hyphens).
@@ -187,7 +187,7 @@ ObjectifiedElement
    .. method:: __str__()
 
       Return the raw text content as a plain ``str``.  Always returns a
-      string — never raises.
+      string: never raises.
 
       .. code-block:: python
 
@@ -328,13 +328,13 @@ Performance Notes
 -----------------
 
 * :class:`~pygixml.ObjectifiedElement` and :class:`~pygixml.NodeSequence`
-  are ``cdef class`` objects compiled into ``pygixml_cy.so`` — no pure-Python
+  are ``cdef class`` objects compiled into ``pygixml_cy.so``: no pure-Python
   overhead.
 * ``_node`` holds the ``xml_node`` C struct directly; no intermediate Python
   :class:`~pygixml.XMLNode` wrapper is allocated per access.
 * Child lookup, attribute lookup, and sibling collection all operate at the
   C++ level via direct pugixml API calls.
-* ``_doc_ref`` is the only Python-level field — it keeps the
+* ``_doc_ref`` is the only Python-level field: it keeps the
   :class:`~pygixml.XMLDocument` alive and prevents premature GC of the
   underlying pugixml memory pool.
 
@@ -350,7 +350,7 @@ normal Python assignment and ``del``.
 .. describe:: elem.child_tag = value
 
    Updates the text content of an existing child element, updates an existing
-   attribute, or creates a new child element — in that priority order.
+   attribute, or creates a new child element: in that priority order.
 
    Values are automatically converted to ``str`` before writing.
 
@@ -381,7 +381,7 @@ normal Python assignment and ``del``.
    3. **Neither exists** → create a new ``<name>value</name>`` child.
 
    When both a child element and an attribute share a name, the child is
-   updated and the attribute is left untouched — consistent with
+   updated and the attribute is left untouched: consistent with
    :meth:`__getattr__` behaviour.
 
    .. code-block:: python

@@ -1,5 +1,5 @@
 """
-pygixml.objectify — lxml.objectify-style interface.
+pygixml.objectify: lxml.objectify-style interface.
 
 All logic lives in objectify.pxi and namespace.pxi, compiled into
 pygixml_cy.so.

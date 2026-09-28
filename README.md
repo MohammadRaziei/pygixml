@@ -1,4 +1,4 @@
-# pygixml — Python Giant XML
+# pygixml: Python Giant XML
 
 <img src="https://github.com/MohammadRaziei/pygixml/raw/master/docs/images/pygixml.svg" width="450" />
 
@@ -10,14 +10,14 @@
 [![Documentation Status](https://github.com/MohammadRaziei/pygixml/actions/workflows/cmake.yml/badge.svg)](https://mohammadraziei.github.io/pygixml/)
 [![GitHub Stars](https://img.shields.io/github/stars/MohammadRaziei/pygixml?style=social)](https://github.com/MohammadRaziei/pygixml)
 
-**pygixml** — *Python Giant XML* — is a Cython framework built on two
+**pygixml** (*Python Giant XML*) is a Cython framework built on two
 specialized C++ engines: [pugixml](https://pugixml.org/) for its
 in-memory DOM parser (XPath, `objectify`, `dictify`), and an inlined
 [yxml](https://dev.yorhel.nl/yxml) push parser for true constant-memory
 streaming. Between the two, pygixml covers everything
 [lxml](https://lxml.de/) and [xmltodict](https://github.com/martinblech/xmltodict)
-do — dotted `objectify` navigation, XPath 1.0, and an
-xmltodict-compatible `dictify` — plus a streaming layer neither of them
+do: dotted `objectify` navigation, XPath 1.0, and an
+xmltodict-compatible `dictify`, plus a streaming layer neither of them
 has, which is what makes pygixml the package of choice for **big XML**
 and big-data pipelines.
 
@@ -30,12 +30,12 @@ and big-data pipelines.
 **Speed, memory, and size.** pygixml brings pugixml's battle-tested C++
 parser directly to Python.
 
-Every parsing/conversion layer pygixml ships — raw DOM, `dictify`,
-`objectify`, `jsonify` — is measured against lxml, ElementTree,
+Every parsing/conversion layer pygixml ships (raw DOM, `dictify`,
+`objectify`, `jsonify`) is measured against lxml, ElementTree,
 xmltodict, and xmljson in a full, reproducible benchmark suite (see
 [`benchmarks/`](benchmarks/)), not summarized here as a handful of
 numbers that inevitably go stale the moment the code changes. The
-live, interactive report — refreshed on a schedule, not hand-edited —
+live, interactive report (refreshed on a schedule, not hand-edited)
 is on the
 **[Performance page](https://mohammadraziei.github.io/pygixml/performance.html)**.
 
@@ -44,12 +44,12 @@ regardless of which exact numbers the report shows this week), not a
 one-time measurement:
 
 * **`jsonify.stream_dump` holds memory flat as input grows.** Every
-  DOM-based approach — pygixml's own DOM path included, lxml,
-  xmltodict — allocates roughly in proportion to the input, so its
+  DOM-based approach (pygixml's own DOM path included, lxml,
+  xmltodict) allocates roughly in proportion to the input, so its
   memory use grows with file size. `stream_dump` never builds a tree
   at all, so it doesn't: this is a different complexity class (O(1)
   vs O(n)), not a fixed "X times less" you'd see at only one input
-  size. It costs something in return — see the report's own memory
+  size. It costs something in return: see the report's own memory
   panel for the honest trade-off, not just the part that flatters it.
 * **Package size**: pygixml installs in well under a megabyte, without
   vendoring a build of libxml2/libxslt the way lxml does.
@@ -57,21 +57,21 @@ one-time measurement:
 ### Built for big XML
 
 Those benchmark numbers are for documents that fit comfortably in
-memory. For the documents that don't — multi-gigabyte exports, logs,
-data dumps — pygixml's streaming layer is the part lxml and xmltodict
+memory. For the documents that don't (multi-gigabyte exports, logs,
+data dumps), pygixml's streaming layer is the part lxml and xmltodict
 simply don't have:
 
-* **`pygixml.iterfind` / `dictify.iterdict` / `jsonify.iterjsonl`** —
+* **`pygixml.iterfind` / `dictify.iterdict` / `jsonify.iterjsonl`**:
   yxml-based incremental parsing in **constant memory**: one element
   (or one dict, or one JSON line) in flight at a time, regardless of
   whether the source document is 10 KB or 10 GB.
-* **`jsonify.stream_dump(xml_path, json_path)`** — the headline
-  feature: converts a giant XML file into a single, valid, giant JSON
+* **`jsonify.stream_dump(xml_path, json_path)`** (the headline
+  feature) converts a giant XML file into a single, valid, giant JSON
   file, **entirely in C++, in constant memory, with an
   xmltodict-compatible output shape** (same `@attr` / `#text` /
   repeated-siblings-as-array conventions as `dictify.parse`). No DOM
   tree is ever built, no intermediate Python dict/list/str is ever
-  allocated, and the file never has to fit in RAM — only an in-place
+  allocated, and the file never has to fit in RAM: only an in-place
   seek-and-patch trick on the *output* file is used to close JSON
   arrays correctly as repeated siblings are discovered. As far as we
   know, this is the only Python package that can do this without
@@ -79,9 +79,9 @@ simply don't have:
   the process once the file gets genuinely large.
 
   The memory guarantee is unconditional (verified: ~17MB peak,
-  completely flat from 5K to 640K records — see
+  completely flat from 5K to 640K records, see
   `benchmarks/adhoc/bench_record_shaped.py`). The **time** guarantee
-  is O(n) for the shape almost all real giant XML actually has — one
+  is O(n) for the shape almost all real giant XML actually has: one
   repeated tag per nesting level (`<orders><order>...</order>...`).
   It degrades towards O(n²) only in an adversarial shape: two or more
   *different* tags repeating and interleaving at the *same* level for
@@ -89,7 +89,7 @@ simply don't have:
   wrapping element around each pair). If that's genuinely your data
   shape, `jsonify.stream_jsonl` (below) sidesteps the problem entirely
   by not trying to preserve a single JSON document at all.
-* **`jsonify.stream_jsonl(xml_path, jsonl_path, tag)`** — the
+* **`jsonify.stream_jsonl(xml_path, jsonl_path, tag)`**: the
   file-to-file counterpart of `iterjsonl` (filters by `tag`, unlike
   `stream_dump` which always converts the whole document): streams
   straight to a `.jsonl` file, one matched element per line, same
@@ -98,7 +98,7 @@ simply don't have:
 ```python
 from pygixml import jsonify
 
-# A multi-GB XML file in, a multi-GB JSON file out -- peak memory stays flat.
+# A multi-GB XML file in, a multi-GB JSON file out: peak memory stays flat.
 jsonify.stream_dump("huge_export.xml", "huge_export.json")
 
 # Or, one record per line:
@@ -107,30 +107,30 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 
 ### Features
 
-* **Fast parsing** — pugixml's C++ DOM parser, consistently at or near
+* **Fast parsing**: pugixml's C++ DOM parser, consistently at or near
   the front across the benchmark suite (see the
   [Performance page](https://mohammadraziei.github.io/pygixml/performance.html))
-* **Constant-memory streaming** — `jsonify.stream_dump` holds flat
+* **Constant-memory streaming**: `jsonify.stream_dump` holds flat
   regardless of input size; nothing else compared here does
-* **Small footprint** — well under a megabyte installed, no bundled
+* **Small footprint**: well under a megabyte installed, no bundled
   libxml2/libxslt
-* **Full XPath 1.0** — complete query engine with all standard functions
-* **Pythonic API** — intuitive properties and methods, not a direct C++ mirror
-* **`objectify`** — lxml.objectify-style dotted navigation
-* **`dictify`** — xmltodict-compatible XML → dict conversion
-* **`jsonify`** — direct XML → JSON, in memory or streamed straight to
+* **Full XPath 1.0**: complete query engine with all standard functions
+* **Pythonic API**: intuitive properties and methods, not a direct C++ mirror
+* **`objectify`**: lxml.objectify-style dotted navigation
+* **`dictify`**: xmltodict-compatible XML → dict conversion
+* **`jsonify`**: direct XML → JSON, in memory or streamed straight to
   disk in constant memory (`stream_dump`, `stream_jsonl`)
-* **Streaming (`iterfind`, `iterdict`, `iterjsonl`)** — constant-memory,
+* **Streaming (`iterfind`, `iterdict`, `iterjsonl`)**: constant-memory,
   yxml-based incremental parsing for documents too big to load whole
-* **CLI tools** — `pygixml cat` (pretty-print/colorize), `pygixml
+* **CLI tools**: `pygixml cat` (pretty-print/colorize), `pygixml
   query` (XPath/dotted query), `pygixml jsonify` (convert to JSON),
   `pygixml convert` (XML/JSON/YAML/TOON, any direction), `pygixml
-  stream` (filter giant files in bounded memory) — see
+  stream` (filter giant files in bounded memory): see
   [Command Line Tools](#command-line-tools)
-* **Cross-platform** — Windows, Linux, macOS
-* **Text extraction** — recursive text gathering with configurable joins
-* **XML serialization** — output with custom indentation
-* **Node iteration** — depth-first traversal of the entire document
+* **Cross-platform**: Windows, Linux, macOS
+* **Text extraction**: recursive text gathering with configurable joins
+* **XML serialization**: output with custom indentation
+* **Node iteration**: depth-first traversal of the entire document
 
 ---
 
@@ -203,7 +203,7 @@ A quick reference so you don't get tripped up:
 
 ---
 
-## objectify — dotted navigation
+## objectify: dotted navigation
 
 `pygixml.objectify` provides an [lxml.objectify](https://lxml.de/objectify.html)-inspired
 interface for navigating XML with plain Python attribute access.
@@ -224,7 +224,7 @@ xml = """
 
 root = objectify.from_string(xml)
 
-# Dotted navigation — underscores map to hyphens automatically
+# Dotted navigation: underscores map to hyphens automatically
 print(root.user_profile.first_name)        # ObjectifiedElement(<first_name>)
 print(str(root.user_profile.first_name))   # 'Mohammad'
 
@@ -237,11 +237,11 @@ print(root.user_profile.verified)         # True  (bool)
 print(str(root.user_profile.first_name))  # 'Mohammad'   always str
 print(root.user_profile.balance())        # 450.75        type-inferred
 
-# Repeated siblings — indexing and iteration
+# Repeated siblings: indexing and iteration
 print(root.entry[0])                      # ObjectifiedElement
 print([str(e) for e in root.entry])       # ['Value A', 'Value B']
 
-# Safe attribute access — never raises
+# Safe attribute access: never raises
 print(root.get('version'))                # 1.2
 print(root.get('missing', 'default'))     # 'default'
 
@@ -250,7 +250,7 @@ print(root.find('balance'))               # ObjectifiedElement(<balance>)
 print(root.find('balance', recursive=False))  # None  (not a direct child)
 print(root.findall('entry'))              # [ObjectifiedElement, ...]
 
-# Write support — modify in place
+# Write support: modify in place
 root.user_profile.first_name = "Ali"      # update child element text
 root.version = 2.0                        # update attribute
 root.timeout = 30                         # create new child element
@@ -282,7 +282,7 @@ del root.version                          # remove attribute
 
 ---
 
-## dictify — XML to dict
+## dictify: XML to dict
 
 `pygixml.dictify` converts XML to a nested dict, compatible with the
 [xmltodict](https://github.com/martinblech/xmltodict) library.
@@ -323,7 +323,7 @@ print(d['database']['@name'])             # 'users_db'
 
 # Custom options
 d = dictify.parse(xml,
-    attr_prefix='',       # no prefix — attrs and children in same namespace
+    attr_prefix='',       # no prefix: attrs and children in same namespace
     cdata_key='text',     # key for text content (default '#text')
     force_list={'entry'}, # always a list, even with one element
 )
@@ -357,19 +357,19 @@ print(xml_out)
 ## Command Line Tools
 
 pygixml installs one CLI entry point, `pygixml`, with three
-subcommands — no Python code required for one-off queries,
+subcommands: no Python code required for one-off queries,
 conversions, or filtering giant files from a shell pipeline. Every
 subcommand also works as `python -m pygixml <subcommand>`.
 
 | Subcommand | Loads | Use it for |
 |---|---|---|
-| `pygixml cat` | full DOM | pretty-print (and colorize) an XML file for the terminal — the XML analog of `bat`/`jq -C` |
-| `pygixml query` | full DOM | ad-hoc XPath / dotted queries — a `jq`/`xq`-style tool for XML you can fit in memory |
+| `pygixml cat` | full DOM | pretty-print (and colorize) an XML file for the terminal: the XML analog of `bat`/`jq -C` |
+| `pygixml query` | full DOM | ad-hoc XPath / dotted queries: a `jq`/`xq`-style tool for XML you can fit in memory |
 | `pygixml jsonify` (`json` alias) | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
 | `pygixml stream` | one record at a time | filtering matches out of a file **too big to load**, bounded memory |
 | `pygixml convert` | full DOM | converting between XML, JSON, YAML, and TOON, any direction |
 
-### `pygixml cat` — pretty-print and colorize
+### `pygixml cat`: pretty-print and colorize
 
 ```bash
 pygixml cat data.xml                    # pretty + colorized (auto: only
@@ -380,12 +380,12 @@ pygixml cat data.xml --color always     # force color even when piped
 pygixml cat data.xml --color never      # force plain, no color
 pygixml cat data.xml --indent 4         # 4-space indent instead of 2
 pygixml cat data.xml -o pretty.xml      # write to a file (never colorized
-                                         # by 'auto' -- a file isn't a tty)
+                                         # by 'auto': a file isn't a tty)
 
 python -m pygixml cat data.xml
 ```
 
-Colorizing is fully optional — install it with `pip install
+Colorizing is fully optional: install it with `pip install
 pygixml[all]` (pulls in `colorama`, along with YAML/TOON support for
 `pygixml convert`). Without it, `cat`
 still works exactly the same, just without color: plain, pretty-printed
@@ -397,7 +397,7 @@ XML, same as `--color never`.
 # XPath (starts with / or //)
 pygixml query data.xml "//user-profile[@id='101']/first_name"
 
-# dotted, objectify-style (starts with .) — first segment names the root
+# dotted, objectify-style (starts with .): first segment names the root
 pygixml query data.xml ".database.user_profile.first_name"
 pygixml query data.xml ".database.user_profile.@id"      # attribute
 pygixml query data.xml ".database.entry[1]"              # index
@@ -420,7 +420,7 @@ pygixml query data.xml ".database.entry[*]" --null | xargs -0 -n1 echo
 python -m pygixml query data.xml ".database.user_profile.first_name"
 ```
 
-### `pygixml jsonify` — convert a whole file
+### `pygixml jsonify`: convert a whole file
 
 ```bash
 pygixml jsonify data.xml                        # compact JSON to stdout
@@ -437,17 +437,17 @@ Automatically switches to `jsonify.stream_dump` (constant memory) for
 files over 64MB; `--stream` / `--no-stream` force one mode or the
 other regardless of size.
 
-### `pygixml stream` — filter a giant file
+### `pygixml stream`: filter a giant file
 
 Reads the file once via `iterparse`, tag by tag, holding at most one
-matched element's subtree in memory — the right tool once a file is
+matched element's subtree in memory: the right tool once a file is
 too large for `pygixml query`/`pygixml jsonify`'s DOM mode.
 
 ```bash
 # every <order>, one JSON object per line (JSONL)
 pygixml stream orders.xml --tag order
 
-# simple filters — numeric or string, on a child path or an @attribute
+# simple filters: numeric or string, on a child path or an @attribute
 pygixml stream orders.xml --tag order --where "total>100"
 pygixml stream orders.xml --tag order --where "@status=shipped"
 
@@ -455,7 +455,7 @@ pygixml stream orders.xml --tag order --where "@status=shipped"
 pygixml stream orders.xml --tag order \
     --where "@status=shipped" --where "customer=acme"
 
-# a real JSON array instead of JSONL — still one pass, still bounded memory
+# a real JSON array instead of JSONL: still one pass, still bounded memory
 pygixml stream orders.xml --tag order --where "total>100" --format array -p
 
 # just count, or stop after N
@@ -474,7 +474,7 @@ is either `@attr` or a child path like `customer` / `items/item/sku`
 
 ---
 
-### `pygixml convert` — XML, JSON, YAML, TOON, any direction
+### `pygixml convert`: XML, JSON, YAML, TOON, any direction
 
 ```bash
 pygixml convert data.xml -o data.json         # format guessed from extensions
@@ -486,20 +486,20 @@ cat data.xml | pygixml convert - --from xml --to json   # stdin needs --from too
 python -m pygixml convert data.xml -o data.yaml
 ```
 
-Built on :class:`pygixml.formats.FormatDocument` -- a small class
+Built on :class:`pygixml.formats.FormatDocument`, a small class
 wrapping a plain dict (the same `@attr`/`#text`/list shape
 `dictify.parse` produces), with `to_json`/`to_xml`/`to_yaml`/`to_toon`
 and matching `from_*` classmethods. JSON and XML always work (stdlib
 `json` + this package's own `dictify`); YAML needs `PyYAML` and TOON
 needs [`ctoon`](https://pypi.org/project/ctoon/) (also written by the
-author of pygixml) -- both are optional, and asking for one you don't
+author of pygixml). Both are optional, and asking for one you don't
 have gives a clear `pip install ...` error instead of crashing:
 
 ```bash
 pip install pygixml[all]   # colorama (for `cat`) + PyYAML + ctoon
 ```
 
-Like `cat`/`query`, this loads the whole document — for XML too big to
+Like `cat`/`query`, this loads the whole document: for XML too big to
 fit in memory, convert with `pygixml jsonify --stream` instead.
 
 ## Advanced Features
@@ -663,7 +663,7 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
 | `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_jsonl` |
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
-| `pygixml cat`, `pygixml query`, `pygixml jsonify`, `pygixml convert`, `pygixml stream` | CLI tools — see [Command Line Tools](#command-line-tools) |
+| `pygixml cat`, `pygixml query`, `pygixml jsonify`, `pygixml convert`, `pygixml stream` | CLI tools: see [Command Line Tools](#command-line-tools) |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`.
 
@@ -677,7 +677,7 @@ cmake --build benchmarks/build --target pygixml_bench_report
 ```
 
 Compares pygixml's parse/`dictify`/`objectify`/`jsonify` against
-**lxml**, **ElementTree**, **xmltodict**, and **xmljson** — speed,
+**lxml**, **ElementTree**, **xmltodict**, and **xmljson**: speed,
 memory at scale, and install size. Writes a standalone, interactive
 `benchmarks/results/report.html`; see
 [`benchmarks/README.md`](benchmarks/README.md) for the full
@@ -697,8 +697,8 @@ methodology, or the live copy on the
 
 pygixml is not affected by the common XML attacks (XXE, Billion Laughs,
 external DTD retrieval) that `lxml`/`defusedxml` guard against, because
-its two embedded parsers — [pugixml](https://pugixml.org/) (DOM API) and
-[yxml](https://dev.yorhel.nl/yxml) (streaming API) — never implement
+its two embedded parsers, [pugixml](https://pugixml.org/) (DOM API) and
+[yxml](https://dev.yorhel.nl/yxml) (streaming API), never implement
 custom entity resolution or external DTD fetching in the first place, so
 there's no "safe mode" to configure. See
 [#8](https://github.com/MohammadRaziei/pygixml/issues/8) for the full
@@ -708,7 +708,7 @@ technical breakdown.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE).
+MIT License: see [LICENSE](LICENSE).
 
 Enjoy pygixml?  Star the repository ⭐
 👉 **[Star pygixml on GitHub](https://github.com/MohammadRaziei/pygixml)**
@@ -717,7 +717,7 @@ Enjoy pygixml?  Star the repository ⭐
 
 ## Acknowledgments
 
-* [pugixml](https://pugixml.org/) — Fast and lightweight C++ XML library
-* [yxml](https://dev.yorhel.nl/yxml) — Tiny, dependency-free streaming XML parser, powering pygixml's constant-memory streaming layer
-* [Cython](https://cython.org/) — C extensions for Python
-* [scikit-build](https://scikit-build.readthedocs.io/) — Modern Python build system
+* [pugixml](https://pugixml.org/): Fast and lightweight C++ XML library
+* [yxml](https://dev.yorhel.nl/yxml): Tiny, dependency-free streaming XML parser, powering pygixml's constant-memory streaming layer
+* [Cython](https://cython.org/): C extensions for Python
+* [scikit-build](https://scikit-build.readthedocs.io/): Modern Python build system
