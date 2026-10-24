@@ -14,6 +14,7 @@ instruction.
 
     json   -- stdlib, always available
     xml    -- pygixml.dictify, always available (this package)
+    html   -- input only, via pygixml.html_to_xml (this package)
     yaml   -- needs PyYAML  (pip install PyYAML)
     toon   -- needs ctoon   (pip install ctoon)
 
@@ -29,6 +30,8 @@ Example::
 from __future__ import annotations
 
 FORMATS = ("json", "xml", "yaml", "toon")
+# HTML is read-only: it can be converted *from*, never *to*.
+INPUT_FORMATS = FORMATS + ("html",)
 
 
 def _missing(package: str, pip_name: str, format_name: str) -> ImportError:
@@ -84,6 +87,12 @@ class FormatDocument:
     def from_xml(cls, text: str, **kwargs) -> "FormatDocument":
         from pygixml import dictify
         return cls(dictify.parse(text, **kwargs))
+
+    @classmethod
+    def from_html(cls, text: str, **kwargs) -> "FormatDocument":
+        """Messy HTML -> normalised XML -> dict (see :func:`pygixml.html_to_xml`)."""
+        from pygixml import dictify, html_to_xml
+        return cls(dictify.parse(html_to_xml(text), **kwargs))
 
     # ----------------------------------------------------------- YAML --
 

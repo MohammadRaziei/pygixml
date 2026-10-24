@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Added
+
+- HTML support. `pygixml.html_to_xml(html)` normalises messy HTML to
+  well-formed XML (void tags, implied end tags, stray end tags,
+  valueless/duplicate attributes, entities, raw `<script>`/`<style>`,
+  invalid names, fragments wrapped in a root), and
+  `pygixml.parse_html(html)` parses the result into an `XMLDocument`, so
+  XPath, `objectify`, `dictify` and `jsonify` work on HTML. Pure Python on
+  top of the stdlib tokenizer, no new dependency; not the full HTML5
+  tree-building algorithm (see `docs/source/modules/html.rst`).
+- `pygixml convert` accepts HTML as an input format (`.html`/`.htm`, or
+  `--from html`), and `FormatDocument.from_html` is available.
+
 ## [v0.13.0] - 2026-09-14
 
 ### Added

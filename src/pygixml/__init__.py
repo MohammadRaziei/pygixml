@@ -22,6 +22,7 @@ from .pygixml_cy import (
     iterparse,
     iterfind,
 )
+from ._html import html_to_xml, parse_html
 
 from . import objectify
 from . import dictify
@@ -44,6 +45,8 @@ __all__ = [
     "PullParser",
     "iterparse",
     "iterfind",
+    "html_to_xml",
+    "parse_html",
     "objectify",
     "dictify",
     "jsonify",

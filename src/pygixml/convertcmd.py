@@ -16,6 +16,7 @@ Examples::
     pygixml convert data.xml -o data.yaml
     pygixml convert data.json -o data.xml -p
     pygixml convert data.yaml --to toon
+    pygixml convert page.html -o page.json     # HTML is input-only
     cat data.xml | pygixml convert - --to json
 
 YAML support needs PyYAML (``pip install PyYAML``); TOON support needs
@@ -34,10 +35,12 @@ import argparse
 import os
 import sys
 
-from pygixml.formats import FORMATS
+from pygixml.formats import FORMATS, INPUT_FORMATS
 
 _EXT_TO_FORMAT = {
     ".xml": "xml",
+    ".html": "html",
+    ".htm": "html",
     ".json": "json",
     ".yaml": "yaml",
     ".yml": "yaml",
@@ -63,7 +66,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Write the result here instead of stdout.",
     )
     p.add_argument(
-        "--from", dest="from_fmt", choices=FORMATS, default=None,
+        "--from", dest="from_fmt", choices=INPUT_FORMATS, default=None,
         help="Input format. Auto-detected from INPUT's extension if omitted.",
     )
     p.add_argument(
@@ -95,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     if from_fmt is None:
         parser.error(
             f"can't tell the input format from {args.file!r} -- pass --from "
-            f"explicitly (one of {FORMATS})"
+            f"explicitly (one of {INPUT_FORMATS})"
         )
 
     to_fmt = args.to_fmt or (
