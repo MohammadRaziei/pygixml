@@ -83,17 +83,27 @@ def test_valueless_and_duplicate_attributes():
 
 def test_invalid_attribute_names_sanitised():
     assert conv("<a @click=1 [p]=2 :x=3 #r=4 v-on:go=5>t</a>") == (
-        '<a _click="1" _p_="2" _x="3" _r="4" v-on_go="5">t</a>'
+        '<a _at_click="1" _lbracket_p_rbracket_="2" _colon_x="3" _hash_r="4"'
+        ' v-on_colon_go="5">t</a>'
     )
 
 
 def test_prefixed_names_do_not_break_namespace_aware_parsers():
-    assert conv("<o:p xlink:href=x>t</o:p>") == '<o_p xlink_href="x">t</o_p>'
+    assert conv("<o:p xlink:href=x>t</o:p>") == '<o_colon_p xlink_colon_href="x">t</o_colon_p>'
 
 
 def test_attribute_value_escaping():
     out = conv("<a title='say \"hi\" &amp; <b>'>t</a>")
     assert ET.fromstring(out).get("title") == 'say "hi" & <b>'
+
+
+def test_whitespace_in_attribute_values_survives():
+    src = "<div data-code='a\n\tb\r\nc'>x</div>"
+    assert ET.fromstring(conv(src)).get("data-code") == "a\n\tb\r\nc"
+    doc = pygixml.parse_html(src)
+    assert doc.root.attribute("data-code").value == "a\n\tb\r\nc"
+    # HTML output keeps them literal (no &#10; noise)
+    assert pygixml.xml_to_html(doc) == '<div data-code="a\n\tb\r\nc">x</div>'
 
 
 # --- text, entities, raw text, comments -------------------------------
@@ -188,3 +198,151 @@ def test_convert_cli_html_to_json(tmp_path):
         capture_output=True, text=True, check=True,
     ).stdout
     assert json.loads(out) == {"ul": {"li": ["a", {"br": None, "#text": "b"}]}}
+
+
+# --- reverse direction: xml_to_html -----------------------------------------
+
+def back(html, **kw):
+    return pygixml.xml_to_html(pygixml.parse_html(html), unwrap="root", **kw)
+
+
+def test_xml_to_html_void_and_empty_elements():
+    assert back("<div></div><br><img src=x>") == '<div></div><br><img src="x">'
+    # never "<div/>": browsers read that as an open tag
+    doc = pygixml.parse_string("<div/>")
+    assert pygixml.xml_to_html(doc) == "<div></div>"
+
+
+def test_xml_to_html_restores_encoded_names():
+    out = back("<o:p @click=1 [x]=2 1bad=3>t</o:p>")
+    assert out == '<o:p @click="1" [x]="2" 1bad="3">t</o:p>'
+    assert pygixml.html_to_xml(out) == pygixml.html_to_xml("<o:p @click=1 [x]=2 1bad=3>t</o:p>")
+
+
+def test_xml_to_html_script_style_raw_but_cannot_close_early():
+    out = back("<script>if(a<b&&c){}</script><style>a>b{}</style>")
+    assert out == "<script>if(a<b&&c){}</script><style>a>b{}</style>"
+    doc = pygixml.parse_string("<script>x='&lt;/script&gt;'</script>")
+    assert "</script><" not in pygixml.xml_to_html(doc).replace("</script>", "", 1)
+    doc = pygixml.parse_string("<script>x='&lt;/script>'</script>")
+    assert pygixml.xml_to_html(doc) == "<script>x='<\\/script>'</script>"
+
+
+def test_xml_to_html_escaping():
+    out = back("<p title='a\"b &amp; c'>1 &lt; 2 &amp; 3</p>")
+    assert out == '<p title="a&quot;b &amp; c">1 &lt; 2 &amp; 3</p>'
+
+
+def test_xml_to_html_whitespace_between_inline_tags_kept():
+    assert back("<p>x <b>y</b> <i>z</i></p>") == "<p>x <b>y</b> <i>z</i></p>"
+
+
+def test_xml_to_html_pre_leading_newline():
+    for src in ("<pre>\nhi</pre>", "<pre>\n\nhi</pre>", "<pre>hi</pre>"):
+        out = back(src)
+        assert pygixml.html_to_xml(out) == pygixml.html_to_xml(src)
+
+
+def test_xml_to_html_comments_doctype_unwrap():
+    assert back("<!-- c --><p>x</p>") == "<!-- c --><p>x</p>"
+    doc = pygixml.parse_html("<p>a</p><p>b</p>")
+    assert pygixml.xml_to_html(doc) == "<root><p>a</p><p>b</p></root>"
+    assert pygixml.xml_to_html(doc, unwrap="root", doctype=True) == "<!DOCTYPE html><p>a</p><p>b</p>"
+
+
+def test_xml_to_html_pretty_only_touches_block_structure():
+    out = back("<ul><li>a<li>b <b>c</b></ul><pre>  x\n  y</pre><p>t<span>1</span><span>2</span></p>", pretty=True)
+    assert out == (
+        "<ul>\n  <li>a</li>\n  <li>b <b>c</b></li>\n</ul>\n"
+        "<pre>  x\n  y</pre>\n<p>t<span>1</span><span>2</span></p>"
+    )
+    div = back("<div><span>a</span><span>b</span></div>", pretty=True)
+    assert div == "<div><span>a</span><span>b</span></div>"      # no space injected
+
+
+def test_to_html_methods_on_node_and_document():
+    doc = pygixml.parse_html("<ul><li>a<li>b</ul>")
+    assert doc.to_html() == "<ul><li>a</li><li>b</li></ul>"
+    assert doc.root.child("li").to_html() == "<li>a</li>"
+    assert doc.to_html(pretty=True) == "<ul>\n  <li>a</li>\n  <li>b</li>\n</ul>"
+
+
+@pytest.mark.parametrize("html", MESSY)
+def test_round_trip_is_stable(html):
+    once = back(html)
+    assert back(once) == once                       # html -> xml -> html is idempotent
+    assert pygixml.html_to_xml(once) == pygixml.html_to_xml(html)
+
+
+def test_round_trip_real_world_shaped_page():
+    # (also covers attribute newlines, see test_whitespace_in_attribute_values_survives)
+    once = back(PAGE)
+    assert back(once) == once
+    assert back(once, pretty=True) == back(back(once, pretty=True), pretty=True)
+
+
+# --- errors --------------------------------------------------------------
+
+def test_errors_are_pygixml_errors():
+    assert issubclass(pygixml.PygiXMLHTMLError, pygixml.PygiXMLError)
+
+
+@pytest.mark.parametrize("bad", [b"<p>x</p>", None, 42])
+def test_html_to_xml_rejects_non_str(bad):
+    with pytest.raises(pygixml.PygiXMLHTMLError, match="must be str"):
+        pygixml.html_to_xml(bad)
+    with pytest.raises(pygixml.PygiXMLError):
+        pygixml.parse_html(bad)
+
+
+def test_xml_to_html_rejects_bad_nodes():
+    with pytest.raises(pygixml.PygiXMLHTMLError, match="XMLNode or XMLDocument"):
+        pygixml.xml_to_html("<p/>")
+    null = pygixml.parse_string("<x/>").root.child("missing")
+    with pytest.raises(pygixml.PygiXMLHTMLError, match="null"):
+        pygixml.xml_to_html(null)
+
+
+def test_deep_nesting_is_an_error_not_a_crash():
+    deep = "<div>" * 5000 + "x"
+    xml = pygixml.parse_html(deep)
+    with pytest.raises(pygixml.PygiXMLHTMLError, match="nested too deeply"):
+        pygixml.xml_to_html(xml)
+
+
+def test_tokenizer_failure_reports_position(monkeypatch):
+    from pygixml import _html
+
+    def boom(self, data):
+        raise RuntimeError("kaput")
+    monkeypatch.setattr(_html._Builder, "feed", boom)
+    with pytest.raises(pygixml.PygiXMLHTMLError, match=r"line 1, column 0: kaput"):
+        pygixml.html_to_xml("<p>x")
+
+
+# --- convert CLI / FormatDocument, reverse ----------------------------------
+
+def test_format_document_to_html():
+    from pygixml.formats import FormatDocument
+    doc = FormatDocument({"ul": {"li": ["a", "b"]}})
+    assert doc.to_html() == "<ul><li>a</li><li>b</li></ul>"
+    # XML data is not run through HTML tag rules: case is kept, <p> doesn't auto-close
+    assert FormatDocument({"Doc": {"p": {"p": "x"}}}).to_html() == "<Doc><p><p>x</p></p></Doc>"
+
+
+def test_convert_cli_xml_to_html_and_html_cleanup(tmp_path):
+    import subprocess, sys
+    src = tmp_path / "d.xml"
+    src.write_text("<ul><li>a</li><li/></ul>", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, "-m", "pygixml", "convert", str(src), "--to", "html"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert out.strip() == "<ul><li>a</li><li></li></ul>"
+    messy = tmp_path / "m.html"
+    messy.write_text("<ul><li>a<li>b<br></ul>", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, "-m", "pygixml", "convert", str(messy), "-o", str(tmp_path / "c.html")],
+        capture_output=True, text=True, check=True,
+    )
+    assert (tmp_path / "c.html").read_text(encoding="utf-8") == "<ul><li>a</li><li>b<br></li></ul>"

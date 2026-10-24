@@ -4,7 +4,8 @@ HTML Support
 ============
 
 pygixml reads real-world (messy) HTML by first normalising it to
-well-formed XML, then handing that to the normal pugixml parser. Because
+well-formed XML, then handing that to the normal pugixml parser, and it can
+write a tree back out as HTML. Because
 the intermediate form is plain XML text, everything else in pygixml (XPath,
 :doc:`objectify </modules/objectify>`, :doc:`dictify </modules/dictify>`,
 :doc:`jsonify </modules/jsonify>`) works on HTML with no extra code.
@@ -26,9 +27,17 @@ the intermediate form is plain XML text, everything else in pygixml (XPath,
    from pygixml import dictify
    dictify.parse(pygixml.html_to_xml(page))
 
-From the shell, HTML is an input format of ``pygixml convert``::
+   # 4. ...and back: edit the tree, write HTML
+   for n in doc.root.select_nodes("//script"):
+       n.node.parent.remove_child(n.node)
+   print(doc.to_html(pretty=True, unwrap="root"))
+
+From the shell, HTML is both an input and an output format of
+``pygixml convert``::
 
    pygixml convert page.html --to json
+   pygixml convert messy.html -o clean.html -p     # normalise + re-indent
+   pygixml convert data.xml --to html
 
 What gets fixed
 ---------------
@@ -42,13 +51,68 @@ What gets fixed
   attributes (the first one wins, as in browsers)
 * entities such as ``&nbsp;`` and ``&copy;`` become real characters
 * ``<script>`` / ``<style>`` contents are kept as raw text
-* names XML rejects are made safe: ``@click`` becomes ``_click`` and
-  ``o:p`` becomes ``o_p``
+* names XML rejects are encoded reversibly (see below)
+* newlines and tabs inside attribute values are kept (XML parsers would
+  otherwise turn them into spaces)
 * comments containing ``--``, control characters, doctype and
   ``<?...?>`` instructions
 * fragments with several top-level nodes (or top-level text) are wrapped in
   a ``<root>`` element; a single top-level element (usually ``<html>``) is
   used as is
+
+Names XML can't hold
+--------------------
+
+Names such as ``o:p`` (a bare prefix breaks namespace-aware parsers) or
+``@click`` are encoded, not dropped, and :func:`pygixml.xml_to_html`
+restores them:
+
+.. list-table::
+   :header-rows: 1
+
+   * - HTML name
+     - In the XML
+   * - ``o:p``
+     - ``o_colon_p``
+   * - ``@click``
+     - ``_at_click``
+   * - ``[prop]``
+     - ``_lbracket_prop_rbracket_``
+   * - ``1bad``
+     - ``_x31_bad``  (any other character is ``_x<hex>_``)
+
+The only ambiguity: an original name that already contains a literal
+``_colon_``, ``_at_``, ... decodes to the character.
+
+Back to HTML
+------------
+
+:func:`pygixml.xml_to_html` (also ``node.to_html()`` and
+``doc.to_html()``) follows HTML rules that ``to_string()`` does not:
+
+* void tags are written ``<br>``, empty elements ``<div></div>`` (never
+  ``<div/>``, which browsers treat as an *open* tag)
+* ``<script>`` / ``<style>`` contents are not escaped (a literal ``</script``
+  inside is written ``<\/script`` so it cannot close the element early)
+* ``pretty=True`` only indents block-level structure. Inline elements, text
+  and ``<pre>``/``<textarea>``/``<script>``/``<style>`` are never
+  re-indented, so rendering does not change
+* ``unwrap="root"`` drops the wrapper that fragments get when parsed
+* ``doctype=True`` prepends ``<!DOCTYPE html>``
+
+``parse_html`` keeps whitespace-only text and comments by default (pass
+``options=`` to change that), so a tree survives the trip:
+``html_to_xml(xml_to_html(parse_html(x))) == html_to_xml(x)``. The output is
+a normalised version of the input, not a byte-for-byte copy.
+
+Errors
+------
+
+Everything raises :class:`pygixml.PygiXMLHTMLError`, a subclass of
+:class:`pygixml.PygiXMLError`: input that is not ``str``, a tokenizer
+failure (with line and column), normalised XML the parser rejects, a null
+or unsupported node given to ``xml_to_html``, or a tree nested too deeply
+to serialize.
 
 Limitations
 -----------
@@ -65,3 +129,7 @@ API
 .. autofunction:: pygixml.html_to_xml
 
 .. autofunction:: pygixml.parse_html
+
+.. autofunction:: pygixml.xml_to_html
+
+.. autoexception:: pygixml.PygiXMLHTMLError

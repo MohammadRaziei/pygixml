@@ -10,16 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- HTML support. `pygixml.html_to_xml(html)` normalises messy HTML to
-  well-formed XML (void tags, implied end tags, stray end tags,
-  valueless/duplicate attributes, entities, raw `<script>`/`<style>`,
-  invalid names, fragments wrapped in a root), and
-  `pygixml.parse_html(html)` parses the result into an `XMLDocument`, so
-  XPath, `objectify`, `dictify` and `jsonify` work on HTML. Pure Python on
-  top of the stdlib tokenizer, no new dependency; not the full HTML5
-  tree-building algorithm (see `docs/source/modules/html.rst`).
-- `pygixml convert` accepts HTML as an input format (`.html`/`.htm`, or
-  `--from html`), and `FormatDocument.from_html` is available.
+- HTML support, both directions.
+  - `pygixml.html_to_xml(html)` normalises messy HTML to well-formed XML
+    (void tags, implied end tags, stray end tags, valueless/duplicate
+    attributes, entities, raw `<script>`/`<style>`, whitespace in
+    attribute values, fragments wrapped in a root). Names XML rejects are
+    encoded reversibly: `o:p` -> `o_colon_p`, `@click` -> `_at_click`,
+    anything else -> `_x<hex>_`.
+  - `pygixml.parse_html(html)` parses the result into an `XMLDocument`
+    (keeps whitespace-only text and comments by default), so XPath,
+    `objectify`, `dictify` and `jsonify` work on HTML.
+  - `pygixml.xml_to_html(node_or_doc, pretty, indent, doctype, unwrap)`,
+    also `XMLNode.to_html()` / `XMLDocument.to_html()`: serialize as HTML
+    (`<br>`, `<div></div>`, raw script/style, original names restored,
+    pretty-printing that never re-indents inline content or `<pre>`).
+  - `pygixml.PygiXMLHTMLError` (a `PygiXMLError`) for every failure in the
+    above.
+  - Pure Python on top of the stdlib tokenizer, no new dependency; not the
+    full HTML5 tree-building algorithm (see `docs/source/modules/html.rst`).
+- `pygixml convert` reads and writes HTML (`.html`/`.htm`, `--from html`,
+  `--to html`), and `FormatDocument` gained `from_html` / `to_html`.
 
 ## [v0.13.0] - 2026-09-14
 

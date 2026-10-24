@@ -14,7 +14,7 @@ instruction.
 
     json   -- stdlib, always available
     xml    -- pygixml.dictify, always available (this package)
-    html   -- input only, via pygixml.html_to_xml (this package)
+    html   -- via pygixml.html_to_xml / xml_to_html (this package)
     yaml   -- needs PyYAML  (pip install PyYAML)
     toon   -- needs ctoon   (pip install ctoon)
 
@@ -30,8 +30,10 @@ Example::
 from __future__ import annotations
 
 FORMATS = ("json", "xml", "yaml", "toon")
-# HTML is read-only: it can be converted *from*, never *to*.
+# HTML is only a *target* of XML-shaped data and a *source* of messy markup;
+# it is not in FORMATS so the five-way json/xml/yaml/toon set stays unchanged.
 INPUT_FORMATS = FORMATS + ("html",)
+OUTPUT_FORMATS = FORMATS + ("html",)
 
 
 def _missing(package: str, pip_name: str, format_name: str) -> ImportError:
@@ -93,6 +95,15 @@ class FormatDocument:
         """Messy HTML -> normalised XML -> dict (see :func:`pygixml.html_to_xml`)."""
         from pygixml import dictify, html_to_xml
         return cls(dictify.parse(html_to_xml(text), **kwargs))
+
+    def to_html(self, pretty: bool = False, indent: str = "  ",
+                root_tag: str = "root", **kwargs) -> str:
+        """Dict -> XML -> HTML (see :func:`pygixml.xml_to_html`)."""
+        import pygixml
+        from pygixml._html import _KEEP_ALL
+        # real XML in, so parse_string (not parse_html: no HTML tag fix-ups)
+        doc = pygixml.parse_string(self.to_xml(root_tag=root_tag), _KEEP_ALL)
+        return pygixml.xml_to_html(doc, pretty=pretty, indent=indent, **kwargs)
 
     # ----------------------------------------------------------- YAML --
 

@@ -557,6 +557,17 @@ cdef class XMLDocument:
         cdef string s = pugi_serialize_node(self._doc.first_child(), indent_bytes)
         return s.decode('utf-8')
 
+    def to_html(self, pretty=False, indent="  ", doctype=False, unwrap=None):
+        """Serialize to HTML (void tags as ``<br>``, ``<div></div>`` never
+        ``<div/>``, raw ``<script>``/``<style>``).  See
+        :func:`pygixml.xml_to_html` for the arguments.
+
+        Returns:
+            str
+        """
+        from pygixml._html import xml_to_html
+        return xml_to_html(self, pretty, indent, doctype, unwrap)
+
     def __iter__(self):
         """Iterate over every element node in the document in depth-first
         order, starting from the root element.
@@ -1213,6 +1224,17 @@ cdef class XMLNode:
         cdef bytes indent_bytes = indent_str.encode('utf-8')
         cdef string s = pugi_serialize_node(self._node, indent_bytes)
         return s.decode('utf-8')
+
+    def to_html(self, pretty=False, indent="  ", doctype=False, unwrap=None):
+        """Serialize to HTML (void tags as ``<br>``, ``<div></div>`` never
+        ``<div/>``, raw ``<script>``/``<style>``).  See
+        :func:`pygixml.xml_to_html` for the arguments.
+
+        Returns:
+            str
+        """
+        from pygixml._html import xml_to_html
+        return xml_to_html(self, pretty, indent, doctype, unwrap)
 
     @property
     def xml(self):

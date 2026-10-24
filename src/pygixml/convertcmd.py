@@ -16,7 +16,8 @@ Examples::
     pygixml convert data.xml -o data.yaml
     pygixml convert data.json -o data.xml -p
     pygixml convert data.yaml --to toon
-    pygixml convert page.html -o page.json     # HTML is input-only
+    pygixml convert page.html -o page.json
+    pygixml convert messy.html -o clean.html -p   # normalise + re-indent
     cat data.xml | pygixml convert - --to json
 
 YAML support needs PyYAML (``pip install PyYAML``); TOON support needs
@@ -35,7 +36,8 @@ import argparse
 import os
 import sys
 
-from pygixml.formats import FORMATS, INPUT_FORMATS
+from pygixml.formats import FORMATS, INPUT_FORMATS, OUTPUT_FORMATS
+from pygixml import PygiXMLError
 
 _EXT_TO_FORMAT = {
     ".xml": "xml",
@@ -70,13 +72,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Input format. Auto-detected from INPUT's extension if omitted.",
     )
     p.add_argument(
-        "--to", dest="to_fmt", choices=FORMATS, default=None,
+        "--to", dest="to_fmt", choices=OUTPUT_FORMATS, default=None,
         help="Output format. Auto-detected from --output's extension if "
              "omitted; required when writing to stdout.",
     )
     p.add_argument(
         "--pretty", "-p", action="store_true", default=False,
-        help="Pretty-print, where the target format supports it (json, xml).",
+        help="Pretty-print, where the target format supports it (json, xml, html).",
     )
     p.add_argument(
         "--indent", default=None, metavar="N_OR_STR",
@@ -107,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
     if to_fmt is None:
         parser.error(
             "can't tell the output format -- pass --to explicitly "
-            f"(one of {FORMATS}), or use -o FILE.ext"
+            f"(one of {OUTPUT_FORMATS}), or use -o FILE.ext"
         )
 
     if args.file == "-":
@@ -126,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     to_kwargs = {}
-    if to_fmt in ("json", "xml"):
+    if to_fmt in ("json", "xml", "html"):
         to_kwargs["pretty"] = args.pretty
         if args.indent is not None:
             to_kwargs["indent"] = (
@@ -138,6 +140,9 @@ def main(argv: list[str] | None = None) -> int:
     except ImportError as e:
         sys.stderr.write(f"{parser.prog}: {e}\n")
         return 3
+    except PygiXMLError as e:
+        sys.stderr.write(f"{parser.prog}: couldn't write {to_fmt} output: {e}\n")
+        return 1
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
