@@ -29,6 +29,7 @@ if(DEFINED SKBUILD)
 
     # Include directories
     target_include_directories(pygixml_cy PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/pugixml/src
     )
 

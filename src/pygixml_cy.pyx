@@ -565,7 +565,6 @@ cdef class XMLDocument:
         Returns:
             str
         """
-        from pygixml._html import xml_to_html
         return xml_to_html(self, pretty, indent, doctype, unwrap)
 
     def __iter__(self):
@@ -1233,7 +1232,6 @@ cdef class XMLNode:
         Returns:
             str
         """
-        from pygixml._html import xml_to_html
         return xml_to_html(self, pretty, indent, doctype, unwrap)
 
     @property
@@ -1836,3 +1834,4 @@ include "stream.pxi"
 include "objectify.pxi"
 include "dictify.pxi"
 include "jsonify.pxi"
+include "html.pxi"

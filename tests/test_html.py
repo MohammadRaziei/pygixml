@@ -98,12 +98,13 @@ def test_attribute_value_escaping():
 
 
 def test_whitespace_in_attribute_values_survives():
-    src = "<div data-code='a\n\tb\r\nc'>x</div>"
-    assert ET.fromstring(conv(src)).get("data-code") == "a\n\tb\r\nc"
+    # (CRLF / lone CR are normalised to LF first, as the HTML spec says)
+    src = "<div data-code='a\n\tb\r\nc\rd'>x</div>"
+    assert ET.fromstring(conv(src)).get("data-code") == "a\n\tb\nc\nd"
     doc = pygixml.parse_html(src)
-    assert doc.root.attribute("data-code").value == "a\n\tb\r\nc"
+    assert doc.root.attribute("data-code").value == "a\n\tb\nc\nd"
     # HTML output keeps them literal (no &#10; noise)
-    assert pygixml.xml_to_html(doc) == '<div data-code="a\n\tb\r\nc">x</div>'
+    assert pygixml.xml_to_html(doc) == '<div data-code="a\n\tb\nc\nd">x</div>'
 
 
 # --- text, entities, raw text, comments -------------------------------
@@ -303,21 +304,17 @@ def test_xml_to_html_rejects_bad_nodes():
         pygixml.xml_to_html(null)
 
 
-def test_deep_nesting_is_an_error_not_a_crash():
-    deep = "<div>" * 5000 + "x"
-    xml = pygixml.parse_html(deep)
-    with pytest.raises(pygixml.PygiXMLHTMLError, match="nested too deeply"):
-        pygixml.xml_to_html(xml)
+def test_very_deep_nesting_does_not_crash():
+    # both directions are iterative in C++: no stack overflow, no RecursionError
+    n = 20000
+    doc = pygixml.parse_html("<div>" * n + "x")
+    out = pygixml.xml_to_html(doc)
+    assert out.startswith("<div><div>") and out.count("<div>") == n and out.count("</div>") == n
 
 
-def test_tokenizer_failure_reports_position(monkeypatch):
-    from pygixml import _html
-
-    def boom(self, data):
-        raise RuntimeError("kaput")
-    monkeypatch.setattr(_html._Builder, "feed", boom)
-    with pytest.raises(pygixml.PygiXMLHTMLError, match=r"line 1, column 0: kaput"):
-        pygixml.html_to_xml("<p>x")
+def test_empty_root_name_rejected():
+    with pytest.raises(pygixml.PygiXMLHTMLError, match="root"):
+        pygixml.html_to_xml("<p>x", root="")
 
 
 # --- convert CLI / FormatDocument, reverse ----------------------------------
@@ -346,3 +343,58 @@ def test_convert_cli_xml_to_html_and_html_cleanup(tmp_path):
         capture_output=True, text=True, check=True,
     )
     assert (tmp_path / "c.html").read_text(encoding="utf-8") == "<ul><li>a</li><li>b<br></li></ul>"
+
+
+# --- C++ tokenizer specifics ---------------------------------------------
+
+def test_nul_character_does_not_truncate_input():
+    out = conv("<p>a</\x00b</p>c")
+    assert out.endswith("c</p>") and "a" in out   # (bogus comment, then the rest is kept)
+    assert conv("<p>a\x00b</p>") == "<p>ab</p>"
+
+
+def test_eof_inside_a_tag_drops_the_tag_like_browsers_do():
+    assert conv("<p>a</p><b") == "<p>a</p>"
+    assert conv("x<<y") == "<root>x&lt;</root>"
+    assert conv("<p>a</p><a href='unterminated") == "<p>a</p>"
+
+
+def test_title_and_textarea_are_rcdata_script_style_are_raw():
+    assert conv("<title>a &amp; <b>x</b></title>") == "<title>a &amp; &lt;b&gt;x&lt;/b&gt;</title>"
+    assert conv("<textarea>\n<i>&lt;</textarea>") == "<textarea>&lt;i&gt;&lt;</textarea>"   # leading \n dropped
+    assert conv("<script>a&amp;b</script>") == "<script>a&amp;amp;b</script>"                # no decoding
+
+
+def test_html5_character_references():
+    root = ET.fromstring(conv("<p>&copy &copy; &amp &notit; &#150; &#x41 &#0; &#xD800; &bogus; &</p>"))
+    assert root.text == "\u00a9 \u00a9 & \u00ac" + "it; \u2013 A \ufffd \ufffd &bogus; &"
+
+
+def test_legacy_reference_in_attribute_followed_by_equals_or_alnum_is_literal():
+    # the classic ?a=1&copy=2 URL: must not turn into "?a=1(c)=2"
+    el = ET.fromstring(conv("<a href='?a=1&copy=2&amp;b=3&copyx'>t</a>"))
+    assert el.get("href") == "?a=1&copy=2&b=3&copyx"
+    assert ET.fromstring(conv("<p>?a=1&copy=2</p>")).text == "?a=1\u00a9=2"       # text: decoded
+
+
+def test_unicode_names_and_xml_name_rules():
+    assert conv("<a日本 ü=1>t</a日本>") == '<a日本 ü="1">t</a日本>'
+    assert conv("<é>t").startswith("<root>&lt;é&gt;t")       # HTML5: a tag name starts with an ASCII letter
+    assert conv("<a -x=1 .y=2 z-=3>t</a>") == '<a _x2d_x="1" _x2e_y="2" z-="3">t</a>'
+    out = back("<a -x=1 .y=2 :z=3 w\u2014v=4>t</a>")
+    assert out == '<a -x="1" .y="2" :z="3" w\u2014v="4">t</a>'
+
+
+def test_pretty_does_not_inject_newlines_next_to_top_level_text():
+    doc = pygixml.parse_html("hello<ul><li>a<li>b</ul>")
+    once = pygixml.xml_to_html(doc, unwrap="root", pretty=True)
+    assert once == "hello<ul>\n  <li>a</li>\n  <li>b</li>\n</ul>"
+    assert pygixml.xml_to_html(pygixml.parse_html(once), unwrap="root", pretty=True) == once
+
+
+def test_text_of_only_illegal_characters_is_blank():
+    assert conv("\ufffe<p>x</p>") == "<p>x</p>"          # no needless <root> wrapper
+
+
+def test_lone_surrogate_does_not_abort():
+    assert conv("<p>a\ud800b</p>").startswith("<p>a")

@@ -100,9 +100,12 @@ class FormatDocument:
                 root_tag: str = "root", **kwargs) -> str:
         """Dict -> XML -> HTML (see :func:`pygixml.xml_to_html`)."""
         import pygixml
-        from pygixml._html import _KEEP_ALL
+        flags = pygixml.ParseFlags
         # real XML in, so parse_string (not parse_html: no HTML tag fix-ups)
-        doc = pygixml.parse_string(self.to_xml(root_tag=root_tag), _KEEP_ALL)
+        doc = pygixml.parse_string(
+            self.to_xml(root_tag=root_tag),
+            flags.DEFAULT | flags.WS_PCDATA | flags.COMMENTS,
+        )
         return pygixml.xml_to_html(doc, pretty=pretty, indent=indent, **kwargs)
 
     # ----------------------------------------------------------- YAML --

@@ -21,8 +21,11 @@ from .pygixml_cy import (
     PullParser,
     iterparse,
     iterfind,
+    PygiXMLHTMLError,
+    html_to_xml,
+    parse_html,
+    xml_to_html,
 )
-from ._html import PygiXMLHTMLError, html_to_xml, parse_html, xml_to_html
 
 from . import objectify
 from . import dictify

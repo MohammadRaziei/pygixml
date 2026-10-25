@@ -5,7 +5,9 @@ HTML Support
 
 pygixml reads real-world (messy) HTML by first normalising it to
 well-formed XML, then handing that to the normal pugixml parser, and it can
-write a tree back out as HTML. Because
+write a tree back out as HTML. All of it runs in C++, and every call
+crosses the Python/C++ boundary exactly once: the text goes in, the result
+comes out, and nothing is walked or built node by node from Python. Because
 the intermediate form is plain XML text, everything else in pygixml (XPath,
 :doc:`objectify </modules/objectify>`, :doc:`dictify </modules/dictify>`,
 :doc:`jsonify </modules/jsonify>`) works on HTML with no extra code.
@@ -49,8 +51,17 @@ What gets fixed
 * stray end tags are ignored, unclosed tags are closed at the end
 * valueless attributes (``disabled`` becomes ``disabled=""``) and duplicate
   attributes (the first one wins, as in browsers)
-* entities such as ``&nbsp;`` and ``&copy;`` become real characters
-* ``<script>`` / ``<style>`` contents are kept as raw text
+* HTML5 character references (all 2231 named ones, legacy ones without a
+  ``;``, numeric ones) become real characters. In attribute values a legacy
+  reference followed by ``=`` or a letter is left alone, so ``?a=1&copy=2``
+  stays a URL
+* ``<script>`` / ``<style>`` contents are kept as raw text, and
+  ``<title>`` / ``<textarea>`` contents are text (entities decoded, no tags
+  inside), as in browsers
+* ``\r\n`` and lone ``\r`` become ``\n``; the newline right after
+  ``<pre>`` / ``<textarea>`` is dropped (and written back by
+  ``xml_to_html``), exactly as the HTML spec says
+* a tag cut off by the end of the input is dropped, as browsers do
 * names XML rejects are encoded reversibly (see below)
 * newlines and tabs inside attribute values are kept (XML parsers would
   otherwise turn them into spaces)
@@ -65,7 +76,8 @@ Names XML can't hold
 
 Names such as ``o:p`` (a bare prefix breaks namespace-aware parsers) or
 ``@click`` are encoded, not dropped, and :func:`pygixml.xml_to_html`
-restores them:
+restores them. What counts as a valid character follows the XML 1.0 name
+rules, so Unicode letters in names are kept as they are:
 
 .. list-table::
    :header-rows: 1
@@ -96,7 +108,10 @@ Back to HTML
   inside is written ``<\/script`` so it cannot close the element early)
 * ``pretty=True`` only indents block-level structure. Inline elements, text
   and ``<pre>``/``<textarea>``/``<script>``/``<style>`` are never
-  re-indented, so rendering does not change
+  re-indented, so rendering does not change. Likewise no newline is added
+  between top-level nodes if one of them is text or an inline element
+* the walk is iterative, so a very deeply nested document cannot overflow
+  the stack (20000 nested ``<div>`` is fine)
 * ``unwrap="root"`` drops the wrapper that fragments get when parsed
 * ``doctype=True`` prepends ``<!DOCTYPE html>``
 
@@ -109,10 +124,10 @@ Errors
 ------
 
 Everything raises :class:`pygixml.PygiXMLHTMLError`, a subclass of
-:class:`pygixml.PygiXMLError`: input that is not ``str``, a tokenizer
-failure (with line and column), normalised XML the parser rejects, a null
-or unsupported node given to ``xml_to_html``, or a tree nested too deeply
-to serialize.
+:class:`pygixml.PygiXMLError`: input that is not ``str`` (decode bytes
+first), an empty ``root`` name, normalised XML the parser rejects, or a null
+or unsupported node given to ``xml_to_html``. HTML itself never fails to
+tokenize: like a browser, the C++ tokenizer recovers from anything.
 
 Limitations
 -----------
