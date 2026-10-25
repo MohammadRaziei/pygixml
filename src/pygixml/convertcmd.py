@@ -118,31 +118,51 @@ def main(argv: list[str] | None = None) -> int:
         with open(args.file, "r", encoding="utf-8") as f:
             text = f.read()
 
-    try:
-        doc = FormatDocument.from_format(text, from_fmt)
-    except ImportError as e:
-        sys.stderr.write(f"{parser.prog}: {e}\n")
-        return 3
-    except Exception as e:
-        sys.stderr.write(f"{parser.prog}: couldn't parse {from_fmt} input: {e}\n")
-        return 1
+    result = None
+    if to_fmt == "html" and from_fmt in ("html", "xml"):
+        # tree -> HTML directly: a dict in between would drop mixed content
+        # (text interleaved with tags) and the wrapper/pretty options.
+        import pygixml
+        try:
+            if from_fmt == "html":
+                doc = pygixml.parse_html(text)
+            else:
+                f = pygixml.ParseFlags
+                doc = pygixml.parse_string(text, f.DEFAULT | f.WS_PCDATA | f.COMMENTS)
+        except PygiXMLError as e:
+            sys.stderr.write(f"{parser.prog}: couldn't parse {from_fmt} input: {e}\n")
+            return 1
+        result = pygixml.xml_to_html(
+            doc, pretty=args.pretty,
+            indent="  " if args.indent is None else args.indent,
+            unwrap="root" if from_fmt == "html" else None,
+        )
+    else:
+        try:
+            doc = FormatDocument.from_format(text, from_fmt)
+        except ImportError as e:
+            sys.stderr.write(f"{parser.prog}: {e}\n")
+            return 3
+        except Exception as e:
+            sys.stderr.write(f"{parser.prog}: couldn't parse {from_fmt} input: {e}\n")
+            return 1
 
-    to_kwargs = {}
-    if to_fmt in ("json", "xml", "html"):
-        to_kwargs["pretty"] = args.pretty
-        if args.indent is not None:
-            to_kwargs["indent"] = (
-                int(args.indent) if to_fmt == "json" else args.indent
-            )
+        to_kwargs = {}
+        if to_fmt in ("json", "xml", "html"):
+            to_kwargs["pretty"] = args.pretty
+            if args.indent is not None:
+                to_kwargs["indent"] = (
+                    int(args.indent) if to_fmt == "json" else args.indent
+                )
 
-    try:
-        result = doc.to_format(to_fmt, **to_kwargs)
-    except ImportError as e:
-        sys.stderr.write(f"{parser.prog}: {e}\n")
-        return 3
-    except PygiXMLError as e:
-        sys.stderr.write(f"{parser.prog}: couldn't write {to_fmt} output: {e}\n")
-        return 1
+        try:
+            result = doc.to_format(to_fmt, **to_kwargs)
+        except ImportError as e:
+            sys.stderr.write(f"{parser.prog}: {e}\n")
+            return 3
+        except PygiXMLError as e:
+            sys.stderr.write(f"{parser.prog}: couldn't write {to_fmt} output: {e}\n")
+            return 1
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

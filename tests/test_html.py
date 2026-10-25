@@ -398,3 +398,27 @@ def test_text_of_only_illegal_characters_is_blank():
 
 def test_lone_surrogate_does_not_abort():
     assert conv("<p>a\ud800b</p>").startswith("<p>a")
+
+
+def test_convert_cli_html_to_html_keeps_mixed_content(tmp_path):
+    import subprocess, sys
+    src = tmp_path / "m.html"
+    src.write_text("<p>a <b>x</b> c <i>y</i> d</p>\n<ul><li>1<li>2</ul>", encoding="utf-8")
+
+    def run(*args):
+        return subprocess.run(
+            [sys.executable, "-m", "pygixml", "convert", str(src), *args],
+            capture_output=True, text=True, check=True,
+        ).stdout.rstrip("\n")
+
+    assert run("--to", "html") == "<p>a <b>x</b> c <i>y</i> d</p><ul><li>1</li><li>2</li></ul>"
+    assert run("--to", "html", "-p") == (
+        "<p>a <b>x</b> c <i>y</i> d</p>\n<ul>\n  <li>1</li>\n  <li>2</li>\n</ul>"
+    )
+    xml = tmp_path / "m.xml"
+    xml.write_text("<p>a <b>x</b> c <i>y</i> d</p>", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, "-m", "pygixml", "convert", str(xml), "--to", "html"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert out == "<p>a <b>x</b> c <i>y</i> d</p>"
