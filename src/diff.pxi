@@ -617,9 +617,12 @@ static inline bool is_equal(const pugi::xml_node& a, bool a_sib, const pugi::xml
 // value) and refuses with an error if the document is not the one the script
 // was made for.
 //
-// ponytail: text that normalisation would merge (a comment dropped between
-// two text nodes) is still two nodes here; applies to documents of one
-// parse, not to hand-edited node sequences.
+// The normalised view merges adjacent text (CDATA included) into one node,
+// also across what it does not see: ignored comments, <?pi?>, doctype. The
+// live document may hold such a run as several nodes, so patch() first merges
+// every run of two or more into its first node; the script's paths and
+// positions then mean the same thing here as in diff(). Only these runs are
+// touched. Everything else (ignored comments, blank text) stays where it is.
 
 struct View {
     const Options& o;
@@ -690,8 +693,34 @@ static inline std::string attr_view(const pugi::xml_attribute& a, const Options&
     return (o.class_as_set && std::string(a.name()) == "class") ? pygixml_tree::normalise_class(v) : v;
 }
 
+static inline bool is_text(const pugi::xml_node& n) { return n.type() == pugi::node_pcdata || n.type() == pugi::node_cdata; }
+
+static inline void merge_text_runs(pugi::xml_node root, const Options& o) {
+    std::vector<pugi::xml_node> todo{root};
+    while (!todo.empty()) {
+        pugi::xml_node parent = todo.back(); todo.pop_back();
+        for (pugi::xml_node c = parent.first_child(); c;) {
+            if (c.type() == pugi::node_element) { todo.push_back(c); c = c.next_sibling(); continue; }
+            if (!is_text(c)) { c = c.next_sibling(); continue; }
+            std::string text = c.value();
+            std::vector<pugi::xml_node> rest;                  // the other text nodes of this run
+            for (pugi::xml_node s = c.next_sibling(); s; s = s.next_sibling()) {
+                if (is_text(s)) { text += s.value(); rest.push_back(s); }
+                else if (s.type() == pugi::node_element || (s.type() == pugi::node_comment && !o.ignore_comments)) break;
+            }
+            pugi::xml_node next = c.next_sibling();
+            if (!rest.empty() && !(o.ignore_whitespace && pygixml_tree::collapse_ws(text).empty())) {   // a blank run is invisible anyway
+                c.set_value(text.c_str());
+                for (pugi::xml_node& r : rest) { if (r == next) next = r.next_sibling(); parent.remove_child(r); }
+            }
+            c = next;
+        }
+    }
+}
+
 static inline void patch(pugi::xml_node doc, const std::vector<Action>& acts, const Options& o) {
     View v{o, pugi::xml_node()};
+    if (!acts.empty()) merge_text_runs(doc, o);
     for (const Action& a : acts) {
         pugi::xml_node ref; bool after = false;
         switch (a.kind) {

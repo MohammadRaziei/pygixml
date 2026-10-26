@@ -374,6 +374,48 @@ def test_patch_leaves_what_normalisation_ignores_alone():
     assert pygixml.is_equal(a, b)
 
 
+FULL = pygixml.ParseFlags.FULL
+
+
+@pytest.mark.parametrize("a, b", [
+    ("<a>x<!--c-->y</a>", "<a>x<!--c-->z</a>"),                      # comment between two text nodes
+    ("<a><![CDATA[x]]>y</a>", "<a><![CDATA[x]]>z</a>"),              # CDATA next to text
+    ("<a>x<?p q?>y<b/>w</a>", "<a>x<?p q?>y<b/>v</a>"),              # processing instruction
+    ("<a>x<!--c-->y<b/>t</a>", "<a><b/>t</a>"),                      # run deleted
+    ("<a><b/>x<!--c-->y</a>", "<a><b/>x<!--c-->y<i/></a>"),          # insert after a run
+    ("<a>x<!--c-->y<b/>t</a>", "<a>q<b/>t<i/>x<!--c-->y</a>"),       # run moved / rebuilt
+    ("<a> <!--c-->x<!--d--> </a>", "<a>y</a>"),                      # blank pieces around text
+])
+@pytest.mark.parametrize("comments", [True, False])
+def test_patch_merges_text_split_by_ignored_nodes(a, b, comments):
+    da, db = pygixml.parse_string(a, FULL), pygixml.parse_string(b, FULL)
+    assert patched_equals(da, db, ignore_comments=comments), (a, b)
+
+
+def test_patch_merges_only_runs_and_keeps_ignored_nodes():
+    a = pygixml.parse_string("<a><!--keep-->x<!--c-->y<b/>z</a>", FULL)
+    b = pygixml.parse_string("<a>xy<b/>z</a>", FULL)
+    assert pygixml.diff(a, b) == []                       # one text node in the normalised view
+    pygixml.patch(a, [pygixml.UpdateText("/a[1]/text()[1]", "x w", "xy", None)])
+    xml = a.to_string() if hasattr(a, "to_string") else str(a)
+    assert "<!--keep-->" in xml and "<!--c-->" in xml and "x w" in xml
+
+
+def test_fuzz_patch_text_split_by_invisible_nodes():
+    r = random.Random(11)
+    pieces = ["x", "y z", " ", "<!--c-->", "<![CDATA[q]]>", "<?p d?>", "<b/>", "<i>t</i>", "<i>u<!--k-->v</i>", "<![CDATA[ ]]>"]
+    for _ in range(600):
+        mk = lambda: "<r>" + "".join(r.choice(pieces) for _ in range(r.randint(1, 9))) + "</r>"
+        a = mk()
+        b = a.replace(r.choice(pieces), r.choice(pieces), 1) if r.random() < 0.7 else mk()
+        try:
+            ET.fromstring(a); ET.fromstring(b)               # a blind replace can break the markup
+        except ET.ParseError:
+            continue
+        for flags in ({}, {"ignore_comments": False}, {"ignore_whitespace": False}):
+            assert patched_equals(pygixml.parse_string(a, FULL), pygixml.parse_string(b, FULL), **flags), (a, b, flags)
+
+
 def test_patch_refuses_a_document_it_was_not_made_for():
     a = pygixml.parse_string("<r><p>one</p><q a='1'/></r>")
     b = pygixml.parse_string("<r><p>two</p><q a='2'/></r>")

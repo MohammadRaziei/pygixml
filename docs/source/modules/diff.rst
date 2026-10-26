@@ -91,6 +91,10 @@ path exists, the old text, the old attribute value), so a script is refused
 with :class:`pygixml.PygiXMLDiffError` when the document is not the one it was
 made for. The document may then be partly patched; patch a copy if you need
 all-or-nothing. ``patch`` works on a document, not on a single element.
+Adjacent text and CDATA nodes (also when only an ignored comment or processing
+instruction separates them) are one text node in the normalised view, so
+``patch`` first merges such runs in the document; the ignored comment itself
+stays, after the merged text.
 
 Normalisation
 -------------
