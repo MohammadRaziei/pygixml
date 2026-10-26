@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     text); `moves=True` also finds subtrees that changed parent. The script
     is verified before it is returned. Optional word-level diff of updated
     text.
+  - `pygixml.patch(doc, actions)`: apply a script to a document in place,
+    through the same normalised view (what normalisation ignores is left
+    alone); every action checks what it expects, so a script that doesn't
+    belong to the document is refused.
   - `pygixml.is_equal(a, b)`: equivalence after normalisation (blank text,
     comments, ignored attributes, `class` as a set), in one linear pass.
   - `pygixml.signature(node)` / `pygixml.similarity(a, b)`: structure-only

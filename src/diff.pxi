@@ -40,6 +40,7 @@ cdef extern from *:
 // elements never get renamed (a different tag is delete + insert); no
 // cross-parent move for a subtree that is both moved and edited.
 
+#include <cstdlib>
 #include <deque>
 #include <stdexcept>
 #include <unordered_map>
@@ -606,6 +607,149 @@ static inline bool is_equal(const pugi::xml_node& a, bool a_sib, const pugi::xml
     return pygixml_tree::build(a, a_sib, o).hash[0] == pygixml_tree::build(b, b_sib, o).hash[0];
 }
 
+
+// ------------------------------------------------------------------ patch
+//
+// Apply an edit script to a real document, node by node, using the same view
+// of the tree that diff() used: paths count only what normalisation keeps
+// (blank text and, by default, comments are invisible and left alone). Every
+// action checks what it expects to find (the old text, the old attribute
+// value) and refuses with an error if the document is not the one the script
+// was made for.
+//
+// ponytail: text that normalisation would merge (a comment dropped between
+// two text nodes) is still two nodes here; applies to documents of one
+// parse, not to hand-edited node sequences.
+
+struct View {
+    const Options& o;
+    pugi::xml_node hidden;                          // a node being moved: not there while its parent is resolved
+    bool visible(const pugi::xml_node& n) const {
+        if (!hidden.empty() && n == hidden) return false;
+        switch (n.type()) {
+            case pugi::node_element: return true;
+            case pugi::node_pcdata:
+            case pugi::node_cdata: {
+                if (!o.ignore_whitespace) return true;
+                for (const char* c = n.value(); *c; ++c) if (!pygixml_html::is_ws(*c)) return true;
+                return false;
+            }
+            case pugi::node_comment: return !o.ignore_comments;
+            default: return false;
+        }
+    }
+};
+
+static inline bool step_matches(const pugi::xml_node& n, const std::string& name) {
+    if (name == "text()") return n.type() == pugi::node_pcdata || n.type() == pugi::node_cdata;
+    if (name == "comment()") return n.type() == pugi::node_comment;
+    return n.type() == pugi::node_element && name == n.name();
+}
+
+static inline pugi::xml_node resolve(const pugi::xml_node& doc, const std::string& path, const View& v) {
+    pugi::xml_node cur = doc;
+    size_t i = 0;
+    while (i < path.size()) {
+        if (path[i] == '/') { ++i; continue; }
+        size_t j = path.find('/', i);
+        std::string step = path.substr(i, j == std::string::npos ? std::string::npos : j - i);
+        i = j == std::string::npos ? path.size() : j;
+        size_t lb = step.rfind('[');
+        if (lb == std::string::npos || step.back() != ']') throw std::runtime_error("bad path: " + path);
+        std::string name = step.substr(0, lb);
+        int k = std::atoi(step.c_str() + lb + 1), count = 0;
+        pugi::xml_node found;
+        for (pugi::xml_node c = cur.first_child(); c; c = c.next_sibling())
+            if (v.visible(c) && step_matches(c, name) && ++count == k) { found = c; break; }
+        if (!found) throw std::runtime_error("path not found: " + path);
+        cur = found;
+    }
+    return cur;
+}
+
+// Where does visible child number `pos` go? Before `ref`, or (after = true)
+// after `ref`; an empty `ref` with `after` means "append".
+static inline void locate(const pugi::xml_node& parent, int pos, const View& v, pugi::xml_node& ref, bool& after) {
+    int count = 0;
+    pugi::xml_node last;
+    for (pugi::xml_node c = parent.first_child(); c; c = c.next_sibling()) {
+        if (!v.visible(c)) continue;
+        if (count == pos) { ref = c; after = false; return; }
+        ++count; last = c;
+    }
+    if (pos != count) throw std::runtime_error("position " + std::to_string(pos) + " is out of range");
+    ref = last; after = true;
+}
+
+static inline std::string text_view(const pugi::xml_node& n, const Options& o) {
+    std::string s = n.value();
+    return o.ignore_whitespace ? pygixml_tree::collapse_ws(s) : s;
+}
+static inline std::string attr_view(const pugi::xml_attribute& a, const Options& o) {
+    std::string v = a.value();
+    return (o.class_as_set && std::string(a.name()) == "class") ? pygixml_tree::normalise_class(v) : v;
+}
+
+static inline void patch(pugi::xml_node doc, const std::vector<Action>& acts, const Options& o) {
+    View v{o, pugi::xml_node()};
+    for (const Action& a : acts) {
+        pugi::xml_node ref; bool after = false;
+        switch (a.kind) {
+            case INSERT: case INSERT_TEXT: {
+                pugi::xml_node parent = resolve(doc, a.path, v);
+                locate(parent, a.pos, v, ref, after);
+                pugi::xml_node made;
+                if (a.kind == INSERT) {
+                    pugi::xml_document frag;
+                    pugi::xml_parse_result r = frag.load_buffer(a.a.data(), a.a.size(),
+                        pugi::parse_default | pugi::parse_comments | pugi::parse_ws_pcdata | pugi::parse_fragment);
+                    if (!r || !frag.first_child()) throw std::runtime_error("Insert: bad xml: " + a.a);
+                    pugi::xml_node src = frag.first_child();
+                    made = !after ? parent.insert_copy_before(src, ref) : ref ? parent.insert_copy_after(src, ref) : parent.append_copy(src);
+                } else {
+                    made = !after ? parent.insert_child_before(pugi::node_pcdata, ref)
+                         : ref ? parent.insert_child_after(pugi::node_pcdata, ref) : parent.append_child(pugi::node_pcdata);
+                    made.set_value(a.a.c_str());
+                }
+                if (!made) throw std::runtime_error("could not insert at " + a.path);
+                break;
+            }
+            case DELETE: {
+                pugi::xml_node n = resolve(doc, a.path, v);
+                if (!n.parent().remove_child(n)) throw std::runtime_error("could not delete " + a.path);
+                break;
+            }
+            case MOVE: {
+                pugi::xml_node n = resolve(doc, a.path, v);
+                View hide{o, n};      // the parent path is read with n detached (so it can't lead into n itself)
+                pugi::xml_node parent = resolve(doc, a.a, hide);
+                locate(parent, a.pos, hide, ref, after);
+                pugi::xml_node moved = !after ? parent.insert_move_before(n, ref) : ref ? parent.insert_move_after(n, ref) : parent.append_move(n);
+                if (!moved) throw std::runtime_error("could not move " + a.path);
+                break;
+            }
+            case UPDATE_TEXT: {
+                pugi::xml_node n = resolve(doc, a.path, v);
+                if (text_view(n, o) != a.b) throw std::runtime_error("UpdateText: the text at " + a.path + " is not the expected old text");
+                n.set_value(a.a.c_str());
+                break;
+            }
+            case SET_ATTRIB: case DELETE_ATTRIB: {
+                pugi::xml_node n = resolve(doc, a.path, v);
+                pugi::xml_attribute at = n.attribute(a.a.c_str());
+                const std::string* expect = a.kind == DELETE_ATTRIB ? &a.b : a.pos == 1 ? &a.c : nullptr;
+                if (expect) {
+                    if (!at || attr_view(at, o) != *expect) throw std::runtime_error("attribute " + a.a + " at " + a.path + " is not the expected old value");
+                } else if (at) throw std::runtime_error("attribute " + a.a + " at " + a.path + " already exists");
+                if (a.kind == DELETE_ATTRIB) n.remove_attribute(at);
+                else { if (!at) at = n.append_attribute(a.a.c_str()); at.set_value(a.b.c_str()); }
+                break;
+            }
+            default: throw std::runtime_error("unknown action");
+        }
+    }
+}
+
 }  // namespace pygixml_diff
     """
     cdef cppclass DiffConfig "pygixml_diff::Config":
@@ -627,6 +771,10 @@ static inline bool is_equal(const pugi::xml_node& a, bool a_sib, const pugi::xml
     vector[DiffAction] diff_cpp "pygixml_diff::diff"(
         const xml_node& a, bint a_sib, const xml_node& b, bint b_sib,
         const TreeOptions& o, const DiffConfig& c) except +
+    void patch_node_cpp "pygixml_diff::patch"(
+        xml_node doc, const vector[DiffAction]& acts, const TreeOptions& o) except +
+    void patch_doc_cpp "pygixml_diff::patch"(
+        xml_document& doc, const vector[DiffAction]& acts, const TreeOptions& o) except +
     bint is_equal_cpp "pygixml_diff::is_equal"(
         const xml_node& a, bint a_sib, const xml_node& b, bint b_sib,
         const TreeOptions& o) except +
@@ -745,6 +893,82 @@ def diff(a, b, *, bint ignore_whitespace=True, bint ignore_comments=True, ignore
     except RuntimeError as e:
         raise PygiXMLDiffError(str(e)) from e
     return [_action(x) for x in acts]
+
+
+cdef vector[DiffAction] _to_cpp(actions) except *:
+    """Python action tuples -> the C++ structs patch() works on."""
+    cdef vector[DiffAction] out
+    cdef DiffAction x
+    for act in actions:
+        x.kind = -1
+        x.pos = -1
+        x.a = b""
+        x.b = b""
+        x.c = b""
+        if isinstance(act, Insert):
+            x.kind = 0; x.path = act.parent.encode("utf-8"); x.pos = act.position; x.a = act.xml.encode("utf-8")
+        elif isinstance(act, InsertText):
+            x.kind = 1; x.path = act.parent.encode("utf-8"); x.pos = act.position; x.a = act.text.encode("utf-8")
+        elif isinstance(act, Delete):
+            x.kind = 2; x.path = act.path.encode("utf-8")
+        elif isinstance(act, Move):
+            x.kind = 3; x.path = act.path.encode("utf-8"); x.a = act.parent.encode("utf-8"); x.pos = act.position
+        elif isinstance(act, UpdateText):
+            x.kind = 4; x.path = act.path.encode("utf-8"); x.a = act.text.encode("utf-8"); x.b = act.old.encode("utf-8")
+        elif isinstance(act, SetAttrib):
+            x.kind = 5; x.path = act.path.encode("utf-8"); x.a = act.name.encode("utf-8"); x.b = act.value.encode("utf-8")
+            if act.old is None:
+                x.pos = 0
+            else:
+                x.pos = 1; x.c = act.old.encode("utf-8")
+        elif isinstance(act, DeleteAttrib):
+            x.kind = 6; x.path = act.path.encode("utf-8"); x.a = act.name.encode("utf-8"); x.b = act.old.encode("utf-8")
+        else:
+            raise PygiXMLDiffError(f"not an edit action: {act!r}")
+        out.push_back(x)
+    return out
+
+
+def patch(doc, actions, *, bint ignore_whitespace=True, bint ignore_comments=True, bint class_as_set=True):
+    """Apply an edit script from :func:`diff` to a document, **in place**.
+
+    After ``patch(a, diff(a, b))``, ``a`` is equivalent to ``b`` (``is_equal``
+    is true and ``diff(a, b)`` is empty). Paths are read through the same
+    normalised view as :func:`diff`: blank text and (by default) comments are
+    invisible, so they are left where they are. Use the same normalisation
+    options as for :func:`diff`.
+
+    Every action checks what it expects: the old text, the old attribute
+    value, that the path exists. If the document is not the one the script was
+    made for, :class:`PygiXMLDiffError` is raised. The document may then be
+    partly patched; patch a copy if you need all-or-nothing.
+
+    Args:
+        doc: an :class:`XMLDocument`.
+        actions: the list returned by :func:`diff` (any iterable of actions).
+        ignore_whitespace, ignore_comments, class_as_set: as in :func:`diff`.
+
+    Raises:
+        PygiXMLDiffError: not a document, not an action, or the script does
+            not apply to this document.
+    """
+    cdef XMLDocument d
+    cdef XMLNode n
+    if isinstance(doc, XMLDocument):
+        d = <XMLDocument>doc
+    elif isinstance(doc, XMLNode) and (<XMLNode>doc)._node.type() == node_document:
+        n = <XMLNode>doc
+    else:
+        raise PygiXMLDiffError(f"patch needs an XMLDocument, not {type(doc).__name__}")
+    cdef vector[DiffAction] acts = _to_cpp(actions)
+    cdef TreeOptions o = _tree_options(ignore_whitespace, ignore_comments, class_as_set, (), ())
+    try:
+        if isinstance(doc, XMLDocument):
+            patch_doc_cpp(d._doc[0], acts, o)
+        else:
+            patch_node_cpp(n._node, acts, o)
+    except RuntimeError as e:
+        raise PygiXMLDiffError(f"the script does not apply: {e}") from e
 
 
 def is_equal(a, b, *, bint ignore_whitespace=True, bint ignore_comments=True, ignore_attrs=(),

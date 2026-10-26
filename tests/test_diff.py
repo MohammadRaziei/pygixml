@@ -322,3 +322,82 @@ def test_embedding_normalisation_and_errors():
         pygixml.signature(a, p=0)
     with pytest.raises(pygixml.PygiXMLDiffError):
         pygixml.similarity(a, "x")
+
+
+# ------------------------------------------------------------------- patch
+
+def patched_equals(a_doc, b_doc, **kw):
+    actions = pygixml.diff(a_doc, b_doc, **kw)
+    pygixml.patch(a_doc, actions, **{k: v for k, v in kw.items() if k in ("ignore_whitespace", "ignore_comments", "class_as_set")})
+    return pygixml.is_equal(a_doc, b_doc, **{k: v for k, v in kw.items() if k in ("ignore_whitespace", "ignore_comments", "class_as_set")}) \
+        and pygixml.diff(a_doc, b_doc, **kw) == []
+
+
+def test_patch_makes_the_first_tree_equal_to_the_second():
+    a = pygixml.parse_html("<ul class='m'><li>Home<li>About us<li>Blog</ul><p>x <b>y</b> z</p>")
+    b = pygixml.parse_html("<ul class='m'><li>Home<li>About<li>Blog<li>Contact</ul><p>x <b>Y</b> z</p>")
+    assert not pygixml.is_equal(a, b)
+    assert patched_equals(a, b)
+    assert a.to_html(unwrap="root") == "<ul class=\"m\"><li>Home</li><li>About</li><li>Blog</li><li>Contact</li></ul><p>x <b>Y</b> z</p>"
+
+
+@pytest.mark.parametrize("seed", range(4))
+@pytest.mark.parametrize("opts", [{}, {"moves": False}, {"keys": ()}])
+def test_fuzz_patch_xml(seed, opts):
+    r = random.Random(1000 + seed)
+    for _ in range(40):
+        a = random_tree(r)
+        b = mutate(r, ET.fromstring(ET.tostring(a)))
+        axml, bxml = ET.tostring(a, encoding="unicode"), ET.tostring(b, encoding="unicode")
+        assert patched_equals(pygixml.parse_string(axml), pygixml.parse_string(bxml), **opts), (axml, bxml)
+
+
+def test_fuzz_patch_messy_html_keeps_invisible_nodes():
+    r = random.Random(7)
+    frags = ["<p>", "</p>", "<div class=a>", "<div class='b a'>", "</div>", "<ul>", "<li>", "<br>", "<b>", "</b>", "<span id=1>",
+             "<span id=2>", "</span>", "text", " ", "\n", "&amp;", "héllo", "سلام", "<!-- c -->", "<table>", "<tr>", "<td>", "<pre>\n x</pre>"]
+    for _ in range(300):
+        mk = lambda: "".join(r.choice(frags) for _ in range(r.randint(1, 14)))
+        a_html = mk()
+        b_html = a_html if r.random() < 0.2 else (mk() if r.random() < 0.3 else a_html.replace(r.choice(frags), r.choice(frags), 1))
+        assert patched_equals(pygixml.parse_html(a_html), pygixml.parse_html(b_html)), (a_html, b_html)
+        # comments compared too
+        assert patched_equals(pygixml.parse_html(a_html), pygixml.parse_html(b_html), ignore_comments=False), (a_html, b_html)
+
+
+def test_patch_leaves_what_normalisation_ignores_alone():
+    a = pygixml.parse_html("<div>\n  <p>one</p>\n  <!-- keep me -->\n  <p>two</p>\n</div>")
+    b = pygixml.parse_html("<div><p>one</p><p>2</p><p>three</p></div>")
+    pygixml.patch(a, pygixml.diff(a, b))
+    out = a.to_html()
+    assert "<!-- keep me -->" in out and "\n" in out          # comment and blank text survived
+    assert pygixml.is_equal(a, b)
+
+
+def test_patch_refuses_a_document_it_was_not_made_for():
+    a = pygixml.parse_string("<r><p>one</p><q a='1'/></r>")
+    b = pygixml.parse_string("<r><p>two</p><q a='2'/></r>")
+    acts = pygixml.diff(a, b)
+    for other, msg in [("<r><p>different</p><q a='1'/></r>", "expected old text"),
+                       ("<r><p>one</p><q a='9'/></r>", "expected old value"),
+                       ("<r><x/></r>", "path not found")]:
+        with pytest.raises(pygixml.PygiXMLDiffError, match=msg):
+            pygixml.patch(pygixml.parse_string(other), acts)
+    pygixml.patch(a, acts)
+
+
+def test_patch_argument_errors():
+    d = pygixml.parse_string("<r/>")
+    with pytest.raises(pygixml.PygiXMLDiffError, match="XMLDocument"):
+        pygixml.patch(d.root, [])
+    with pytest.raises(pygixml.PygiXMLDiffError, match="not an edit action"):
+        pygixml.patch(d, ["delete everything"])
+    with pytest.raises(pygixml.PygiXMLDiffError, match="out of range"):
+        pygixml.patch(d, [pygixml.InsertText("/r[1]", 5, "x")])
+    with pytest.raises(pygixml.PygiXMLDiffError, match="bad xml"):
+        pygixml.patch(d, [pygixml.Insert("/r[1]", 0, "<unclosed")])
+    with pytest.raises(pygixml.PygiXMLDiffError, match="already exists"):
+        pygixml.patch(pygixml.parse_string("<r a='1'/>"), [pygixml.SetAttrib("/r[1]", "a", "2", None)])
+    with pytest.raises(pygixml.PygiXMLDiffError, match="path not found"):   # n is hidden while its new parent is read
+        pygixml.patch(pygixml.parse_string("<r><a><b/></a></r>"), [pygixml.Move("/r[1]/a[1]", "/r[1]/a[1]/b[1]", 0)])
+    pygixml.patch(d, [])                                       # an empty script is fine

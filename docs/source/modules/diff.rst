@@ -71,6 +71,27 @@ must give the second, otherwise :class:`pygixml.PygiXMLDiffError` is raised
 (that would be a bug). The tests also apply scripts with an independent
 reference patcher on 15,000 random tree pairs.
 
+Applying a script
+-----------------
+
+``patch(doc, actions)`` applies a script to a document **in place**:
+
+.. code-block:: python
+
+   actions = pygixml.diff(a, b)
+   pygixml.patch(a, actions)
+   pygixml.is_equal(a, b)          # True
+   pygixml.diff(a, b)              # []
+
+It reads paths through the same normalised view as ``diff``, so what
+normalisation ignores (blank text, comments by default) is invisible to it and
+is left where it is. Pass the same ``ignore_whitespace`` / ``ignore_comments``
+/ ``class_as_set`` you gave ``diff``. Every action checks what it expects (the
+path exists, the old text, the old attribute value), so a script is refused
+with :class:`pygixml.PygiXMLDiffError` when the document is not the one it was
+made for. The document may then be partly patched; patch a copy if you need
+all-or-nothing. ``patch`` works on a document, not on a single element.
+
 Normalisation
 -------------
 
@@ -168,12 +189,15 @@ Errors
 
 Everything raises :class:`pygixml.PygiXMLDiffError`, a subclass of
 :class:`pygixml.PygiXMLError`: something that is not a node or document, a null
-node, an invalid option, or an internal consistency failure.
+node, an invalid option, a script that does not apply to the document, or an
+internal consistency failure.
 
 API
 ---
 
 .. autofunction:: pygixml.diff
+
+.. autofunction:: pygixml.patch
 
 .. autofunction:: pygixml.is_equal
 
