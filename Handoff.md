@@ -147,7 +147,11 @@ Used inside diff for similarity, and public as `signature`/`similarity`.
 
 ## 7. Known limitations and things NOT done
 
-- **Not compiled or tested on MSVC or clang**, only g++ on Linux. No CI run.
+- **Not compiled or tested on MSVC or clang**, only g++ on Linux. First CI run (PR #50, cibuildwheel) failed on musllinux cp310 with a
+  segfault in `test_xml_to_html_rejects_bad_nodes`: the test did `parse_string("<x/>").root.child(...)`, and an `XMLNode` does not keep its
+  document alive, so the temporary document was freed first (use-after-free; glibc and musl cp38/cp39 got away with it). Fixed in the test
+  (the document is held in a variable). Reproduce this class of bug locally with `MALLOC_PERTURB_=165 pytest tests`; the whole suite passes that way.
+  The other CI jobs/platforms (macOS, Windows/MSVC, the remaining wheels) were not seen.
 - **Sphinx docs were not built**: `html.rst`/`diff.rst` use `autofunction`/`autoexception`; render warnings are unchecked.
 - **Nothing is committed.** Version not bumped (changes sit under `[Unreleased]` in CHANGELOG).
 - `html.pxi` is ~112 KB because the full 2231-entity table is inlined. The user was offered a 252-entity HTML4-only

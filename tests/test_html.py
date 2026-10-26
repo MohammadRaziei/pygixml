@@ -299,7 +299,8 @@ def test_html_to_xml_rejects_non_str(bad):
 def test_xml_to_html_rejects_bad_nodes():
     with pytest.raises(pygixml.PygiXMLHTMLError, match="XMLNode or XMLDocument"):
         pygixml.xml_to_html("<p/>")
-    null = pygixml.parse_string("<x/>").root.child("missing")
+    doc = pygixml.parse_string("<x/>")          # nodes don't keep their document alive: hold it
+    null = doc.root.child("missing")
     with pytest.raises(pygixml.PygiXMLHTMLError, match="null"):
         pygixml.xml_to_html(null)
 
