@@ -56,6 +56,9 @@ Features
   in constant memory (see :doc:`/modules/jsonify`)
 * **HTML**: ``parse_html`` / ``html_to_xml`` normalise messy HTML to XML first,
   so XPath, objectify and dictify work on it (see :doc:`/modules/html`)
+* **Diff and embeddings**: ``diff`` (ordered tree edit script, keys, moves,
+  text diff), ``is_equal``, ``signature`` / ``similarity`` (pq-grams); see
+  :doc:`/modules/diff`
 * **Streaming**: constant-memory, ``ElementTree``-style incremental
   parsing for documents too big to load whole (see :doc:`/core/stream-parser`)
 * **Cross-platform**: Windows, Linux, macOS
@@ -248,6 +251,7 @@ Documentation Contents
    modules/dictify
    modules/jsonify
    modules/html
+   modules/diff
 
 .. toctree::
    :maxdepth: 2
