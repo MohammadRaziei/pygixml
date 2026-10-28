@@ -21,6 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `pygixml.encode_name(name, fully_escaped=True)`,
     `pygixml.decode_name(name)` and `pygixml.XMLNameCodec`: that mapping on
     its own, e.g. `decode_name(node.name)` to read a parsed name.
+  - `dictify.parse(..., cdata_separator=None)` (and `parse_file`): `None` keeps
+    only the first text run of an element as before (so it still agrees with
+    `jsonify` and the streaming writers); a string joins all the text runs
+    like xmltodict's `cdata_separator` (`""`: `<p>Hi<br/>x</p>` ->
+    `'#text': 'Hix'`). `FormatDocument.from_html` / `pygixml convert page.html
+    --to json` use `""`, so tail text is no longer lost.
+  - `case="lower" | "keep" | "escape"` on `html_to_xml` / `parse_html`
+    (and `escape_case` on `encode_name` / `XMLNameCodec`): lower-case names
+    (default), keep the input spelling (`@Click` stays distinct from
+    `@click`, `viewBox` stays `viewBox`), or lower-case them with every `A-Z`
+    escaped (`_x0043_lick`) so nothing is lost.
   - `pygixml.parse_html(html)` parses the result into an `XMLDocument`
     (keeps whitespace-only text and comments by default), so XPath,
     `objectify`, `dictify` and `jsonify` work on HTML.

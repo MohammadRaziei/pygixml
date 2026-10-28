@@ -120,6 +120,11 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 * **`dictify`**: xmltodict-compatible XML → dict conversion
 * **`jsonify`**: direct XML → JSON, in memory or streamed straight to
   disk in constant memory (`stream_dump`, `stream_jsonl`)
+* **HTML ↔ XML**: `parse_html` / `html_to_xml` turn real-world HTML into
+  well-formed XML you can query with XPath, `xml_to_html` goes back; names
+  XML can't hold are mapped reversibly (`encode_name` / `decode_name`)
+* **Tree `diff` / `patch`**: a minimal edit script between two documents
+  (HTML or XML), plus `similarity` / `signature` for structural comparison
 * **Streaming (`iterfind`, `iterdict`, `iterjsonl`)**: constant-memory,
   yxml-based incremental parsing for documents too big to load whole
 * **CLI tools**: `pygixml cat` (pretty-print/colorize), `pygixml
@@ -354,6 +359,40 @@ print(xml_out)
 
 ---
 
+## HTML, diff and patch
+
+```python
+import pygixml
+
+# Messy HTML -> well-formed XML, and back
+pygixml.html_to_xml("<ul><li>a<li>b<br></ul>")
+# '<ul><li>a</li><li>b<br/></li></ul>'
+doc = pygixml.parse_html("<ul><li>a<li>b<br></ul>")      # a normal XMLDocument
+pygixml.xml_to_html(doc, unwrap="root")
+# '<ul><li>a</li><li>b<br></li></ul>'
+
+# Names XML can't hold (o:p, @click, [prop] ...) are mapped reversibly with the
+# SQL/XML rules; `case` picks lower-case (default), "keep" or "escape"
+pygixml.html_to_xml("<o:p @Click=1>x</o:p>", case="keep")
+# '<o_x003A_p _x0040_Click="1">x</o_x003A_p>'
+pygixml.decode_name("_x0040_Click")                       # '@Click'
+
+# Edit script between two documents, and applying it
+a = pygixml.parse_html("<ul><li>one</li></ul>")
+b = pygixml.parse_html("<ul><li>one</li><li>two</li></ul>")
+actions = pygixml.diff(a, b)
+# [Insert(parent='/ul[1]', position=1, xml='<li>two</li>')]
+pygixml.similarity(a, b)                                   # 0.72
+pygixml.patch(a, actions)
+pygixml.is_equal(a, b)                                     # True
+```
+
+See the HTML and diff pages of the documentation for the options
+(`ignore_whitespace`, `ignore_comments`, `class_as_set`, `keys`,
+`ignore_attrs`, moves, `text_diff`).
+
+---
+
 ## Command Line Tools
 
 pygixml installs one CLI entry point, `pygixml`, with three
@@ -367,7 +406,7 @@ subcommand also works as `python -m pygixml <subcommand>`.
 | `pygixml query` | full DOM | ad-hoc XPath / dotted queries: a `jq`/`xq`-style tool for XML you can fit in memory |
 | `pygixml jsonify` (`json` alias) | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
 | `pygixml stream` | one record at a time | filtering matches out of a file **too big to load**, bounded memory |
-| `pygixml convert` | full DOM | converting between XML, JSON, YAML, and TOON, any direction |
+| `pygixml convert` | full DOM | converting between XML, JSON, YAML, TOON and HTML, any direction (`--case` for HTML names) |
 
 ### `pygixml cat`: pretty-print and colorize
 

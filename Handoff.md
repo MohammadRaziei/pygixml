@@ -85,8 +85,13 @@ PYTHONPATH=src python3 -m pytest tests -q -p no:cacheprovider
   in `html.pxi`; Python `encode_name` / `decode_name` / `XMLNameCodec` are thin wrappers (tests: `tests/test_names.py`).
   The decoder also takes lower-case hex and 5/8-digit forms (PostgreSQL, .NET). Non-BMP escapes use 6 digits; I did not
   check that against the standard text.
-- The tokenizer still **lower-cases names before the mapping**, so `@Click` and `@click` are the same attribute in
-  `parse_html`/`html_to_xml` (first wins). Only `encode_name` keeps case. A `keep case` option was discussed, not done.
+- `case` on `html_to_xml`/`parse_html` (`"lower"` default, `"keep"`, `"escape"`): the tokenizer passes raw names to
+  `Builder`; logic (void tags, implied end tags, raw text, end-tag matching) always uses the lower-cased name,
+  `show_name()` decides what is written, and `Builder::shown` keeps the written name so an end tag repeats the start
+  tag's spelling. `"escape"` is the SQL/XML mapping with `A-Z` escaped (`encode_name(..., escape_case=True)`), so names
+  stay lower-case and `decode_name` restores them. Duplicate attributes: by written name (so `@Click`/`@click` are two in
+  keep/escape, one in lower). `FormatDocument.from_html(text, case=...)` and `pygixml convert --case` (html input only, else an argparse error) take it too. Tests: `tests/test_html_case.py`
+  (a fuzz shows the three modes give the same document up to name case).
 - Tests use expat only for characters both XML 1.0 editions allow: expat has the 4th-edition name tables and rejects
   U+2040, U+FFFD and chars above U+FFFF that the current spec, libxml2 and pugixml accept.
 - Spec behaviours chosen on purpose: all 2231 named entities incl. legacy no-`;` ones (and `?a=1&copy=2` stays
@@ -188,7 +193,7 @@ Used inside diff for similarity, and public as `signature`/`similarity`.
 
 1. Run the build + full tests on Windows (MSVC) and macOS (clang); fix any C++ portability issues (most likely spots:
    `std::to_string`/`snprintf` includes, `uint16_t` table math, signed/unsigned comparisons).
-2. Fix the duplicate-object Sphinx warnings; add a small README mention.
+2. Fix the duplicate-object Sphinx warnings (README section on HTML/diff/patch is done).
 3. Commit in sensible pieces (HTML, embedding+diff, patch, CLI) and decide the version bump.
 4. Decide with the user: `actions_to_json`/`from_json` and a readable text format; the entity-table size question.
 5. Optional: Myers/Wu for huge sibling lists, `strict` HTML mode, add HTML/diff cases to `benchmarks/`.
@@ -199,3 +204,17 @@ They reviewed ideas critically and redirected twice: "an algorithm that diffs tw
 (so HTML needs no special diff, only a normalisation layer), and "no extra submodules, C code goes inside the Cython files".
 They also asked to minimise Python/C++ boundary crossings (hence one C++ call per public function) and
 to have the diff use the embedding for similarity.
+
+## Text split by child elements (dictify / jsonify)
+
+- By design all of these keep only the **first text run** of an element as `#text`: `dictify.parse` (via `child_value()`),
+  the in-memory `jsonify` serializer, and both streaming writers in `jsonify.pxi` (`text_flushed`, so a stream can emit
+  `#text` at once and keep constant memory). `<p>Hi<br/>x</p>` -> `'Hi'`; xmltodict gives `'Hix'`. Tests pin this and check
+  `dictify.parse == json.loads(jsonify.dumps_str(...))` on mixed content.
+- `dictify.parse(..., cdata_separator=None)` / `parse_file`: a str joins all text runs (xmltodict's option; text+CDATA next to
+  each other are one run, so `a<![CDATA[b]]>c` is `'abc'` for any separator). Default unchanged (same speed: 7.5 MB, ~220 ms).
+  `FormatDocument.from_html` sets `""` (so `pygixml convert page.html --to json` keeps tail text). `jsonify` and `iterdict`
+  do not have the option; with it on, dictify and jsonify differ on mixed content by design.
+- Not done: whitespace. dictify keeps text as is (`' hi '`), xmltodict strips by default (`'hi'`); the comment in
+  `_node_to_obj` says "xmltodict does not strip", which is only true with `strip_whitespace=False`.
+- html_to_xml speed is about 75 MB/s on a 3 MB generated page in all three `case` modes (no measurement of the code before `case`).

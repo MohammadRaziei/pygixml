@@ -259,7 +259,8 @@ cdef extern from *:
 cdef object _node_to_obj(xml_node node,
                           str attr_prefix,
                           str cdata_key,
-                          object force_list):
+                          object force_list,
+                          object cdata_sep):
     """Recursively convert *node* to a dict / string / None.
 
     Rules (matching xmltodict behaviour):
@@ -269,7 +270,9 @@ cdef object _node_to_obj(xml_node node,
       - Mixed (attrs and/or children)                 → dict
         - Attributes stored as  attr_prefix + name
         - Repeated sibling tags collapsed into list
-        - Text content stored under cdata_key
+        - Text content stored under cdata_key: the first text child only
+          (what ``child_value()``, ``jsonify`` and the streaming writers do),
+          or, when *cdata_sep* is a str, all the text runs joined by it
     """
     cdef xml_attribute attr_c
     cdef xml_node      child
@@ -277,6 +280,8 @@ cdef object _node_to_obj(xml_node node,
     cdef bint          has_attrs    = False
     cdef bint          has_children = False
     cdef str           text         = None
+    cdef str           raw
+    cdef list          parts
 
     # --- collect attributes ---
     cdef dict result = {}
@@ -290,12 +295,28 @@ cdef object _node_to_obj(xml_node node,
         attr_c = attr_c.next_attribute()
 
     # --- collect text / CDATA ---
-    s = node.child_value()
-    if not s.empty():
-        raw = s.decode("utf-8")
-        stripped = raw.strip()
-        if stripped:
-            text = raw   # preserve original (xmltodict does not strip)
+    if cdata_sep is None:
+        s = node.child_value()           # the first text child only
+        raw = s.decode("utf-8") if not s.empty() else None
+    else:
+        # text and CDATA next to each other are one run (as xmltodict reads them);
+        # anything else between two of them ends the run, and runs are joined by cdata_sep
+        parts = []
+        run = None
+        child = node.first_child()
+        while not _node_is_null(child):
+            if child.type() == node_pcdata or child.type() == node_cdata:
+                s = child.value()
+                run = s.decode("utf-8") if run is None else run + s.decode("utf-8")
+            elif run is not None:
+                parts.append(run)
+                run = None
+            child = child.next_sibling()
+        if run is not None:
+            parts.append(run)
+        raw = cdata_sep.join(parts)
+    if raw and raw.strip():
+        text = raw   # preserve original (xmltodict does not strip)
 
     # --- collect child elements ---
     child = node.first_child()
@@ -304,7 +325,7 @@ cdef object _node_to_obj(xml_node node,
             has_children = True
             s = child.name()
             tag = s.decode("utf-8")
-            val = _node_to_obj(child, attr_prefix, cdata_key, force_list)
+            val = _node_to_obj(child, attr_prefix, cdata_key, force_list, cdata_sep)
 
             if tag in result:
                 # already seen: ensure it's a list
@@ -341,11 +362,18 @@ cdef object _node_to_obj(xml_node node,
 # parse
 # ---------------------------------------------------------------------------
 
+cdef object _check_sep(object cdata_separator):
+    if cdata_separator is not None and not isinstance(cdata_separator, str):
+        raise TypeError("cdata_separator must be a str or None")
+    return cdata_separator
+
+
 def dictify_parse(str xml,
                     str attr_prefix=u"@",
                     str cdata_key=u"#text",
                     object force_list=None,
-                    object encoding=None):
+                    object encoding=None,
+                    object cdata_separator=None):
     """Parse an XML string into an OrderedDict-compatible dict.
 
     Matches the behaviour of the ``xmltodict`` library:
@@ -367,6 +395,14 @@ def dictify_parse(str xml,
             Pass ``True`` to force all tags into lists.
         encoding: Accepted for API compatibility; pygixml auto-detects
             encoding and this parameter is ignored.
+        cdata_separator (str | None): What to do with text that is split
+            by child elements or CDATA (``Hi<br/>x``, ``a<![CDATA[b]]>c``).
+            ``None`` (default) keeps only the first text run, like
+            :mod:`pygixml.jsonify` and the streaming writers do, so the
+            three agree. A string joins all the text runs of an element
+            with it, as xmltodict's ``cdata_separator`` does: ``""`` gives
+            ``"Hix"``, ``" "`` gives ``"Hi x"``. Text and CDATA next to each
+            other are one run (``a<![CDATA[b]]>c`` is ``"abc"``).
 
     Returns:
         dict: Parsed document as a nested dict.
@@ -389,14 +425,15 @@ def dictify_parse(str xml,
 
     cdef string root_name = root_raw.name()
     tag = root_name.decode("utf-8")
-    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list)
+    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list, _check_sep(cdata_separator))
     return {tag: val}
 
 
 def dictify_parse_file(str path,
                          str attr_prefix=u"@",
                          str cdata_key=u"#text",
-                         object force_list=None):
+                         object force_list=None,
+                         object cdata_separator=None):
     """Parse an XML file into a dict. Same semantics as :func:`dictify_parse`.
 
     Args:
@@ -420,7 +457,7 @@ def dictify_parse_file(str path,
 
     cdef string root_name = root_raw.name()
     tag = root_name.decode("utf-8")
-    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list)
+    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list, _check_sep(cdata_separator))
     return {tag: val}
 
 

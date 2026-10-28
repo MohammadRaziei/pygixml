@@ -81,6 +81,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Pretty-print, where the target format supports it (json, xml, html).",
     )
     p.add_argument(
+        "--case", choices=("lower", "keep", "escape"), default=None,
+        help="HTML input only: tag and attribute names are lower-cased "
+             "(lower, the default), kept as written (keep) or lower-cased "
+             "with every A-Z escaped, e.g. _x0043_lick (escape). "
+             "See pygixml.html_to_xml.",
+    )
+    p.add_argument(
         "--indent", default=None, metavar="N_OR_STR",
         help="Indent for json (a number of spaces) or xml (a literal "
              "string, e.g. a tab).",
@@ -102,6 +109,10 @@ def main(argv: list[str] | None = None) -> int:
             f"can't tell the input format from {args.file!r} -- pass --from "
             f"explicitly (one of {INPUT_FORMATS})"
         )
+
+    if args.case is not None and from_fmt != "html":
+        parser.error("--case only applies to html input")
+    case = args.case or "lower"
 
     to_fmt = args.to_fmt or (
         _guess_format(args.output) if args.output else None
@@ -125,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         import pygixml
         try:
             if from_fmt == "html":
-                doc = pygixml.parse_html(text)
+                doc = pygixml.parse_html(text, case=case)
             else:
                 f = pygixml.ParseFlags
                 doc = pygixml.parse_string(text, f.DEFAULT | f.WS_PCDATA | f.COMMENTS)
@@ -139,7 +150,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     else:
         try:
-            doc = FormatDocument.from_format(text, from_fmt)
+            doc = FormatDocument.from_format(
+                text, from_fmt, **({"case": case} if from_fmt == "html" else {}))
         except ImportError as e:
             sys.stderr.write(f"{parser.prog}: {e}\n")
             return 3

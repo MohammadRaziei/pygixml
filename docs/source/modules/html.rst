@@ -41,6 +41,12 @@ From the shell, HTML is both an input and an output format of
    pygixml convert messy.html -o clean.html -p     # normalise + re-indent
    pygixml convert data.xml --to html
 
+Converting HTML to JSON/YAML/TOON goes through a dict, which keeps one value per
+tag name: the text of an element is kept whole (``<p>Hi<br>x</p>`` gives
+``{'p': {'br': None, '#text': 'Hix'}}``, ``FormatDocument.from_html`` passes
+``cdata_separator=""`` to :func:`pygixml.dictify.parse`), but the order of text
+and tags is not. Use ``--to html`` or ``--to xml`` when the order matters.
+
 What gets fixed
 ---------------
 
@@ -112,9 +118,38 @@ When an encoded name is hard to read, decode it::
     >>> pygixml.decode_name(doc.root.name)
     'o:p'
 
-HTML names are case-insensitive, so the tokenizer lower-cases them first:
-``@Click`` reaches the mapping as ``@click`` (and SVG's ``viewBox`` as
-``viewbox``). ``encode_name`` itself keeps case.
+Case of names
+~~~~~~~~~~~~~
+
+HTML names are case-insensitive, so by default tag and attribute names are
+lower-cased (``@Click`` becomes ``@click``, SVG's ``viewBox`` becomes
+``viewbox``, and two attributes that differ only in case are one). The
+``case`` argument of :func:`pygixml.html_to_xml` and :func:`pygixml.parse_html`
+changes that:
+
+.. list-table::
+   :header-rows: 1
+
+   * - ``case``
+     - ``<DIV @Click viewBox>`` becomes
+     - Use it for
+   * - ``"lower"`` (default)
+     - ``<div _x0040_click viewbox>``
+     - ordinary HTML; ``//div`` also finds ``<DIV>``
+   * - ``"keep"``
+     - ``<DIV _x0040_Click viewBox>``
+     - Vue/Angular templates, SVG; readable
+   * - ``"escape"``
+     - ``<_x0044__x0049__x0056_ _x0040__x0043_lick view_x0042_ox>``
+     - names that must stay lower-case without losing anything
+
+In every mode text and attribute values are untouched, void tags, implied end
+tags and matching end tags still ignore case (``<P>a<P>b``, ``<BR>``,
+``<DIV></div>``), and :func:`pygixml.xml_to_html` gives back the spelling that
+the XML holds. With ``"keep"`` an end tag takes the spelling of its start tag;
+a duplicate attribute (same spelling) keeps the first value.
+:func:`pygixml.encode_name` has the matching ``escape_case`` option, and
+:func:`pygixml.decode_name` reads all three.
 
 Back to HTML
 ------------

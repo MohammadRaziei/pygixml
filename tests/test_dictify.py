@@ -286,3 +286,54 @@ class TestUnparseBasic:
     def test_unparse_custom_indent(self):
         xml = dictify.unparse({"root": {"x": "v"}}, pretty=True, indent="  ")
         assert "  <x>" in xml
+
+
+# ---------------------------------------------------------------------------
+# text split by child elements: cdata_separator
+# ---------------------------------------------------------------------------
+
+_SPLIT = [
+    "<p>Hi<br/>x</p>",
+    "<p>a<![CDATA[b]]>c</p>",
+    "<p x='1'>Hi<b>y</b>x<i>z</i>end</p>",
+    "<a><b>1</b>tail</a>",
+    "<a>lead<b><c>in</c>after</b>end</a>",
+]
+
+
+def test_default_keeps_only_the_first_text_run():
+    # deliberate: jsonify (in memory and streamed) does the same, so they agree
+    import json
+    from pygixml import jsonify
+    assert dictify.parse("<p>Hi<br/>x</p>") == {"p": {"br": None, "#text": "Hi"}}
+    assert dictify.parse("<p>a<![CDATA[b]]>c</p>") == {"p": "a"}
+    for x in _SPLIT:
+        assert dictify.parse(x) == json.loads(jsonify.dumps_str(x)), x
+
+
+@pytest.mark.parametrize("sep", ["", " ", "|"])
+def test_cdata_separator_matches_xmltodict(sep):
+    xmltodict = pytest.importorskip("xmltodict")
+    for x in _SPLIT:
+        want = xmltodict.parse(x, cdata_separator=sep, strip_whitespace=False)
+        assert dictify.parse(x, cdata_separator=sep) == want, x
+
+
+def test_cdata_separator_values():
+    assert dictify.parse("<p>Hi<br/>x</p>", cdata_separator="") == {"p": {"br": None, "#text": "Hix"}}
+    assert dictify.parse("<p>Hi<br/>x</p>", cdata_separator=" ", cdata_key="t") == {"p": {"br": None, "t": "Hi x"}}
+    assert dictify.parse("<p>a<![CDATA[b]]>c</p>", cdata_separator="") == {"p": "abc"}
+    # whitespace-only text is still no text, attributes still work, a leaf is unchanged
+    assert dictify.parse("<a x='1'/>", cdata_separator="") == {"a": {"@x": "1"}}
+    assert dictify.parse("<a>t</a>", cdata_separator="") == dictify.parse("<a>t</a>") == {"a": "t"}
+
+
+def test_cdata_separator_in_parse_file_and_type_check(tmp_path):
+    f = tmp_path / "m.xml"
+    f.write_text("<p>Hi<br/>x</p>", encoding="utf-8")
+    assert dictify.parse_file(str(f), cdata_separator="") == {"p": {"br": None, "#text": "Hix"}}
+    assert dictify.parse_file(str(f)) == {"p": {"br": None, "#text": "Hi"}}
+    for bad in (1, b"", ["a"]):
+        with pytest.raises(TypeError):
+            dictify.parse("<a/>", cdata_separator=bad)
+

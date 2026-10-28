@@ -2419,7 +2419,10 @@ static inline void append_comment(std::string& out, const char* s, size_t n) {
 //   * "fully escaped" (the default) also escapes every ':' (a bare prefix breaks
 //     namespace-aware parsers) and the first letter of a name that starts with
 //     "xml" in any case (those names are reserved). Not fully escaped, a ':'
-//     is kept unless it is the first character.
+//     is kept unless it is the first character;
+//   * escape_case (off by default) also escapes A-Z, so the name has no upper-case
+//     ASCII letter left and the case survives a lower-casing step: Click ->
+//     _x0043_lick.
 
 static inline bool name_start(uint32_t c) {
     return (c >= 'A' && c <= 'Z') || c == '_' || (c >= 'a' && c <= 'z') ||
@@ -2433,7 +2436,7 @@ static inline bool name_char(uint32_t c) {
            (c >= 0x300 && c <= 0x36F) || (c >= 0x203F && c <= 0x2040);
 }
 
-static inline std::string enc_name(const std::string& raw, bool full = true) {
+static inline std::string enc_name(const std::string& raw, bool full = true, bool escape_case = false) {
     const bool xml = full && raw.size() >= 3 && (raw[0] | 32) == 'x' && (raw[1] | 32) == 'm' && (raw[2] | 32) == 'l';
     std::string out;
     for (size_t i = 0; i < raw.size();) {
@@ -2443,7 +2446,7 @@ static inline std::string enc_name(const std::string& raw, bool full = true) {
         bool esc;
         if (cp == ':') esc = first || full;
         else if (cp == '_') esc = i < raw.size() && raw[i] == 'x';
-        else esc = (first && xml) || !(first ? name_start(cp) : name_char(cp));
+        else esc = (first && xml) || (escape_case && cp >= 'A' && cp <= 'Z') || !(first ? name_start(cp) : name_char(cp));
         if (esc) {
             char buf[16];
             std::snprintf(buf, sizeof buf, cp > 0xFFFF ? "_x%06X_" : "_x%04X_", static_cast<unsigned>(cp));
@@ -2590,17 +2593,30 @@ static inline bool is_void(const std::string& t) {
     return v.count(t) != 0;
 }
 
+// How tag and attribute names are written. HTML names are case-insensitive, so the
+// logic (void tags, implied end tags, raw text) always works on the lower-case
+// name; this only decides what ends up in the XML.
+enum CaseMode { CASE_LOWER = 0, CASE_KEEP = 1, CASE_ESCAPE = 2 };
+
+static inline std::string show_name(const std::string& raw, int mode) {
+    if (mode == CASE_KEEP) return enc_name(raw);
+    if (mode == CASE_ESCAPE) return enc_name(raw, true, true);
+    return enc_name(lower_ascii(raw.data(), raw.size()));
+}
+
 struct Builder {
+    int mode = CASE_LOWER;
     std::string out;
     std::vector<std::string> stack;    // open elements (lower-case HTML names)
+    std::vector<std::string> shown;    // the same elements as written in the XML
     size_t tops = 0;                   // top-level elements seen
     bool loose = false;                // top-level non-blank text seen
     bool skip_nl = false;              // just opened <pre>/<textarea>: drop one leading "\n"
 
     void pop_to(size_t keep) {
         while (stack.size() > keep) {
-            out += "</"; out += enc_name(stack.back()); out += '>';
-            stack.pop_back();
+            out += "</"; out += shown.back(); out += '>';
+            stack.pop_back(); shown.pop_back();
         }
     }
 
@@ -2621,7 +2637,9 @@ struct Builder {
         escape(out, text.data(), text.size(), false);
     }
 
-    void start(const std::string& tag, const std::vector<std::pair<std::string, std::string>>& attrs, bool empty) {
+    // raw: the names as written in the input.
+    void start(const std::string& raw, const std::vector<std::pair<std::string, std::string>>& attrs, bool empty) {
+        const std::string tag = lower_ascii(raw.data(), raw.size());
         skip_nl = false;
         auto it = rule_table().find(tag);
         if (it != rule_table().end()) {
@@ -2633,11 +2651,12 @@ struct Builder {
             }
         }
         if (stack.empty()) ++tops;
-        out += '<'; out += enc_name(tag);
+        const std::string name = show_name(raw, mode);
+        out += '<'; out += name;
         std::unordered_set<std::string> seen;
         for (const auto& kv : attrs) {
-            std::string k = enc_name(kv.first);
-            if (!seen.insert(k).second) continue;     // HTML keeps the first duplicate
+            std::string k = show_name(kv.first, mode);
+            if (!seen.insert(k).second) continue;     // HTML keeps the first duplicate (same spelling, unless lower-cased)
             out += ' '; out += k; out += "=\"";
             escape(out, kv.second.data(), kv.second.size(), true);
             out += '"';
@@ -2646,11 +2665,13 @@ struct Builder {
         out += closed ? "/>" : ">";
         if (!closed) {
             stack.push_back(tag);
+            shown.push_back(name);
             skip_nl = (tag == "pre" || tag == "textarea" || tag == "listing");
         }
     }
 
-    void end(const std::string& tag) {
+    void end(const std::string& raw) {
+        const std::string tag = lower_ascii(raw.data(), raw.size());
         skip_nl = false;
         for (size_t i = stack.size(); i-- > 0;)
             if (stack[i] == tag) { pop_to(i); return; }
@@ -2661,7 +2682,7 @@ struct Builder {
 };
 
 // Returns the XML text. `root` wraps fragments (several top-level nodes or text).
-static inline std::string to_xml(const std::string& input, const std::string& root) {
+static inline std::string to_xml(const std::string& input, const std::string& root, int mode = CASE_LOWER) {
     // Input stream preprocessing: CRLF and lone CR become LF.
     std::string src;
     src.reserve(input.size());
@@ -2673,6 +2694,7 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
     const size_t n = src.size();
 
     Builder b;
+    b.mode = mode;
     b.out.reserve(n + n / 8);
     size_t i = 0;
     while (i < n) {
@@ -2687,7 +2709,8 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
             // ---- start tag
             size_t j = i + 1;
             while (j < n && !is_ws(s[j]) && s[j] != '/' && s[j] != '>') ++j;
-            std::string tag = lower_ascii(s + i + 1, j - (i + 1));
+            const std::string raw_tag(s + i + 1, j - (i + 1));
+            const std::string tag = lower_ascii(raw_tag.data(), raw_tag.size());
             std::vector<std::pair<std::string, std::string>> attrs;
             bool empty = false, closed = false;
             while (true) {
@@ -2697,7 +2720,7 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
                 if (s[j] == '/') { j += 2; empty = true; closed = true; break; }
                 size_t k = j + 1;                                     // attribute name (may start with '=')
                 while (k < n && !is_ws(s[k]) && s[k] != '/' && s[k] != '>' && s[k] != '=') ++k;
-                std::string name = lower_ascii(s + j, k - j);
+                std::string name(s + j, k - j);
                 j = k;
                 while (j < n && is_ws(s[j])) ++j;
                 std::string value;
@@ -2720,7 +2743,7 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
                 attrs.emplace_back(std::move(name), std::move(value));
             }
             if (!closed) break;                                       // EOF inside a tag: dropped (HTML5)
-            b.start(tag, attrs, empty);
+            b.start(raw_tag, attrs, empty);
             i = j;
             if (!empty && (tag == "script" || tag == "style" || tag == "textarea" || tag == "title")) {
                 // raw text / RCDATA: runs to the matching end tag, no markup inside
@@ -2749,9 +2772,9 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
             if (is_alpha(d)) {                                        // end tag
                 size_t j = i + 2;
                 while (j < n && !is_ws(s[j]) && s[j] != '/' && s[j] != '>') ++j;
-                std::string tag = lower_ascii(s + i + 2, j - (i + 2));
+                const std::string raw_tag(s + i + 2, j - (i + 2));
                 const char* gt = static_cast<const char*>(std::memchr(s + j, '>', n - j));
-                b.end(tag);
+                b.end(raw_tag);
                 if (!gt) break;
                 i = static_cast<size_t>(gt - s) + 1;
             } else if (d == '>') {
@@ -2961,8 +2984,8 @@ static inline std::string to_html(const pugi::xml_node& first, bool siblings, bo
 
 }  // namespace pygixml_html
     """
-    string html_to_xml_cpp "pygixml_html::to_xml"(const string& html, const string& root) except +
-    string enc_name_cpp "pygixml_html::enc_name"(const string& raw, bint full) except +
+    string html_to_xml_cpp "pygixml_html::to_xml"(const string& html, const string& root, int mode) except +
+    string enc_name_cpp "pygixml_html::enc_name"(const string& raw, bint full, bint escape_case) except +
     string dec_name_cpp "pygixml_html::dec_name"(const char* s) except +
     string xml_to_html_cpp "pygixml_html::to_html"(
         const xml_node& first, bint siblings, bint pretty, const string& indent,
@@ -2987,7 +3010,7 @@ cdef bytes _name_bytes(name):
         raise PygiXMLHTMLError("name contains a lone surrogate")
 
 
-def encode_name(name, bint fully_escaped=True):
+def encode_name(name, bint fully_escaped=True, bint escape_case=False):
     """Map any string to a valid XML name, reversibly (see :func:`decode_name`).
 
     This is the SQL/XML rule (ISO/IEC 9075-14, "Mapping SQL identifiers to XML
@@ -3003,7 +3026,9 @@ def encode_name(name, bint fully_escaped=True):
     * *fully_escaped* (the default) also escapes every ``:`` (``o:p`` ->
       ``o_x003A_p``) and the first letter of a name starting with ``xml`` in
       any case (``xmlns`` -> ``_x0078_mlns``). With ``False`` a ``:`` inside a
-      name is kept, giving a QName.
+      name is kept, giving a QName;
+    * *escape_case* (off by default) also escapes ``A``-``Z`` (``Click`` ->
+      ``_x0043_lick``), for when the name must survive lower-casing.
 
     Names that are already fine (``data-id``, ``snake_case``, ``é``) are
     returned unchanged.
@@ -3015,7 +3040,7 @@ def encode_name(name, bint fully_escaped=True):
     cdef bytes data = _name_bytes(name)
     if not data:
         raise PygiXMLHTMLError("name must not be empty")
-    return enc_name_cpp(data, fully_escaped).decode("utf-8")
+    return enc_name_cpp(data, fully_escaped, escape_case).decode("utf-8")
 
 
 def decode_name(name):
@@ -3039,27 +3064,38 @@ class XMLNameCodec:
     >>> XMLNameCodec(fully_escaped=False).encode("o:p")
     'o:p'
 
-    *fully_escaped* is described in :func:`encode_name`. ``decode`` does not
-    depend on it.
+    *fully_escaped* and *escape_case* are described in :func:`encode_name`.
+    ``decode`` does not depend on them.
     """
-    __slots__ = ("fully_escaped",)
+    __slots__ = ("fully_escaped", "escape_case")
 
-    def __init__(self, fully_escaped=True):
+    def __init__(self, fully_escaped=True, escape_case=False):
         self.fully_escaped = True if fully_escaped else False
+        self.escape_case = True if escape_case else False
 
     def encode(self, name):
         """:func:`encode_name` with this codec's options."""
-        return encode_name(name, self.fully_escaped)
+        return encode_name(name, self.fully_escaped, self.escape_case)
 
     def decode(self, name):
         """:func:`decode_name`."""
         return decode_name(name)
 
     def __repr__(self):
-        return f"XMLNameCodec(fully_escaped={self.fully_escaped})"
+        return f"XMLNameCodec(fully_escaped={self.fully_escaped}, escape_case={self.escape_case})"
 
 
-cdef string _normalise_html(html, str root) except *:
+cdef int _case_mode(case) except -1:
+    if case == "lower":
+        return 0
+    if case == "keep":
+        return 1
+    if case == "escape":
+        return 2
+    raise PygiXMLHTMLError(f"case must be 'lower', 'keep' or 'escape', not {case!r}")
+
+
+cdef string _normalise_html(html, str root, case) except *:
     if not isinstance(html, str):
         raise PygiXMLHTMLError(
             f"html must be str, not {type(html).__name__} (decode bytes first)"
@@ -3067,11 +3103,12 @@ cdef string _normalise_html(html, str root) except *:
     if not root:
         raise PygiXMLHTMLError("root must be a non-empty element name")
     # "replace": a lone surrogate must not abort the whole conversion.
+    cdef int mode = _case_mode(case)
     cdef bytes data = (<str>html).encode("utf-8", "replace")
-    return html_to_xml_cpp(data, root.encode("utf-8"))
+    return html_to_xml_cpp(data, root.encode("utf-8"), mode)
 
 
-def html_to_xml(html, str root="root"):
+def html_to_xml(html, str root="root", case="lower"):
     """Convert HTML (possibly malformed, possibly a fragment) to a
     well-formed XML string.
 
@@ -3080,18 +3117,32 @@ def html_to_xml(html, str root="root"):
     otherwise everything is wrapped in ``<root>`` (name configurable via
     *root*).
 
-    Names XML rejects are encoded reversibly (``o:p`` -> ``o_colon_p``,
-    ``@click`` -> ``_at_click``) so :func:`xml_to_html` can restore them.
+    Names XML rejects are mapped reversibly (``o:p`` -> ``o_x003A_p``,
+    ``@click`` -> ``_x0040_click``, see :func:`encode_name`) so
+    :func:`xml_to_html` can restore them.
+
+    HTML names don't depend on case; *case* decides what the XML gets:
+
+    * ``"lower"`` (default): tag and attribute names are lower-cased, so
+      ``<DIV CLASS=a>`` and ``//div`` just work;
+    * ``"keep"``: names are written as they were in the input (XML is case
+      sensitive: ``@Click`` and ``@click`` stay two attributes, ``viewBox``
+      stays ``viewBox``). The logic (void tags, implied end tags, matching end
+      tags) still ignores case, and an end tag takes the spelling of its start
+      tag;
+    * ``"escape"``: like ``"lower"``, but each upper-case ASCII letter is
+      written as its escape, so nothing is lost and names stay lower-case:
+      ``@Click`` -> ``_x0040__x0043_lick``. :func:`decode_name` reads it.
 
     Raises:
-        PygiXMLHTMLError: *html* isn't a ``str`` (decode bytes first), or
-            *root* is empty.
+        PygiXMLHTMLError: *html* isn't a ``str`` (decode bytes first),
+            *root* is empty, or *case* is not one of the three values.
     """
-    cdef string xml = _normalise_html(html, root)
+    cdef string xml = _normalise_html(html, root, case)
     return xml.decode("utf-8")
 
 
-def parse_html(html, str root="root", options=None):
+def parse_html(html, str root="root", options=None, case="lower"):
     """Parse HTML into an :class:`~pygixml.XMLDocument` (see
     :func:`html_to_xml` for what is normalised and what is not).
 
@@ -3102,11 +3153,13 @@ def parse_html(html, str root="root", options=None):
     in HTML the space in ``<b>a</b> <i>b</i>`` is content, and dropping
     comments would make :func:`xml_to_html` lose them.
 
+    *case* is ``"lower"``, ``"keep"`` or ``"escape"``, see :func:`html_to_xml`.
+
     Raises:
         PygiXMLHTMLError: see :func:`html_to_xml`; also if the normalised
             XML is rejected by the XML parser.
     """
-    cdef string xml = _normalise_html(html, root)
+    cdef string xml = _normalise_html(html, root, case)
     cdef unsigned int opts = (parse_default | parse_ws_pcdata | parse_comments
                               if options is None else <unsigned int>options)
     cdef XMLDocument doc = XMLDocument()
@@ -3128,7 +3181,7 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
     ``<br>``, empty elements ``<div></div>`` (never ``<div/>``, which a
     browser reads as an open tag), ``<script>``/``<style>`` contents are
     not escaped, and names encoded by :func:`html_to_xml` are restored
-    (``o_colon_p`` -> ``o:p``). Runs in a single C++ call.
+    (``o_x003A_p`` -> ``o:p``). Runs in a single C++ call.
 
     Args:
         node: an :class:`XMLNode` or :class:`XMLDocument`.

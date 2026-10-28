@@ -111,8 +111,8 @@ def test_codec_object():
     c = XMLNameCodec()
     assert c.encode("@Click") == "_x0040_Click"
     assert c.decode("_x0040_Click") == "@Click"
-    assert repr(c) == "XMLNameCodec(fully_escaped=True)"
-    assert repr(XMLNameCodec(0)) == "XMLNameCodec(fully_escaped=False)"
+    assert repr(c) == "XMLNameCodec(fully_escaped=True, escape_case=False)"
+    assert repr(XMLNameCodec(0, 1)) == "XMLNameCodec(fully_escaped=False, escape_case=True)"
     assert XMLNameCodec(fully_escaped=False).decode("_x003A_x") == ":x"
 
 
@@ -150,3 +150,30 @@ def test_html_lower_cases_names_before_mapping():
     # itself keeps case. (@Click and @click only differ when you call encode_name.)
     assert "_x0040_click=" in pygixml.html_to_xml("<p @Click=1>t</p>")
     assert encode_name("@Click") != encode_name("@click")
+
+
+# --- escape_case: upper-case ASCII letters are escaped too ---------------------------------
+
+@pytest.mark.parametrize("raw, mapped", [
+    ("Click", "_x0043_lick"),
+    ("viewBox", "view_x0042_ox"),
+    ("@Click", "_x0040__x0043_lick"),
+    ("click", "click"),
+    ("é", "é"),                                  # only A-Z
+    ("XML", "_x0058__x004D__x004C_"),
+    ("a_xB", "a_x005F_x_x0042_"),
+])
+def test_escape_case_mappings(raw, mapped):
+    assert encode_name(raw, escape_case=True) == mapped
+    assert decode_name(mapped) == raw
+    assert XMLNameCodec(escape_case=True).encode(raw) == mapped
+
+
+@pytest.mark.parametrize("full", [True, False])
+def test_escape_case_round_trip_and_no_upper_case_left(full):
+    seen = {}
+    for s in _samples(seed=9):
+        e = encode_name(s, full, escape_case=True)
+        assert decode_name(e) == s, s
+        assert not re.search("[A-Z]", re.sub("_x[0-9A-F]+_", "", e)), (s, e)   # only hex digits inside escapes
+        assert seen.setdefault(e, s) == s, (s, seen[e], e)                     # still one-to-one

@@ -49,7 +49,7 @@ library.  Drop ``import xmltodict`` and replace it with
 Entry Points
 ------------
 
-.. function:: pygixml.dictify.parse(xml, attr_prefix='@', cdata_key='#text', force_list=None, encoding=None)
+.. function:: pygixml.dictify.parse(xml, attr_prefix='@', cdata_key='#text', force_list=None, encoding=None, cdata_separator=None)
    :no-index:
 
    Parse an XML string into a nested dict.
@@ -66,6 +66,14 @@ Entry Points
    :type force_list: set or True or None
    :param encoding: Accepted for API compatibility; ignored (pygixml
       auto-detects encoding).
+   :param cdata_separator: What to do with text that child elements split
+      (``<p>Hi<br/>x</p>``). ``None`` (default) keeps only the first text run,
+      under *cdata_key*; this is what :mod:`pygixml.jsonify` and the streaming
+      writers do too, so the three give the same result. A string joins all the
+      text runs of an element with it, like xmltodict's ``cdata_separator``:
+      ``""`` gives ``'Hix'``, ``" "`` gives ``'Hi x'``. Text and CDATA next to
+      each other are one run.
+   :type cdata_separator: str or None
    :returns: Parsed document as a nested dict.
    :rtype: dict
    :raises PygiXMLError: If the XML is malformed.
@@ -85,7 +93,13 @@ Entry Points
       d = dictify.parse('<root><x>only</x></root>', force_list={'x'})
       # {'root': {'x': ['only']}}
 
-.. function:: pygixml.dictify.parse_file(path, attr_prefix='@', cdata_key='#text', force_list=None)
+      # Text that child elements split: first run only (default), or all of it
+      dictify.parse('<p>Hi<br/>x</p>')
+      # {'p': {'br': None, '#text': 'Hi'}}
+      dictify.parse('<p>Hi<br/>x</p>', cdata_separator='')
+      # {'p': {'br': None, '#text': 'Hix'}}
+
+.. function:: pygixml.dictify.parse_file(path, attr_prefix='@', cdata_key='#text', force_list=None, cdata_separator=None)
    :no-index:
 
    Parse an XML file into a nested dict.  Accepts the same keyword arguments
