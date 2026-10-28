@@ -2406,11 +2406,20 @@ static inline void append_comment(std::string& out, const char* s, size_t n) {
     out += "-->";
 }
 
-// ------------------------------------------------------- reversible names
+// ------------------------------------------------------------- name mapping
 //
 // XML rejects some names HTML allows (o:p, @click, [prop], 1bad). They are
-// encoded, not dropped, so to_html can restore them:
-//   ':' -> _colon_   '@' -> _at_   '[' -> _lbracket_   anything else -> _x<hex>_
+// mapped, not dropped, so to_html can restore them. The rules are the SQL/XML
+// ones (ISO/IEC 9075-14, "Mapping SQL <identifier>s to XML Names"; the same as
+// PostgreSQL's map_sql_identifier_to_xml_name and .NET's XmlConvert.EncodeName):
+//   * a character that is not valid at that place in an XML name becomes
+//     _xHHHH_ (its code point in upper-case hex; 6 digits above U+FFFF);
+//   * a '_' followed by 'x' becomes _x005F_, so the mapping is one-to-one
+//     (nothing a name already contains can be mistaken for an escape);
+//   * "fully escaped" (the default) also escapes every ':' (a bare prefix breaks
+//     namespace-aware parsers) and the first letter of a name that starts with
+//     "xml" in any case (those names are reserved). Not fully escaped, a ':'
+//     is kept unless it is the first character.
 
 static inline bool name_start(uint32_t c) {
     return (c >= 'A' && c <= 'Z') || c == '_' || (c >= 'a' && c <= 'z') ||
@@ -2424,67 +2433,47 @@ static inline bool name_char(uint32_t c) {
            (c >= 0x300 && c <= 0x36F) || (c >= 0x203F && c <= 0x2040);
 }
 
-static const char* const kWords[][2] = {
-    {":", "colon"}, {"@", "at"}, {"#", "hash"}, {"[", "lbracket"}, {"]", "rbracket"},
-    {"(", "lparen"}, {")", "rparen"}, {"*", "star"}, {"+", "plus"}, {"/", "slash"},
-};
-
-static inline std::string enc_name(const std::string& raw) {
-    bool ok = !raw.empty();                         // fast path: already a valid XML name
-    for (size_t i = 0; ok && i < raw.size();) {
-        uint32_t cp = get_utf8(raw, i);
-        ok = name_char(cp);                         // (start char re-checked below)
-    }
-    if (ok) {
-        size_t i = 0;
-        if (name_start(get_utf8(raw, i))) return raw;
-    }
+static inline std::string enc_name(const std::string& raw, bool full = true) {
+    const bool xml = full && raw.size() >= 3 && (raw[0] | 32) == 'x' && (raw[1] | 32) == 'm' && (raw[2] | 32) == 'l';
     std::string out;
-    size_t i = 0;
-    bool first = true;
-    while (i < raw.size()) {
-        size_t begin = i;
-        uint32_t cp = get_utf8(raw, i);
-        if (first ? name_start(cp) : name_char(cp)) {
-            out.append(raw, begin, i - begin);
+    for (size_t i = 0; i < raw.size();) {
+        const size_t begin = i;
+        const uint32_t cp = get_utf8(raw, i);
+        const bool first = begin == 0;
+        bool esc;
+        if (cp == ':') esc = first || full;
+        else if (cp == '_') esc = i < raw.size() && raw[i] == 'x';
+        else esc = (first && xml) || !(first ? name_start(cp) : name_char(cp));
+        if (esc) {
+            char buf[16];
+            std::snprintf(buf, sizeof buf, cp > 0xFFFF ? "_x%06X_" : "_x%04X_", static_cast<unsigned>(cp));
+            out += buf;
         } else {
-            const char* word = nullptr;
-            if (cp < 0x80)
-                for (auto& w : kWords) if (w[0][0] == static_cast<char>(cp)) { word = w[1]; break; }
-            if (word) { out += '_'; out += word; out += '_'; }
-            else { char buf[16]; std::snprintf(buf, sizeof buf, "_x%x_", cp); out += buf; }
+            out.append(raw, begin, i - begin);
         }
-        first = false;
     }
     return out;
 }
 
+// Inverse. Any _x<4..8 hex digits>_ that names a real character (not U+0000, no
+// surrogate, at most U+10FFFF) is replaced by it; lower-case hex and the 8-digit
+// form of .NET are accepted too. Anything else is left as it is.
 static inline std::string dec_name(const char* s) {
     std::string out;
-    size_t n = std::strlen(s);
+    const size_t n = std::strlen(s);
     for (size_t i = 0; i < n; ++i) {
-        if (s[i] == '_') {
-            size_t j = i + 1;
-            if (j < n && s[j] == 'x') {                      // _x<hex>_
-                size_t k = j + 1;
-                while (k < n && ((s[k] >= '0' && s[k] <= '9') || (s[k] >= 'a' && s[k] <= 'f'))) ++k;
-                if (k > j + 1 && k < n && s[k] == '_') {
-                    put_utf8(out, static_cast<uint32_t>(std::strtoul(std::string(s + j + 1, k - j - 1).c_str(), nullptr, 16)));
-                    i = k;
-                    continue;
-                }
+        if (s[i] == '_' && i + 1 < n && s[i + 1] == 'x') {
+            size_t k = i + 2;
+            uint32_t cp = 0;
+            while (k < n && k - (i + 2) < 8 && is_hex(s[k])) {
+                cp = cp * 16 + static_cast<uint32_t>(s[k] <= '9' ? s[k] - '0' : (s[k] | 32) - 'a' + 10);
+                ++k;
             }
-            bool hit = false;
-            for (auto& w : kWords) {
-                size_t l = std::strlen(w[1]);
-                if (n - j > l && std::memcmp(s + j, w[1], l) == 0 && s[j + l] == '_') {
-                    out += w[0];
-                    i = j + l;
-                    hit = true;
-                    break;
-                }
+            if (k - (i + 2) >= 4 && k < n && s[k] == '_' && cp > 0 && cp <= 0x10FFFF && !(cp >= 0xD800 && cp <= 0xDFFF)) {
+                put_utf8(out, cp);
+                i = k;
+                continue;
             }
-            if (hit) continue;
         }
         out += s[i];
     }
@@ -2973,6 +2962,8 @@ static inline std::string to_html(const pugi::xml_node& first, bool siblings, bo
 }  // namespace pygixml_html
     """
     string html_to_xml_cpp "pygixml_html::to_xml"(const string& html, const string& root) except +
+    string enc_name_cpp "pygixml_html::enc_name"(const string& raw, bint full) except +
+    string dec_name_cpp "pygixml_html::dec_name"(const char* s) except +
     string xml_to_html_cpp "pygixml_html::to_html"(
         const xml_node& first, bint siblings, bint pretty, const string& indent,
         bint doctype, const char* unwrap) except +
@@ -2985,6 +2976,87 @@ class PygiXMLHTMLError(PygiXMLError):
     :class:`PygiXMLError`.
     """
     pass
+
+
+cdef bytes _name_bytes(name):
+    if not isinstance(name, str):
+        raise PygiXMLHTMLError(f"name must be str, not {type(name).__name__}")
+    try:
+        return (<str>name).encode("utf-8")
+    except UnicodeEncodeError:
+        raise PygiXMLHTMLError("name contains a lone surrogate")
+
+
+def encode_name(name, bint fully_escaped=True):
+    """Map any string to a valid XML name, reversibly (see :func:`decode_name`).
+
+    This is the SQL/XML rule (ISO/IEC 9075-14, "Mapping SQL identifiers to XML
+    Names"; PostgreSQL's ``map_sql_identifier_to_xml_name``, .NET's
+    ``XmlConvert.EncodeName``). It is what :func:`html_to_xml` does to the tag
+    and attribute names XML can't hold. Case is kept.
+
+    * a character that isn't valid at that place in an XML name becomes
+      ``_xHHHH_`` (its code point, upper-case hex; 6 digits above U+FFFF):
+      ``@click`` -> ``_x0040_click``, ``1bad`` -> ``_x0031_bad``;
+    * a ``_`` followed by ``x`` becomes ``_x005F_``, so no name can be mistaken
+      for an escape and the mapping is one-to-one;
+    * *fully_escaped* (the default) also escapes every ``:`` (``o:p`` ->
+      ``o_x003A_p``) and the first letter of a name starting with ``xml`` in
+      any case (``xmlns`` -> ``_x0078_mlns``). With ``False`` a ``:`` inside a
+      name is kept, giving a QName.
+
+    Names that are already fine (``data-id``, ``snake_case``, ``é``) are
+    returned unchanged.
+
+    Raises:
+        PygiXMLHTMLError: *name* is not a ``str``, is empty, or has a lone
+            surrogate.
+    """
+    cdef bytes data = _name_bytes(name)
+    if not data:
+        raise PygiXMLHTMLError("name must not be empty")
+    return enc_name_cpp(data, fully_escaped).decode("utf-8")
+
+
+def decode_name(name):
+    """Inverse of :func:`encode_name`: ``_x0040_click`` -> ``@click``.
+
+    Use it to read the names :func:`parse_html` produced, e.g.
+    ``decode_name(node.name)``. Every ``_x<hex>_`` of 4 to 8 hex digits that
+    names a real character is replaced (lower-case hex is accepted too);
+    anything else is left alone.
+    """
+    cdef bytes data = _name_bytes(name)
+    return dec_name_cpp(data).decode("utf-8")
+
+
+class XMLNameCodec:
+    """The SQL/XML name mapping as an object, for when the options matter.
+
+    >>> c = XMLNameCodec()
+    >>> c.encode("@Click"), c.decode("_x0040_Click")
+    ('_x0040_Click', '@Click')
+    >>> XMLNameCodec(fully_escaped=False).encode("o:p")
+    'o:p'
+
+    *fully_escaped* is described in :func:`encode_name`. ``decode`` does not
+    depend on it.
+    """
+    __slots__ = ("fully_escaped",)
+
+    def __init__(self, fully_escaped=True):
+        self.fully_escaped = True if fully_escaped else False
+
+    def encode(self, name):
+        """:func:`encode_name` with this codec's options."""
+        return encode_name(name, self.fully_escaped)
+
+    def decode(self, name):
+        """:func:`decode_name`."""
+        return decode_name(name)
+
+    def __repr__(self):
+        return f"XMLNameCodec(fully_escaped={self.fully_escaped})"
 
 
 cdef string _normalise_html(html, str root) except *:

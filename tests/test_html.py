@@ -83,13 +83,13 @@ def test_valueless_and_duplicate_attributes():
 
 def test_invalid_attribute_names_sanitised():
     assert conv("<a @click=1 [p]=2 :x=3 #r=4 v-on:go=5>t</a>") == (
-        '<a _at_click="1" _lbracket_p_rbracket_="2" _colon_x="3" _hash_r="4"'
-        ' v-on_colon_go="5">t</a>'
+        '<a _x0040_click="1" _x005B_p_x005D_="2" _x003A_x="3" _x0023_r="4"'
+        ' v-on_x003A_go="5">t</a>'
     )
 
 
 def test_prefixed_names_do_not_break_namespace_aware_parsers():
-    assert conv("<o:p xlink:href=x>t</o:p>") == '<o_colon_p xlink_colon_href="x">t</o_colon_p>'
+    assert conv("<o:p xlink:href=x>t</o:p>") == '<o_x003A_p xlink_x003A_href="x">t</o_x003A_p>'
 
 
 def test_attribute_value_escaping():
@@ -381,7 +381,7 @@ def test_legacy_reference_in_attribute_followed_by_equals_or_alnum_is_literal():
 def test_unicode_names_and_xml_name_rules():
     assert conv("<a日本 ü=1>t</a日本>") == '<a日本 ü="1">t</a日本>'
     assert conv("<é>t").startswith("<root>&lt;é&gt;t")       # HTML5: a tag name starts with an ASCII letter
-    assert conv("<a -x=1 .y=2 z-=3>t</a>") == '<a _x2d_x="1" _x2e_y="2" z-="3">t</a>'
+    assert conv("<a -x=1 .y=2 z-=3>t</a>") == '<a _x002D_x="1" _x002E_y="2" z-="3">t</a>'
     out = back("<a -x=1 .y=2 :z=3 w\u2014v=4>t</a>")
     assert out == '<a -x="1" .y="2" :z="3" w\u2014v="4">t</a>'
 

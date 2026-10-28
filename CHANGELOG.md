@@ -15,8 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (void tags, implied end tags, stray end tags, valueless/duplicate
     attributes, entities, raw `<script>`/`<style>`, whitespace in
     attribute values, fragments wrapped in a root). Names XML rejects are
-    encoded reversibly: `o:p` -> `o_colon_p`, `@click` -> `_at_click`,
-    anything else -> `_x<hex>_`.
+    mapped reversibly with the SQL/XML rules (ISO/IEC 9075-14): `o:p` ->
+    `o_x003A_p`, `@click` -> `_x0040_click`, `1bad` -> `_x0031_bad`;
+    `_x` -> `_x005F_x` keeps it one-to-one.
+  - `pygixml.encode_name(name, fully_escaped=True)`,
+    `pygixml.decode_name(name)` and `pygixml.XMLNameCodec`: that mapping on
+    its own, e.g. `decode_name(node.name)` to read a parsed name.
   - `pygixml.parse_html(html)` parses the result into an `XMLDocument`
     (keeps whitespace-only text and comments by default), so XPath,
     `objectify`, `dictify` and `jsonify` work on HTML.

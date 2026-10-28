@@ -62,7 +62,7 @@ What gets fixed
   ``<pre>`` / ``<textarea>`` is dropped (and written back by
   ``xml_to_html``), exactly as the HTML spec says
 * a tag cut off by the end of the input is dropped, as browsers do
-* names XML rejects are encoded reversibly (see below)
+* names XML rejects are mapped reversibly (see below)
 * newlines and tabs inside attribute values are kept (XML parsers would
   otherwise turn them into spaces)
 * comments containing ``--``, control characters, doctype and
@@ -75,9 +75,13 @@ Names XML can't hold
 --------------------
 
 Names such as ``o:p`` (a bare prefix breaks namespace-aware parsers) or
-``@click`` are encoded, not dropped, and :func:`pygixml.xml_to_html`
-restores them. What counts as a valid character follows the XML 1.0 name
-rules, so Unicode letters in names are kept as they are:
+``@click`` are mapped, not dropped, and :func:`pygixml.xml_to_html` restores
+them. The mapping is the SQL/XML one (ISO/IEC 9075-14, "Mapping SQL
+identifiers to XML Names"; the same as PostgreSQL's and .NET's
+``XmlConvert.EncodeName``), available on its own as
+:func:`pygixml.encode_name` / :func:`pygixml.decode_name`. What counts as a
+valid character follows the XML 1.0 name rules, so Unicode letters in names
+are kept as they are:
 
 .. list-table::
    :header-rows: 1
@@ -85,16 +89,32 @@ rules, so Unicode letters in names are kept as they are:
    * - HTML name
      - In the XML
    * - ``o:p``
-     - ``o_colon_p``
+     - ``o_x003A_p``
    * - ``@click``
-     - ``_at_click``
+     - ``_x0040_click``
    * - ``[prop]``
-     - ``_lbracket_prop_rbracket_``
-   * - ``1bad``
-     - ``_x31_bad``  (any other character is ``_x<hex>_``)
+     - ``_x005B_prop_x005D_``
+   * - ``1bad`` (attribute)
+     - ``_x0031_bad``
+   * - ``xml:lang``, ``xmlns``
+     - ``_x0078_ml_x003A_lang``, ``_x0078_mlns``  (names starting with
+       ``xml`` are reserved: the first letter is escaped)
+   * - ``my_xvalue``
+     - ``my_x005F_xvalue``  (``_`` before ``x`` is escaped, so a name can never
+       be mistaken for an escape)
 
-The only ambiguity: an original name that already contains a literal
-``_colon_``, ``_at_``, ... decodes to the character.
+The mapping is one-to-one: ``xml_to_html`` always gets back what was there.
+When an encoded name is hard to read, decode it::
+
+    >>> doc = pygixml.parse_html("<o:p>t</o:p>")
+    >>> doc.root.name
+    'o_x003A_p'
+    >>> pygixml.decode_name(doc.root.name)
+    'o:p'
+
+HTML names are case-insensitive, so the tokenizer lower-cases them first:
+``@Click`` reaches the mapping as ``@click`` (and SVG's ``viewBox`` as
+``viewbox``). ``encode_name`` itself keeps case.
 
 Back to HTML
 ------------
@@ -146,5 +166,12 @@ API
 .. autofunction:: pygixml.parse_html
 
 .. autofunction:: pygixml.xml_to_html
+
+.. autofunction:: pygixml.encode_name
+
+.. autofunction:: pygixml.decode_name
+
+.. autoclass:: pygixml.XMLNameCodec
+   :members:
 
 .. autoexception:: pygixml.PygiXMLHTMLError

@@ -77,9 +77,18 @@ PYTHONPATH=src python3 -m pytest tests -q -p no:cacheprovider
   implied end tags (`<p>`, `<li>`, `<td>`, `<option>`...), stray end tags, root wrapping for fragments.
   It is **not** the HTML5 tree-construction algorithm: no implied html/head/body, no table repair,
   names are lower-cased (SVG `viewBox` becomes `viewbox`).
-- Names XML rejects are **encoded reversibly**: `o:p` -> `o_colon_p`, `@click` -> `_at_click`,
-  other chars -> `_x<hex>_`; `xml_to_html` decodes them. Ambiguity only if an original name already
-  contains e.g. `_colon_`.
+- Names XML rejects are mapped with the **SQL/XML rules** (ISO/IEC 9075-14 9.1, same as PostgreSQL
+  `map_sql_identifier_to_xml_name` and .NET `XmlConvert.EncodeName`): `o:p` -> `o_x003A_p`, `@click` ->
+  `_x0040_click`; `_x` -> `_x005F_x` makes it one-to-one; "fully escaped" (default) also escapes every `:` and
+  the first letter of a name starting with `xml` (`xmlns` -> `_x0078_mlns`). Replaced an earlier readable scheme
+  (`_colon_`, `_at_`, ...) that was ambiguous (`x_colon:` and `__at_` did not round-trip). C++ `enc_name`/`dec_name`
+  in `html.pxi`; Python `encode_name` / `decode_name` / `XMLNameCodec` are thin wrappers (tests: `tests/test_names.py`).
+  The decoder also takes lower-case hex and 5/8-digit forms (PostgreSQL, .NET). Non-BMP escapes use 6 digits; I did not
+  check that against the standard text.
+- The tokenizer still **lower-cases names before the mapping**, so `@Click` and `@click` are the same attribute in
+  `parse_html`/`html_to_xml` (first wins). Only `encode_name` keeps case. A `keep case` option was discussed, not done.
+- Tests use expat only for characters both XML 1.0 editions allow: expat has the 4th-edition name tables and rejects
+  U+2040, U+FFFD and chars above U+FFFF that the current spec, libxml2 and pugixml accept.
 - Spec behaviours chosen on purpose: all 2231 named entities incl. legacy no-`;` ones (and `?a=1&copy=2` stays
   literal in attributes), `<title>`/`<textarea>` are RCDATA, `\r\n`->`\n`, newline after `<pre>` dropped
   and re-added on output, a tag cut off by EOF is dropped, newlines in attribute values survive (char refs).
@@ -143,7 +152,7 @@ Used inside diff for similarity, and public as `signature`/`similarity`.
 - `'\0'` as an "end of input" sentinel truncates documents at a real NUL byte: check indices instead.
 - pugixml needs `parse_fragment` to load a lone comment/text fragment (used by `patch` for `Insert`).
 - A node being moved is "hidden" while its new parent's path is resolved, so a move into itself fails with "path not found".
-- Names with `:` break namespace-aware parsers (ElementTree/lxml): hence the reversible encoding.
+- Names with `:` break namespace-aware parsers (ElementTree/lxml): hence the name mapping.
 
 ## 7. Known limitations and things NOT done
 
@@ -152,7 +161,9 @@ Used inside diff for similarity, and public as `signature`/`similarity`.
   document alive, so the temporary document was freed first (use-after-free; glibc and musl cp38/cp39 got away with it). Fixed in the test
   (the document is held in a variable). Reproduce this class of bug locally with `MALLOC_PERTURB_=165 pytest tests`; the whole suite passes that way.
   The other CI jobs/platforms (macOS, Windows/MSVC, the remaining wheels) were not seen.
-- **Sphinx docs were not built**: `html.rst`/`diff.rst` use `autofunction`/`autoexception`; render warnings are unchecked.
+- **Sphinx docs**: built once (sphinx + furo, `sphinx-build -b html docs/source out`): OK, the API entries render. The only warnings
+  seen are `duplicate object description` for names listed both in `html.rst`/`diff.rst` and on the API page (`diff`, `html_to_xml`,
+  `PygiXMLHTMLError`, `encode_name`, ...); not fixed (`:no-index:` on one side would).
 - **Nothing is committed.** Version not bumped (changes sit under `[Unreleased]` in CHANGELOG).
 - `html.pxi` is ~112 KB because the full 2231-entity table is inlined. The user was offered a 252-entity HTML4-only
   alternative (~4 KB, loses `&nbsp`-style legacy behaviour and rare names) and did not answer.
@@ -177,7 +188,7 @@ Used inside diff for similarity, and public as `signature`/`similarity`.
 
 1. Run the build + full tests on Windows (MSVC) and macOS (clang); fix any C++ portability issues (most likely spots:
    `std::to_string`/`snprintf` includes, `uint16_t` table math, signed/unsigned comparisons).
-2. Build the Sphinx docs and fix warnings; add a small README mention.
+2. Fix the duplicate-object Sphinx warnings; add a small README mention.
 3. Commit in sensible pieces (HTML, embedding+diff, patch, CLI) and decide the version bump.
 4. Decide with the user: `actions_to_json`/`from_json` and a readable text format; the entity-table size question.
 5. Optional: Myers/Wu for huge sibling lists, `strict` HTML mode, add HTML/diff cases to `benchmarks/`.
