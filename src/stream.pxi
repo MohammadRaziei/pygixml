@@ -1508,6 +1508,12 @@ cdef class StreamElement:
         This only ever builds ``dict``/``list``/``str``: no JSON text
         is produced. See :meth:`to_json` for a direct-to-string version
         that skips building this dict entirely.
+
+        *cdata_separator* controls text that child elements split
+        (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+        (text and CDATA next to each other, also across a comment, are one run);
+        a string joins all runs with it, as xmltodict does (``""`` gives
+        ``"Hix"``). See :func:`pygixml.dictify.parse`.
         """
         cdef bint force_all = (force_list is True)
         cdef object force_set = None
@@ -1582,6 +1588,12 @@ cdef class StreamElement:
                 line = elem.to_json()   # str, ready to write/yield
                 ...
                 elem.clear()
+
+        *cdata_separator* controls text that child elements split
+        (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+        (text and CDATA next to each other, also across a comment, are one run);
+        a string joins all runs with it, as xmltodict does (``""`` gives
+        ``"Hix"``). See :func:`pygixml.dictify.parse`.
         """
         cdef bint force_all = (force_list is True)
         cdef object force_set = None

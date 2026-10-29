@@ -1637,6 +1637,12 @@ def jsonify_dumps_str(str xml,
 
     Raises:
         PygiXMLError: If the XML is malformed.
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_string(xml):
@@ -1666,6 +1672,12 @@ def jsonify_dumps_file(str path,
 
     Raises:
         PygiXMLError: If the file cannot be read or XML is malformed.
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     cdef XMLDocument doc = XMLDocument()
     if not doc.load_file(path):
@@ -1695,6 +1707,12 @@ def jsonify_dumps_obj(object elem,
 
     Raises:
         TypeError: If *elem* is not an ObjectifiedElement.
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     if not isinstance(elem, ObjectifiedElement):
         raise TypeError(
@@ -1725,6 +1743,12 @@ def jsonify_dumps_node(object node,
 
     Raises:
         TypeError: If *node* is not an XMLNode.
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     if not isinstance(node, XMLNode):
         raise TypeError(
@@ -1780,6 +1804,12 @@ def jsonify_dumps(object source,
         jsonify.dumps(root.user_profile)   # ObjectifiedElement
         jsonify.dumps(doc.root)            # XMLNode
         jsonify.dumps_file("data.xml")     # file: explicit
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     if isinstance(source, ObjectifiedElement):
         return jsonify_dumps_obj(source, attr_prefix, cdata_key,
@@ -1904,6 +1934,12 @@ def jsonify_stream_dump(
         import json
         with open("huge.json") as f:
             data = json.load(f)   # a single, ordinary, valid JSON document
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     cdef bytes xml_b  = xml_path.encode("utf-8")
     cdef bytes json_b = json_path.encode("utf-8")
@@ -2003,6 +2039,12 @@ def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text
             for line in jsonify.iterjsonl("big.xml", "record"):
                 f.write(line)
                 f.write("\\n")
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
         yield (<StreamElement>elem).to_json(attr_prefix, cdata_key, force_list, cdata_separator)
@@ -2069,6 +2111,12 @@ def jsonify_stream_jsonl(str xml_path, str jsonl_path, str tag,
         from pygixml import jsonify
         n = jsonify.stream_jsonl("big.xml", "big.jsonl", "record")
         print(f"wrote {n} records")
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     cdef bytes xml_b   = xml_path.encode("utf-8")
     cdef bytes jsonl_b = jsonl_path.encode("utf-8")

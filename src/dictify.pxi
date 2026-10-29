@@ -539,6 +539,12 @@ def dictify_iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text"
 
         for record in dictify.iterdict("big.xml", "record"):
             print(record["name"], record["@id"])
+
+    *cdata_separator* controls text that child elements split
+    (``Hi<br/>x``). ``None`` (default) keeps the first non-blank text run
+    (text and CDATA next to each other, also across a comment, are one run);
+    a string joins all runs with it, as xmltodict does (``""`` gives
+    ``"Hix"``). See :func:`pygixml.dictify.parse`.
     """
     for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
         yield (<StreamElement>elem).to_dict(attr_prefix, cdata_key, force_list, cdata_separator)
