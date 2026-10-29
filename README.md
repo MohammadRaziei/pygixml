@@ -331,6 +331,7 @@ d = dictify.parse(xml,
     attr_prefix='',       # no prefix: attrs and children in same namespace
     cdata_key='text',     # key for text content (default '#text')
     force_list={'entry'}, # always a list, even with one element
+    cdata_separator='',   # join text split by child elements (default: first run)
 )
 
 # Parse from file
@@ -348,6 +349,8 @@ print(xml_out)
 | `attr_prefix` | `"@"` | Prefix added to attribute keys |
 | `cdata_key` | `"#text"` | Key for text content in mixed nodes |
 | `force_list` | `None` | Tag names always wrapped in a list; pass `True` for all |
+| `cdata_separator` | `None` | Text split by child elements (`Hi<br/>x`): `None` keeps the first non-blank run, a string joins all runs (`""` gives `"Hix"`) |
+| `strip_whitespace` | `False` | Strip text at both ends (`parse` / `parse_file` only) |
 
 | Function | Description |
 |---|---|
@@ -386,6 +389,15 @@ pygixml.similarity(a, b)                                   # 0.72
 pygixml.patch(a, actions)
 pygixml.is_equal(a, b)                                     # True
 ```
+
+A document from `parse_html` remembers it came from HTML, so `to_html()`
+restores the original names; a document from `parse_string` keeps its names as
+they are.
+
+> [!NOTE]
+> Text next to CDATA or comments is one run, and `dictify` / `jsonify` read it
+> the same way in every engine: `<p>a<![CDATA[b]]>c</p>` gives `'abc'`. This
+> changed in 0.14.0 (it used to give `'a'`), see the [changelog](CHANGELOG.md).
 
 See the HTML and diff pages of the documentation for the options
 (`ignore_whitespace`, `ignore_comments`, `class_as_set`, `keys`,
