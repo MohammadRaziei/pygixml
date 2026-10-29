@@ -358,6 +358,7 @@ cdef class XMLDocument:
     :meth:`reset` to avoid repeated allocations.
     """
     cdef xml_document* _doc
+    cdef bint _from_html   # set by parse_html; makes to_html decode names
 
     def __cinit__(self):
         """Create an empty ``XMLDocument``.
@@ -402,6 +403,7 @@ cdef class XMLDocument:
                 by :func:`parse_string`; this method returns ``False``
                 instead).
         """
+        self._from_html = False
         cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes content_bytes = content.encode('utf-8')
         if opts == 0xFFFFFFFF:
@@ -431,6 +433,7 @@ cdef class XMLDocument:
             >>> doc.root.name
             'root'
         """
+        self._from_html = False
         cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes path_bytes = path.encode('utf-8')
         if opts == 0xFFFFFFFF:
@@ -469,6 +472,7 @@ cdef class XMLDocument:
             >>> doc.reset()
             >>> doc.root  # None: document is empty
         """
+        self._from_html = False
         self._doc.reset()
     
     def append_child(self, str name):

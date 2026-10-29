@@ -49,7 +49,7 @@ library.  Drop ``import xmltodict`` and replace it with
 Entry Points
 ------------
 
-.. function:: pygixml.dictify.parse(xml, attr_prefix='@', cdata_key='#text', force_list=None, encoding=None, cdata_separator=None)
+.. function:: pygixml.dictify.parse(xml, attr_prefix='@', cdata_key='#text', force_list=None, encoding=None, cdata_separator=None, strip_whitespace=False)
    :no-index:
 
    Parse an XML string into a nested dict.
@@ -67,13 +67,16 @@ Entry Points
    :param encoding: Accepted for API compatibility; ignored (pygixml
       auto-detects encoding).
    :param cdata_separator: What to do with text that child elements split
-      (``<p>Hi<br/>x</p>``). ``None`` (default) keeps only the first text run,
-      under *cdata_key*; this is what :mod:`pygixml.jsonify` and the streaming
-      writers do too, so the three give the same result. A string joins all the
-      text runs of an element with it, like xmltodict's ``cdata_separator``:
-      ``""`` gives ``'Hix'``, ``" "`` gives ``'Hi x'``. Text and CDATA next to
-      each other are one run.
+      (``<p>Hi<br/>x</p>``). Text and CDATA next to each other (also across a
+      comment) are one run, and blank runs don't count. ``None`` (default)
+      keeps the first run, under *cdata_key*; a string joins all the runs of an
+      element with it, like xmltodict's ``cdata_separator``: ``""`` gives
+      ``'Hix'``, ``" "`` gives ``'Hi x'``. :mod:`pygixml.jsonify` and the
+      streaming readers read text the same way, see :ref:`text-runs`.
    :type cdata_separator: str or None
+   :param strip_whitespace: Strip the text at both ends (xmltodict does by
+      default, here it is off). Only :func:`parse` and :func:`parse_file` have it.
+   :type strip_whitespace: bool
    :returns: Parsed document as a nested dict.
    :rtype: dict
    :raises PygiXMLError: If the XML is malformed.
@@ -99,7 +102,7 @@ Entry Points
       dictify.parse('<p>Hi<br/>x</p>', cdata_separator='')
       # {'p': {'br': None, '#text': 'Hix'}}
 
-.. function:: pygixml.dictify.parse_file(path, attr_prefix='@', cdata_key='#text', force_list=None, cdata_separator=None)
+.. function:: pygixml.dictify.parse_file(path, attr_prefix='@', cdata_key='#text', force_list=None, cdata_separator=None, strip_whitespace=False)
    :no-index:
 
    Parse an XML file into a nested dict.  Accepts the same keyword arguments

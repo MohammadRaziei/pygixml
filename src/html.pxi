@@ -2852,9 +2852,9 @@ static inline bool blank_text(const pugi::xml_node& n) {
 
 // Can this node sit on its own line without changing how the page renders?
 // (block-level elements, comments, blank text -- not inline elements or real text)
-static inline bool block_ok(const pugi::xml_node& k) {
+static inline bool block_ok(const pugi::xml_node& k, bool dec) {
     if (k.type() == pugi::node_element) {
-        std::string t = dec_name(k.name());
+        std::string t = dec ? dec_name(k.name()) : std::string(k.name());
         return !in_list(kInline, lower_ascii(t.data(), t.size()));
     }
     if (k.type() == pugi::node_pcdata || k.type() == pugi::node_cdata) return blank_text(k);
@@ -2875,7 +2875,7 @@ static inline void write_raw(std::string& out, const std::string& text) {
 }
 
 static inline void write_node(std::string& out, const pugi::xml_node& node, bool pretty,
-                              size_t depth, std::vector<Frame>& st) {
+                              size_t depth, std::vector<Frame>& st, bool dec) {
     switch (node.type()) {
         case pugi::node_comment: append_comment(out, node.value(), std::strlen(node.value())); return;
         case pugi::node_pcdata:
@@ -2883,11 +2883,11 @@ static inline void write_node(std::string& out, const pugi::xml_node& node, bool
         case pugi::node_element: break;
         default: return;   // doctype, <?pi?>, declaration: dropped
     }
-    std::string tag = dec_name(node.name());
+    std::string tag = dec ? dec_name(node.name()) : std::string(node.name());
     std::string low = lower_ascii(tag.data(), tag.size());
     out += '<'; out += tag;
     for (pugi::xml_attribute a = node.first_attribute(); a; a = a.next_attribute()) {
-        out += ' '; out += dec_name(a.name()); out += "=\"";
+        out += ' '; out += dec ? dec_name(a.name()) : std::string(a.name()); out += "=\"";
         escape(out, a.value(), std::strlen(a.value()), true, true);
         out += '"';
     }
@@ -2913,12 +2913,12 @@ static inline void write_node(std::string& out, const pugi::xml_node& node, bool
     bool block = false;
     if (pretty && first && !in_list(kVerbatim, low) && !in_list(kInline, low)) {
         block = true;                              // only if every child can sit on its own line
-        for (pugi::xml_node k = first; k && block; k = k.next_sibling()) block = block_ok(k);
+        for (pugi::xml_node k = first; k && block; k = k.next_sibling()) block = block_ok(k, dec);
     }
     st.push_back(Frame{first, tag, block, depth});
 }
 
-static inline void drain(std::string& out, std::vector<Frame>& st, const std::string& indent) {
+static inline void drain(std::string& out, std::vector<Frame>& st, const std::string& indent, bool dec) {
     while (!st.empty()) {
         Frame& f = st.back();
         if (f.next) {
@@ -2932,7 +2932,7 @@ static inline void drain(std::string& out, std::vector<Frame>& st, const std::st
                 out += '\n';
                 for (size_t d = 0; d <= depth; ++d) out += indent;
             }
-            write_node(out, child, block, depth + 1, st);   // may push (f invalid afterwards)
+            write_node(out, child, block, depth + 1, st, dec);   // may push (f invalid afterwards)
         } else {
             if (f.block) { out += '\n'; for (size_t d = 0; d < f.depth; ++d) out += indent; }
             out += "</" + f.tag + ">";
@@ -2946,7 +2946,8 @@ static inline void drain(std::string& out, std::vector<Frame>& st, const std::st
 // `first` alone is serialized. `unwrap`: if set and the only top-level element
 // has this name, emit its children instead.
 static inline std::string to_html(const pugi::xml_node& first, bool siblings, bool pretty,
-                                  const std::string& indent, bool doctype, const char* unwrap) {
+                                  const std::string& indent, bool doctype, const char* unwrap,
+                                  bool dec) {
     std::vector<pugi::xml_node> tops;
     if (siblings) for (pugi::xml_node k = first; k; k = k.next_sibling()) tops.push_back(k);
     else tops.push_back(first);
@@ -2964,7 +2965,7 @@ static inline std::string to_html(const pugi::xml_node& first, bool siblings, bo
     // Top-level newlines are only safe when no top-level node is real text or an
     // inline element: otherwise the "\n" would itself become content when re-parsed.
     bool top_block = pretty;
-    for (auto& t : tops) if (!block_ok(t)) { top_block = false; break; }
+    for (auto& t : tops) if (!block_ok(t, dec)) { top_block = false; break; }
 
     std::string out;
     if (doctype) out += top_block ? "<!DOCTYPE html>\n" : "<!DOCTYPE html>";
@@ -2976,8 +2977,8 @@ static inline std::string to_html(const pugi::xml_node& first, bool siblings, bo
             if (!is_first) out += '\n';
         }
         is_first = false;
-        write_node(out, t, pretty, 0, st);
-        drain(out, st, indent);
+        write_node(out, t, pretty, 0, st, dec);
+        drain(out, st, indent, dec);
     }
     return out;
 }
@@ -2989,7 +2990,7 @@ static inline std::string to_html(const pugi::xml_node& first, bool siblings, bo
     string dec_name_cpp "pygixml_html::dec_name"(const char* s) except +
     string xml_to_html_cpp "pygixml_html::to_html"(
         const xml_node& first, bint siblings, bint pretty, const string& indent,
-        bint doctype, const char* unwrap) except +
+        bint doctype, const char* unwrap, bint dec) except +
 
 
 class PygiXMLHTMLError(PygiXMLError):
@@ -3170,6 +3171,7 @@ def parse_html(html, str root="root", options=None, case="lower"):
         ok = <bint>doc._doc.load_string(xml.c_str(), opts)
     if not ok:
         raise PygiXMLHTMLError("normalised HTML was rejected by the XML parser")
+    doc._from_html = True
     return doc
 
 
@@ -3182,6 +3184,11 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
     browser reads as an open tag), ``<script>``/``<style>`` contents are
     not escaped, and names encoded by :func:`html_to_xml` are restored
     (``o_x003A_p`` -> ``o:p``). Runs in a single C++ call.
+
+    Names are only decoded for a document made by :func:`parse_html` (it
+    remembers where it came from); a document from ``parse_string`` /
+    ``load_string`` / ``load_file`` keeps its names exactly. An
+    :class:`XMLNode` does not know its document, so it is always decoded.
 
     Args:
         node: an :class:`XMLNode` or :class:`XMLDocument`.
@@ -3212,16 +3219,17 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
         unw_c = unw
     if isinstance(node, XMLDocument):
         d = <XMLDocument>node
-        out = xml_to_html_cpp(d._doc.first_child(), True, pretty, ind, doctype, unw_c)
+        out = xml_to_html_cpp(d._doc.first_child(), True, pretty, ind, doctype, unw_c,
+                              d._from_html)
     elif isinstance(node, XMLNode):
         n = <XMLNode>node
         t = n._node.type()
         if t == node_null:
             raise PygiXMLHTMLError("can't serialize a null node")
         if t == node_document:
-            out = xml_to_html_cpp(n._node.first_child(), True, pretty, ind, doctype, unw_c)
+            out = xml_to_html_cpp(n._node.first_child(), True, pretty, ind, doctype, unw_c, True)
         else:
-            out = xml_to_html_cpp(n._node, False, pretty, ind, doctype, unw_c)
+            out = xml_to_html_cpp(n._node, False, pretty, ind, doctype, unw_c, True)
     else:
         raise PygiXMLHTMLError(
             f"expected XMLNode or XMLDocument, not {type(node).__name__}"

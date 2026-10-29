@@ -205,16 +205,6 @@ They reviewed ideas critically and redirected twice: "an algorithm that diffs tw
 They also asked to minimise Python/C++ boundary crossings (hence one C++ call per public function) and
 to have the diff use the embedding for similarity.
 
-## Text split by child elements (dictify / jsonify)
+## Session 2
 
-- By design all of these keep only the **first text run** of an element as `#text`: `dictify.parse` (via `child_value()`),
-  the in-memory `jsonify` serializer, and both streaming writers in `jsonify.pxi` (`text_flushed`, so a stream can emit
-  `#text` at once and keep constant memory). `<p>Hi<br/>x</p>` -> `'Hi'`; xmltodict gives `'Hix'`. Tests pin this and check
-  `dictify.parse == json.loads(jsonify.dumps_str(...))` on mixed content.
-- `dictify.parse(..., cdata_separator=None)` / `parse_file`: a str joins all text runs (xmltodict's option; text+CDATA next to
-  each other are one run, so `a<![CDATA[b]]>c` is `'abc'` for any separator). Default unchanged (same speed: 7.5 MB, ~220 ms).
-  `FormatDocument.from_html` sets `""` (so `pygixml convert page.html --to json` keeps tail text). `jsonify` and `iterdict`
-  do not have the option; with it on, dictify and jsonify differ on mixed content by design.
-- Not done: whitespace. dictify keeps text as is (`' hi '`), xmltodict strips by default (`'hi'`); the comment in
-  `_node_to_obj` says "xmltodict does not strip", which is only true with `strip_whitespace=False`.
-- html_to_xml speed is about 75 MB/s on a 3 MB generated page in all three `case` modes (no measurement of the code before `case`).
+See `HANDOFF_NEXT.md` (current state, what was done, what is left). It replaces anything here about text runs, `case` and the name mapping.

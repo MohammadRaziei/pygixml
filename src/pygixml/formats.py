@@ -97,6 +97,7 @@ class FormatDocument:
         from pygixml import dictify, html_to_xml
         # HTML interleaves text and tags all the time: keep all the text of an element
         kwargs.setdefault("cdata_separator", "")
+        kwargs.setdefault("strip_whitespace", True)
         return cls(dictify.parse(html_to_xml(text, case=case), **kwargs))
 
     def to_html(self, pretty: bool = False, indent: str = "  ",

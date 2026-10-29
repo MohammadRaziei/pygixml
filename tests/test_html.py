@@ -423,3 +423,19 @@ def test_convert_cli_html_to_html_keeps_mixed_content(tmp_path):
         capture_output=True, text=True, check=True,
     ).stdout.strip()
     assert out == "<p>a <b>x</b> c <i>y</i> d</p>"
+
+
+def test_to_html_decodes_only_documents_from_html():
+    # a document from parse_html remembers it; plain XML keeps its names
+    xml = '<root><a_x003A_b c_x003A_d="1"/></root>'
+    plain = pygixml.parse_string(xml)
+    assert "a_x003A_b" in plain.to_html() and "c_x003A_d" in plain.to_html()
+    h = pygixml.parse_html("<o:p x:y=1>t</o:p>")
+    assert h.to_html(unwrap="root") == '<o:p x:y="1">t</o:p>'
+    # reloading clears the memory
+    h.load_string(xml)
+    assert "a_x003A_b" in h.to_html()
+    h2 = pygixml.parse_html("<o:p>t</o:p>")
+    h2.reset()
+    h2.load_string("<o_x003A_p/>")
+    assert "o_x003A_p" in h2.to_html()

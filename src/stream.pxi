@@ -1464,8 +1464,33 @@ cdef class StreamElement:
         self.tail = None
         self._children = None
 
+    cdef object _text_value(self, object sep):
+        """The text of this element, read in runs: ``text`` and the ``tail`` of
+        every child are the runs (text and CDATA next to each other are already
+        one, a comment doesn't split them), blank ones don't count. The first
+        run, or all of them joined by *sep* when it is a str. None if there is
+        no text."""
+        cdef list runs = None
+        cdef object t = self.text
+        cdef StreamElement child
+        if t is not None and not t.isspace():
+            if sep is None:
+                return t
+            runs = [t]
+        if self._children is not None:
+            for child in self._children:
+                t = child.tail
+                if t is not None and not t.isspace():
+                    if sep is None:
+                        return t
+                    if runs is None:
+                        runs = [t]
+                    else:
+                        runs.append(t)
+        return None if runs is None else sep.join(runs)
+
     def to_dict(self, str attr_prefix="@", str cdata_key="#text",
-                object force_list=None):
+                object force_list=None, object cdata_separator=None):
         """Convert this element (and its subtree) to a plain ``dict``,
         using the same convention as :func:`pygixml.jsonify.dumps`:
 
@@ -1488,10 +1513,11 @@ cdef class StreamElement:
         cdef object force_set = None
         if not force_all and force_list:
             force_set = set(force_list)
-        return self._to_dict(attr_prefix, cdata_key, force_all, force_set)
+        return self._to_dict(attr_prefix, cdata_key, force_all, force_set,
+                             _check_sep(cdata_separator))
 
     cdef object _to_dict(self, str attr_prefix, str cdata_key,
-                          bint force_all, object force_set):
+                          bint force_all, object force_set, object sep):
         cdef dict result
         cdef StreamElement child
         cdef str tag
@@ -1500,10 +1526,18 @@ cdef class StreamElement:
         cdef list children = self._children if self._children is not None else []
         cdef bint has_attrs = (self._attrib is not None and len(self._attrib) > 0)
         cdef bint has_children = (len(children) > 0)
-        cdef bint has_text = (self.text is not None and not self.text.isspace())
+        cdef object text
+        cdef bint has_text
+        if has_children:
+            text = self._text_value(sep)
+        else:                                  # a leaf: its text is the whole text
+            text = self.text
+            if text is not None and text.isspace():
+                text = None
+        has_text = text is not None
 
         if not has_attrs and not has_children:
-            return self.text if has_text else None
+            return text
 
         result = {}
         if self._attrib is not None:
@@ -1511,7 +1545,7 @@ cdef class StreamElement:
                 result[attr_prefix + k] = v
 
         if has_text and (has_attrs or has_children):
-            result[cdata_key] = self.text
+            result[cdata_key] = text
 
         for child in children:
             tag = child.tag
@@ -1520,7 +1554,7 @@ cdef class StreamElement:
         cdef dict seen_as_list = {}
         for child in children:
             tag = child.tag
-            value = child._to_dict(attr_prefix, cdata_key, force_all, force_set)
+            value = child._to_dict(attr_prefix, cdata_key, force_all, force_set, sep)
             as_list = (counts[tag] > 1) or force_all or \
                 (force_set is not None and tag in force_set)
             if tag in seen_as_list:
@@ -1534,7 +1568,7 @@ cdef class StreamElement:
         return result
 
     def to_json(self, str attr_prefix="@", str cdata_key="#text",
-                object force_list=None):
+                object force_list=None, object cdata_separator=None):
         """Serialize this element (and its subtree) directly to a JSON
         ``str``: **without** ever constructing an intermediate ``dict``
         or ``list``, and without using the ``json`` module. Uses the
@@ -1554,25 +1588,35 @@ cdef class StreamElement:
         if not force_all and force_list:
             force_set = set(force_list)
         cdef list parts = []
-        self._to_json(parts, attr_prefix, cdata_key, force_all, force_set)
+        self._to_json(parts, attr_prefix, cdata_key, force_all, force_set,
+                      _check_sep(cdata_separator))
         return "".join(parts)
 
     cdef void _to_json(self, list parts, str attr_prefix, str cdata_key,
-                        bint force_all, object force_set):
+                        bint force_all, object force_set, object sep):
         cdef StreamElement child
         cdef str tag
         cdef dict counts = {}
         cdef list children = self._children if self._children is not None else []
         cdef bint has_attrs = (self._attrib is not None and len(self._attrib) > 0)
         cdef bint has_children = (len(children) > 0)
-        cdef bint has_text = (self.text is not None and not self.text.isspace())
+        cdef object text
+        cdef bint has_text
         cdef bint first
         cdef bint as_list
         cdef bint first_item
 
+        if has_children:
+            text = self._text_value(sep)
+        else:                                  # a leaf: its text is the whole text
+            text = self.text
+            if text is not None and text.isspace():
+                text = None
+        has_text = text is not None
+
         if not has_attrs and not has_children:
             if has_text:
-                parts.append(_json_escape_str(self.text))
+                parts.append(_json_escape_str(text))
             else:
                 parts.append("null")
             return
@@ -1595,7 +1639,7 @@ cdef class StreamElement:
             first = False
             parts.append(_json_escape_str(cdata_key))
             parts.append(":")
-            parts.append(_json_escape_str(self.text))
+            parts.append(_json_escape_str(text))
 
         for child in children:
             tag = child.tag
@@ -1627,10 +1671,10 @@ cdef class StreamElement:
                         parts.append(",")
                     first_item = False
                     (<StreamElement>sib)._to_json(parts, attr_prefix, cdata_key,
-                                                    force_all, force_set)
+                                                    force_all, force_set, sep)
                 parts.append("]")
             else:
-                child._to_json(parts, attr_prefix, cdata_key, force_all, force_set)
+                child._to_json(parts, attr_prefix, cdata_key, force_all, force_set, sep)
 
         parts.append("}")
 
@@ -1755,10 +1799,13 @@ cdef class PullParser:
             top = self._elem_stack[len(self._elem_stack) - 1]
             if top is not None:
                 cur = <StreamElement>top
+                # A processing instruction flushes the text before it; the text after it
+                # continues the same run, so append to what is already there.
                 if cur._children:
-                    (<StreamElement>cur._children[len(cur._children) - 1]).tail = text
+                    last = <StreamElement>cur._children[len(cur._children) - 1]
+                    last.tail = text if last.tail is None else last.tail + text
                 else:
-                    cur.text = text
+                    cur.text = text if cur.text is None else cur.text + text
 
     cdef inline void _finalize_pending(self):
         cdef StreamElement elem

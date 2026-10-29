@@ -40,10 +40,42 @@ to, but faster than, ``json.dumps(dictify.parse(xml))``.
    jsonify.dumps(xml, pretty=True, indent="  ")   # multi-line, 2-space indent
 
 
+.. _text-runs:
+
+Text split by child elements
+------------------------------
+
+An element's text is read in *runs*: text and CDATA next to each other (also
+across a comment or a processing instruction) are one run, and only a child
+element ends it. Blank (whitespace-only) runs don't count. ``#text`` is the
+first run, or, with ``cdata_separator=<str>``, all of them joined by it (the
+option has the name and meaning of xmltodict's):
+
+.. code-block:: python
+
+   jsonify.dumps("<p>Hi<br/>x</p>")                       # {"p": {"#text": "Hi", "br": null}}
+   jsonify.dumps("<p>Hi<br/>x</p>", cdata_separator="")   # {"p": {"#text": "Hix", "br": null}}
+   jsonify.dumps("<p>a<![CDATA[b]]>c</p>")                # {"p": "abc"}
+
+:func:`pygixml.dictify.parse`, :func:`pygixml.dictify.iterdict`, every
+``dumps*`` function, :func:`~pygixml.jsonify.iterjsonl`,
+:func:`~pygixml.jsonify.stream_dump` and :func:`~pygixml.jsonify.stream_jsonl`
+give the same result, with and without the option; ``tests/test_text_runs.py``
+checks them against an ElementTree reference. Three known differences remain:
+
+* The DOM readers (``dictify.parse``, ``dumps*``) never see whitespace-only
+  *plain* text, because pugixml drops it while parsing. It only matters inside a
+  run (``<![CDATA[a]]> <![CDATA[b]]>``): the streaming readers keep that space.
+* What counts as blank differs for characters beyond ASCII: ``dictify`` and
+  ``iterdict`` use ``str.isspace()`` (a text of only ``&#160;`` is blank), the
+  JSON writers only space, tab, CR and LF (it is the text ``"\u00a0"``).
+* With ``cdata_separator`` set, a streaming writer holds the text of an element
+  until the element closes, instead of writing it at once.
+
 In-memory entry points
 ------------------------
 
-.. function:: pygixml.jsonify.dumps(source, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8")
+.. function:: pygixml.jsonify.dumps(source, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8", cdata_separator=None)
    :no-index:
 
    Smart dispatcher: serializes XML to JSON regardless of what form the
@@ -63,6 +95,10 @@ In-memory entry points
    :param cdata_key: Key used for text content in mixed nodes. Default
       ``"#text"``.
    :type cdata_key: str
+   :param cdata_separator: ``None`` (default): the text of an element is its
+      first non-blank text run; a string: all the runs, joined by it. See
+      :ref:`text-runs`. Every function of this page takes it.
+   :type cdata_separator: str or None
    :param force_list: Tag names that should always be wrapped in a JSON
       array, even when only one sibling exists. Pass ``True`` to force
       every tag.
@@ -86,7 +122,7 @@ In-memory entry points
       always unambiguous whether a ``str`` argument is XML content or a
       file path.
 
-.. function:: pygixml.jsonify.dumps_str(xml, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8")
+.. function:: pygixml.jsonify.dumps_str(xml, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8", cdata_separator=None)
    :no-index:
 
    Parse an XML *string* and serialize it directly to JSON.
@@ -97,7 +133,7 @@ In-memory entry points
    :rtype: str
    :raises PygiXMLError: If the XML is malformed.
 
-.. function:: pygixml.jsonify.dumps_file(path, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8")
+.. function:: pygixml.jsonify.dumps_file(path, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8", cdata_separator=None)
    :no-index:
 
    Parse an XML *file* and serialize it directly to JSON, returning the
@@ -110,7 +146,7 @@ In-memory entry points
    :rtype: str
    :raises PygiXMLError: If the file cannot be read or the XML is malformed.
 
-.. function:: pygixml.jsonify.dumps_obj(elem, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8")
+.. function:: pygixml.jsonify.dumps_obj(elem, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8", cdata_separator=None)
    :no-index:
 
    Serialize an already-parsed :class:`~pygixml.ObjectifiedElement`
@@ -130,7 +166,7 @@ In-memory entry points
       root = objectify.from_string(xml)
       jsonify.dumps_obj(root.user)            # just the <user> subtree
 
-.. function:: pygixml.jsonify.dumps_node(node, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8")
+.. function:: pygixml.jsonify.dumps_node(node, attr_prefix="@", cdata_key="#text", force_list=None, pretty=False, indent="\\t", encoding="utf-8", cdata_separator=None)
    :no-index:
 
    Serialize a low-level :class:`~pygixml.XMLNode` directly to JSON.
@@ -152,7 +188,7 @@ documents that fit comfortably in RAM. For documents that don't,
 in C++, with no pugixml DOM, no Python ``dict``/``list``/``str`` for
 individual elements, and no ``json`` module anywhere in the call chain.
 
-.. function:: pygixml.jsonify.stream_dump(xml_path, json_path, attr_prefix="@", cdata_key="#text", force_list=None, indent=0, stack_size=4096, io_buf_size=65536)
+.. function:: pygixml.jsonify.stream_dump(xml_path, json_path, attr_prefix="@", cdata_key="#text", force_list=None, indent=0, stack_size=4096, io_buf_size=65536, cdata_separator=None)
    :no-index:
 
    Convert a (potentially gigantic) XML **file** into a single,
@@ -244,7 +280,7 @@ individual elements, and no ``json`` module anywhere in the call chain.
       with open("huge.json") as f:
           data = json.load(f)   # a single, ordinary, valid JSON document
 
-.. function:: pygixml.jsonify.stream_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536)
+.. function:: pygixml.jsonify.stream_jsonl(xml_path, jsonl_path, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, io_buf_size=65536, cdata_separator=None)
    :no-index:
 
    The file-to-file counterpart of :func:`~pygixml.jsonify.iterjsonl`

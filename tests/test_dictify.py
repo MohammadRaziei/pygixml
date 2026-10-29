@@ -301,12 +301,17 @@ _SPLIT = [
 ]
 
 
-def test_default_keeps_only_the_first_text_run():
-    # deliberate: jsonify (in memory and streamed) does the same, so they agree
+def test_default_keeps_the_first_text_run():
+    # a run is text and CDATA next to each other (a comment doesn't split it); a child
+    # element ends it. Default: the first run that isn't blank. See tests/test_text_runs.py.
+    assert dictify.parse("<p>Hi<br/>x</p>") == {"p": {"br": None, "#text": "Hi"}}
+    assert dictify.parse("<p>a<![CDATA[b]]>c</p>") == {"p": "abc"}
+    assert dictify.parse("<p>a<!--n-->b</p>") == {"p": "ab"}
+    assert dictify.parse("<p><br/>tail</p>") == {"p": {"br": None, "#text": "tail"}}
+    assert dictify.parse("<p>\n  <br/>tail</p>") == {"p": {"br": None, "#text": "tail"}}
+    # and the jsonify writers agree
     import json
     from pygixml import jsonify
-    assert dictify.parse("<p>Hi<br/>x</p>") == {"p": {"br": None, "#text": "Hi"}}
-    assert dictify.parse("<p>a<![CDATA[b]]>c</p>") == {"p": "a"}
     for x in _SPLIT:
         assert dictify.parse(x) == json.loads(jsonify.dumps_str(x)), x
 
@@ -336,4 +341,15 @@ def test_cdata_separator_in_parse_file_and_type_check(tmp_path):
     for bad in (1, b"", ["a"]):
         with pytest.raises(TypeError):
             dictify.parse("<a/>", cdata_separator=bad)
+
+
+def test_strip_whitespace():
+    assert dictify.parse("<a>\n  hi  \n</a>") == {"a": "\n  hi  \n"}
+    assert dictify.parse("<a>\n  hi  \n</a>", strip_whitespace=True) == {"a": "hi"}
+    assert dictify.parse("<a x='1'> t </a>", strip_whitespace=True) == {"a": {"@x": "1", "#text": "t"}}
+    assert dictify.parse("<p> Hi <br/> x </p>", cdata_separator=" ", strip_whitespace=True) == {
+        "p": {"br": None, "#text": "Hi   x"}}
+    xmltodict = pytest.importorskip("xmltodict")
+    for x in ["<a> hi </a>", "<a>\n  <b>1</b>\n  tail\n</a>", "<p> Hi <b>y</b> x </p>"]:
+        assert dictify.parse(x, strip_whitespace=True, cdata_separator="") == xmltodict.parse(x), x
 

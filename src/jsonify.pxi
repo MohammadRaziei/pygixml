@@ -62,6 +62,61 @@ cdef extern from *:
     }
 
     // ---------------------------------------------------------------------------
+    // Text of an element, read in runs (same rule as dictify and the streaming
+    // writers): text and CDATA next to each other, also across a comment or a PI,
+    // are one run, a child element ends it, blank runs don't count. The text is
+    // the first run, or all the runs joined by sep when sep_on. Returns nullptr
+    // when there is none; buf holds the text when it had to be built, otherwise
+    // the pointer is the node's own value (no copy).
+    // ---------------------------------------------------------------------------
+    static bool dom_blank(const char* p) {
+        while (*p == 32 || *p == 9 || *p == 10 || *p == 13) ++p;
+        return !*p;
+    }
+
+    static const char* element_text(pugi::xml_node node, bool sep_on,
+                                    const std::string& sep, std::string& buf) {
+        const char* single = nullptr;     // the current run is just this node's value
+        std::string run;
+        bool in_run = false;
+        bool any    = false;              // something is in buf (sep_on)
+        const char* first = nullptr;      // the answer when !sep_on
+        buf.clear();
+
+        // closes the current run; true = the answer is complete
+        auto end_run = [&]() -> bool {
+            if (!in_run) return false;
+            in_run = false;
+            const char* r = single ? single : run.c_str();
+            if (!dom_blank(r)) {
+                if (!sep_on) {
+                    if (single) first = single; else { buf = run; first = buf.c_str(); }
+                    return true;
+                }
+                if (any) buf += sep;
+                buf += r;
+                any = true;
+            }
+            single = nullptr;
+            run.clear();
+            return false;
+        };
+
+        for (pugi::xml_node c = node.first_child(); c; c = c.next_sibling()) {
+            pugi::xml_node_type t = c.type();
+            if (t == pugi::node_pcdata || t == pugi::node_cdata) {
+                const char* v = c.value();
+                if (!in_run) { in_run = true; single = v; }
+                else { if (single) { run = single; single = nullptr; } run += v; }
+            } else if (t == pugi::node_element) {
+                if (end_run()) return first;
+            }
+        }
+        if (end_run()) return first;
+        return any ? buf.c_str() : nullptr;
+    }
+
+    // ---------------------------------------------------------------------------
     // Core recursive serializer
     // ---------------------------------------------------------------------------
     static void node_to_json(
@@ -71,6 +126,8 @@ cdef extern from *:
         const std::string& cdata_key,
         const std::unordered_set<std::string>& force_list,
         bool               force_all,
+        bool               sep_on,   // cdata_separator given?
+        const std::string& tsep,     // ... and what it is
         const std::string& nl,       // newline: "\\n" or ""
         const std::string& ind,      // one indent level: "\\t", "  ", or ""
         int                depth
@@ -78,15 +135,9 @@ cdef extern from *:
         // --- collect attributes -------------------------------------------
         bool has_attrs    = false;
         bool has_children = false;
-        const char* text  = node.child_value();   // direct text child
-        bool has_text     = (text && text[0]);
-
-        // trim whitespace-only text
-        if (has_text) {
-            const char* p = text;
-            while (*p == ' ' || *p == '\\t' || *p == '\\n' || *p == '\\r') ++p;
-            if (!*p) has_text = false;
-        }
+        std::string text_buf;
+        const char* text  = element_text(node, sep_on, tsep, text_buf);
+        bool has_text     = (text != nullptr);
 
         for (pugi::xml_attribute a = node.first_attribute(); a;
              a = a.next_attribute())
@@ -169,7 +220,7 @@ cdef extern from *:
                     buf += pad1 + ind;
                     first_item = false;
                     node_to_json(s, buf, attr_prefix, cdata_key,
-                                 force_list, force_all,
+                                 force_list, force_all, sep_on, tsep,
                                  nl, ind, depth + 2);
                 }
                 buf += nl;
@@ -177,7 +228,7 @@ cdef extern from *:
                 buf += ']';
             } else {
                 node_to_json(c, buf, attr_prefix, cdata_key,
-                             force_list, force_all,
+                             force_list, force_all, sep_on, tsep,
                              nl, ind, depth + 1);
             }
         }
@@ -197,8 +248,11 @@ cdef extern from *:
         const char* const* force_list_items,   // null-terminated array
         bool               force_all,
         bool               pretty,
-        const char*        indent
+        const char*        indent,
+        bool               sep_on,
+        const char*        sep_c
     ) {
+        const std::string sep(sep_c);
         std::unordered_set<std::string> force_list;
         if (force_list_items) {
             for (int i = 0; force_list_items[i]; ++i)
@@ -218,7 +272,7 @@ cdef extern from *:
         if (pretty) buf += ' ';
 
         node_to_json(root, buf, attr_prefix, cdata_key,
-                     force_list, force_all, nl, ind, 1);
+                     force_list, force_all, sep_on, sep, nl, ind, 1);
 
         if (pretty) buf += "\\n";
         buf += '}';
@@ -233,8 +287,11 @@ cdef extern from *:
         PyObject*      force_set,
         bool           force_all,
         bool           pretty,
-        const char*    indent
+        const char*    indent,
+        bool           sep_on,
+        const char*    sep_c
     ) {
+        const std::string sep(sep_c);
         std::unordered_set<std::string> force_list;
         if (force_set && force_set != Py_None) {
             PyObject* iter = PyObject_GetIter(force_set);
@@ -258,7 +315,7 @@ cdef extern from *:
         buf += ':';
         if (pretty) buf += ' ';
         node_to_json(root, buf, attr_prefix, cdata_key,
-                     force_list, force_all, nl, ind, 1);
+                     force_list, force_all, sep_on, sep, nl, ind, 1);
         if (pretty) buf += "\\n";
         buf += '}';
         return buf;
@@ -347,7 +404,9 @@ cdef extern from *:
         bool wrote_brace          = false;  // '{' written for this level?
         bool first_field          = true;   // comma bookkeeping for this object
         bool any_attr_or_child    = false;
-        bool text_flushed         = false;  // see flush_text_field's comment
+        bool text_flushed         = false;  // the first non-blank run is written (see flush_text_field)
+        bool joined_any           = false;  // cdata_separator: runs collected so far ...
+        std::string joined;                 // ... and their text, written when the level closes
         int  depth                = 0;      // nesting depth, for indentation
         std::unordered_map<std::string, PJChildSlot> children;
         // attribute de-dup, per xmltodict convention: last value for a
@@ -544,11 +603,14 @@ cdef extern from *:
         int          indent_width,
         size_t       stack_size,
         size_t       io_buf_size,
+        bool         sep_on,
+        const char*  sep_c,
         char*        errbuf,
         size_t       errbuf_size
     ) {
         std::string attr_prefix(attr_prefix_c);
         std::string cdata_key(cdata_key_c);
+        const std::string cdata_sep(sep_c);
         bool pretty = indent_width > 0;
         std::string nl  = pretty ? "\\n" : "";
         std::string ind = pretty ? std::string((size_t)indent_width, ' ') : "";
@@ -623,25 +685,24 @@ cdef extern from *:
         // i.e. it already has attrs/children, or is about to get one).
         auto flush_text_field = [&](PJLevel& lv) {
             if (!have_pending_text) return;
-            if (lv.text_flushed) {
-                // Match pugixml's child_value() semantics (used by the
-                // in-memory DOM serializer): only the FIRST text run of
-                // an element becomes "#text"; text appearing after later
-                // child elements is dropped, not concatenated.
-                cur_text.clear();
-                have_pending_text = false;
-                return;
+            // Text is read in runs (see element_text): the first run that isn't blank
+            // becomes the text field; with cdata_separator all of them are collected and
+            // written when the level closes. Blank runs don't count.
+            if (!pgj_all_ws(cur_text.data(), cur_text.size())) {
+                if (sep_on) {
+                    if (lv.joined_any) lv.joined += cdata_sep;
+                    lv.joined += cur_text;
+                    lv.joined_any = true;
+                } else if (!lv.text_flushed) {
+                    ensure_open(lv);
+                    field_sep(lv);
+                    pgj_write_escaped(ed, cdata_key);
+                    ed.write_at_tail(':');
+                    if (!nl.empty()) ed.write_at_tail(' ');
+                    pgj_write_escaped(ed, cur_text);
+                    lv.text_flushed = true;
+                }
             }
-            bool blank = pgj_all_ws(cur_text.data(), cur_text.size());
-            if (!blank) {
-                ensure_open(lv);
-                field_sep(lv);
-                pgj_write_escaped(ed, cdata_key);
-                ed.write_at_tail(':');
-                if (!nl.empty()) ed.write_at_tail(' ');
-                pgj_write_escaped(ed, cur_text);
-            }
-            lv.text_flushed = true;
             cur_text.clear();
             have_pending_text = false;
         };
@@ -853,6 +914,13 @@ cdef extern from *:
                 return;
             }
             flush_text_field(lv);
+            if (sep_on && lv.joined_any) {
+                field_sep(lv);
+                pgj_write_escaped(ed, cdata_key);
+                ed.write_at_tail(':');
+                if (!nl.empty()) ed.write_at_tail(' ');
+                pgj_write_escaped(ed, lv.joined);
+            }
 
             // Close every child tag that ended up as a list, in ascending
             // order of where its content ends in the file. This matters
@@ -1037,7 +1105,9 @@ cdef extern from *:
         const char** force_list_items,
         bint        force_all,
         bint        pretty,
-        const char* indent
+        const char* indent,
+        bint        sep_on,
+        const char* sep_c
     ) except +
 
     # direct overload with pre-built set: used by _do_jsonify
@@ -1048,7 +1118,9 @@ cdef extern from *:
         object      force_set,
         bint        force_all,
         bint        pretty,
-        const char* indent
+        const char* indent,
+        bint        sep_on,
+        const char* sep_c
     ) except +
 
 
@@ -1062,6 +1134,8 @@ cdef extern from *:
         int         indent_width,
         size_t      stack_size,
         size_t      io_buf_size,
+        bint        sep_on,
+        const char* sep_c,
         char*       errbuf,
         size_t      errbuf_size
     ) except +
@@ -1179,12 +1253,15 @@ cdef extern from *:
         bool         force_all,
         size_t       stack_size,
         size_t       io_buf_size,
+        bool         sep_on,
+        const char*  sep_c,
         char*        errbuf,
         size_t       errbuf_size
     ) {
         std::string target_tag(target_tag_c);
         std::string attr_prefix(attr_prefix_c);
         std::string cdata_key(cdata_key_c);
+        const std::string cdata_sep(sep_c);
 
         std::vector<std::string> force_list;
         if (force_set && force_set != Py_None) {
@@ -1243,20 +1320,22 @@ cdef extern from *:
         };
         auto flush_text_field = [&](PJLevel& lv) {
             if (!have_pending_text) return;
-            if (lv.text_flushed) {
-                cur_text.clear();
-                have_pending_text = false;
-                return;
+            // same rule as in xml_stream_to_json_file: first non-blank run, or all of them
+            // joined by cdata_separator and written when the level closes
+            if (!pgj_all_ws(cur_text.data(), cur_text.size())) {
+                if (sep_on) {
+                    if (lv.joined_any) lv.joined += cdata_sep;
+                    lv.joined += cur_text;
+                    lv.joined_any = true;
+                } else if (!lv.text_flushed) {
+                    ensure_open(lv);
+                    field_sep(lv);
+                    pgj_write_escaped_t(med, cdata_key);
+                    med.write_at_tail(':');
+                    pgj_write_escaped_t(med, cur_text);
+                    lv.text_flushed = true;
+                }
             }
-            bool blank = pgj_all_ws(cur_text.data(), cur_text.size());
-            if (!blank) {
-                ensure_open(lv);
-                field_sep(lv);
-                pgj_write_escaped_t(med, cdata_key);
-                med.write_at_tail(':');
-                pgj_write_escaped_t(med, cur_text);
-            }
-            lv.text_flushed = true;
             cur_text.clear();
             have_pending_text = false;
         };
@@ -1344,6 +1423,12 @@ cdef extern from *:
                 return;
             }
             flush_text_field(lv);
+            if (sep_on && lv.joined_any) {
+                field_sep(lv);
+                pgj_write_escaped_t(med, cdata_key);
+                med.write_at_tail(':');
+                pgj_write_escaped_t(med, lv.joined);
+            }
 
             std::vector<std::pair<long, std::string>> pending_closes;
             for (auto& kv : lv.children) {
@@ -1495,6 +1580,8 @@ cdef extern from *:
         bint        force_all,
         size_t      stack_size,
         size_t      io_buf_size,
+        bint        sep_on,
+        const char* sep_c,
         char*       errbuf,
         size_t      errbuf_size
     ) except +
@@ -1510,7 +1597,7 @@ cdef extern from *:
 
 cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
                          object force_list, bint pretty, str indent,
-                         str encoding, object doc_ref=None):
+                         str encoding, object doc_ref=None, object cdata_sep=None):
     """Call the C++ serializer and return a Python str.
 
     *doc_ref* keeps the owning XMLDocument alive for the duration of the
@@ -1524,8 +1611,10 @@ cdef object _do_jsonify(xml_node root, str attr_prefix, str cdata_key,
     cdef object fl_set   = None
     if force_list and not force_all:
         fl_set = set(force_list)
+    cdef bytes sep_b     = (cdata_sep or "").encode(encoding)
     cdef string result = xml_node_to_json_set(
         root, ap_b, ck_b, fl_set, force_all, pretty, ind_b,
+        cdata_sep is not None, sep_b,
     )
     return result.decode(encoding)
 
@@ -1536,7 +1625,8 @@ def jsonify_dumps_str(str xml,
                       object force_list  = None,
                       bint   pretty      = False,
                       str    indent      = u"\t",
-                      str    encoding    = u"utf-8"):
+                      str    encoding    = u"utf-8",
+                      object cdata_separator = None):
     """Serialize an XML *string* directly to JSON.
 
     Args:
@@ -1554,7 +1644,8 @@ def jsonify_dumps_str(str xml,
     cdef xml_node root_raw = doc._doc.first_child()
     if _node_is_null(root_raw):
         raise PygiXMLError("Parsed document has no root element")
-    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
+    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding,
+                       None, _check_sep(cdata_separator))
 
 
 def jsonify_dumps_file(str path,
@@ -1563,7 +1654,8 @@ def jsonify_dumps_file(str path,
                        object force_list  = None,
                        bint   pretty      = False,
                        str    indent      = u"\t",
-                      str    encoding    = u"utf-8"):
+                      str    encoding    = u"utf-8",
+                      object cdata_separator = None):
     """Serialize an XML *file* directly to JSON.
 
     Args:
@@ -1581,7 +1673,8 @@ def jsonify_dumps_file(str path,
     cdef xml_node root_raw = doc._doc.first_child()
     if _node_is_null(root_raw):
         raise PygiXMLError(f"File {path!r} has no root element")
-    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
+    return _do_jsonify(root_raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding,
+                       None, _check_sep(cdata_separator))
 
 
 def jsonify_dumps_obj(object elem,
@@ -1590,7 +1683,8 @@ def jsonify_dumps_obj(object elem,
                       object force_list  = None,
                       bint   pretty      = False,
                       str    indent      = u"\t",
-                      str    encoding    = u"utf-8"):
+                      str    encoding    = u"utf-8",
+                      object cdata_separator = None):
     """Serialize an :class:`pygixml.ObjectifiedElement` subtree directly to JSON.
 
     Args:
@@ -1609,7 +1703,8 @@ def jsonify_dumps_obj(object elem,
     cdef xml_node node   = (<ObjectifiedElement>elem)._node
     cdef object   doc_ref = (<ObjectifiedElement>elem)._doc_ref
     return _do_jsonify(node, attr_prefix, cdata_key,
-                       force_list, pretty, indent, encoding, doc_ref)
+                       force_list, pretty, indent, encoding, doc_ref,
+                       _check_sep(cdata_separator))
 
 
 def jsonify_dumps_node(object node,
@@ -1618,7 +1713,8 @@ def jsonify_dumps_node(object node,
                        object force_list  = None,
                        bint   pretty      = False,
                        str    indent      = u"\t",
-                      str    encoding    = u"utf-8"):
+                      str    encoding    = u"utf-8",
+                      object cdata_separator = None):
     """Serialize a low-level :class:`pygixml.XMLNode` directly to JSON.
 
     Args:
@@ -1636,7 +1732,8 @@ def jsonify_dumps_node(object node,
         )
     cdef xml_node raw = (<XMLNode>node)._node
     # Note: XMLNode does not hold a doc_ref: caller must keep XMLDocument alive
-    return _do_jsonify(raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding)
+    return _do_jsonify(raw, attr_prefix, cdata_key, force_list, pretty, indent, encoding,
+                       None, _check_sep(cdata_separator))
 
 
 def jsonify_dumps(object source,
@@ -1645,7 +1742,8 @@ def jsonify_dumps(object source,
                   object force_list  = None,
                   bint   pretty      = False,
                   str    indent      = u"\t",
-                  str    encoding    = u"utf-8"):
+                  str    encoding    = u"utf-8",
+                      object cdata_separator = None):
     """Serialize XML to JSON: smart dispatcher.
 
     Routes automatically based on *source* type:
@@ -1685,14 +1783,14 @@ def jsonify_dumps(object source,
     """
     if isinstance(source, ObjectifiedElement):
         return jsonify_dumps_obj(source, attr_prefix, cdata_key,
-                                 force_list, pretty, indent, encoding)
+                                 force_list, pretty, indent, encoding, cdata_separator)
     if isinstance(source, XMLNode):
         return jsonify_dumps_node(source, attr_prefix, cdata_key,
-                                  force_list, pretty, indent, encoding)
+                                  force_list, pretty, indent, encoding, cdata_separator)
     if isinstance(source, str):
         if (<str>source).lstrip().startswith("<"):
             return jsonify_dumps_str(source, attr_prefix, cdata_key,
-                                     force_list, pretty, indent, encoding)
+                                     force_list, pretty, indent, encoding, cdata_separator)
         raise ValueError(
             f"jsonify.dumps() received a str that does not start with '<'. "
             f"For files use jsonify.dumps_file() explicitly."
@@ -1714,6 +1812,7 @@ def jsonify_stream_dump(
     int indent=0,
     size_t stack_size=4096,
     size_t io_buf_size=65536,
+    object cdata_separator=None,
 ):
     """Convert a (potentially gigantic) XML file to a single, **standard,
     valid JSON document**: in roughly constant memory.
@@ -1810,6 +1909,7 @@ def jsonify_stream_dump(
     cdef bytes json_b = json_path.encode("utf-8")
     cdef bytes ap_b   = attr_prefix.encode("utf-8")
     cdef bytes ck_b   = cdata_key.encode("utf-8")
+    cdef bytes sep_b  = (_check_sep(cdata_separator) or "").encode("utf-8")
 
     if indent < 0:
         raise ValueError(f"indent must be >= 0, got {indent}")
@@ -1834,6 +1934,8 @@ def jsonify_stream_dump(
         <int>indent,
         stack_size,
         io_buf_size,
+        cdata_separator is not None,
+        <const char*>sep_b,
         errbuf,
         sizeof(errbuf),
     )
@@ -1848,7 +1950,7 @@ def jsonify_stream_dump(
 
 def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
-             Py_ssize_t chunk_size=65536):
+             Py_ssize_t chunk_size=65536, object cdata_separator=None):
     """Stream-parse XML and yield each matching element as a **JSON
     string**, one at a time -- a generator, not a file.
 
@@ -1903,14 +2005,14 @@ def jsonify_iterjsonl(source, str tag, str attr_prefix="@", str cdata_key="#text
                 f.write("\\n")
     """
     for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
-        yield (<StreamElement>elem).to_json(attr_prefix, cdata_key, force_list)
+        yield (<StreamElement>elem).to_json(attr_prefix, cdata_key, force_list, cdata_separator)
         elem.clear()
 
 
 def jsonify_stream_jsonl(str xml_path, str jsonl_path, str tag,
              str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
-             size_t io_buf_size=65536):
+             size_t io_buf_size=65536, object cdata_separator=None):
     """Stream-convert an XML **file** straight to a ``.jsonl`` **file**,
     one matched element per line -- entirely in C++.
 
@@ -1973,6 +2075,7 @@ def jsonify_stream_jsonl(str xml_path, str jsonl_path, str tag,
     cdef bytes tag_b   = tag.encode("utf-8")
     cdef bytes ap_b    = attr_prefix.encode("utf-8")
     cdef bytes ck_b    = cdata_key.encode("utf-8")
+    cdef bytes sep_b   = (_check_sep(cdata_separator) or "").encode("utf-8")
 
     cdef bint force_all = False
     cdef object force_set = None
@@ -1994,6 +2097,8 @@ def jsonify_stream_jsonl(str xml_path, str jsonl_path, str tag,
         force_all,
         stack_size,
         io_buf_size,
+        cdata_separator is not None,
+        <const char*>sep_b,
         errbuf,
         sizeof(errbuf),
     )

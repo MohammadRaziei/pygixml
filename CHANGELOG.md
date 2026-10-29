@@ -21,12 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `pygixml.encode_name(name, fully_escaped=True)`,
     `pygixml.decode_name(name)` and `pygixml.XMLNameCodec`: that mapping on
     its own, e.g. `decode_name(node.name)` to read a parsed name.
-  - `dictify.parse(..., cdata_separator=None)` (and `parse_file`): `None` keeps
-    only the first text run of an element as before (so it still agrees with
-    `jsonify` and the streaming writers); a string joins all the text runs
-    like xmltodict's `cdata_separator` (`""`: `<p>Hi<br/>x</p>` ->
-    `'#text': 'Hix'`). `FormatDocument.from_html` / `pygixml convert page.html
-    --to json` use `""`, so tail text is no longer lost.
+  - `cdata_separator=None` on every XML->dict/JSON engine (`dictify.parse`,
+    `parse_file`, `iterdict`, `dumps*`, `stream_dump`, `stream_jsonl`,
+    `iterjsonl`, `to_dict`, `to_json`). `None` keeps the first non-blank text
+    run as `#text`; a string joins all non-blank runs with it, like
+    xmltodict (`""`: `<p>Hi<br/>x</p>` -> `'#text': 'Hix'`). With a
+    separator the streaming writers hold an element's text until it closes.
+    `dictify.parse` / `parse_file` also take `strip_whitespace` (default
+    False). `FormatDocument.from_html` / `pygixml convert page.html --to
+    json` use `cdata_separator=""` and `strip_whitespace=True`, so tail text
+    is kept and trimmed.
   - `case="lower" | "keep" | "escape"` on `html_to_xml` / `parse_html`
     (and `escape_case` on `encode_name` / `XMLNameCodec`): lower-case names
     (default), keep the input spelling (`@Click` stays distinct from
@@ -39,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     also `XMLNode.to_html()` / `XMLDocument.to_html()`: serialize as HTML
     (`<br>`, `<div></div>`, raw script/style, original names restored,
     pretty-printing that never re-indents inline content or `<pre>`).
+  - A document from `parse_html` remembers it came from HTML: its
+    `to_html()` decodes `_xHHHH_` names, a plain-XML document keeps them
+    (an `XMLNode` always decodes).
   - `pygixml.PygiXMLHTMLError` (a `PygiXMLError`) for every failure in the
     above.
   - All logic is C++, written inside `src/html.pxi` as verbatim blocks (the
@@ -69,6 +76,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `pygixml.PygiXMLDiffError` for every failure above.
 - `pygixml convert` reads and writes HTML (`.html`/`.htm`, `--from html`,
   `--to html`), and `FormatDocument` gained `from_html` / `to_html`.
+
+### Changed
+
+- Text-run rule, the same in all XML->dict/JSON engines (DOM and
+  streaming), so they agree with ElementTree on mixed content. A run is
+  text/CDATA next to each other (comments and PIs do not split it); only a
+  child element ends it; blank runs are ignored. Behaviour changes versus
+  0.13.0:
+  - text next to CDATA/comment/PI: `a<![CDATA[b]]>c` gives `'abc'` (the DOM
+    readers gave `'a'`);
+  - a blank first run (indentation) no longer uses up the slot, so text
+    after the first child is no longer dropped by the streamers;
+  - `iterdict` / `iterjsonl` now see tail-only text;
+  - a PI no longer overwrites the text before it (`x<?p d?>y` was `'y'`).
+
+### Fixed
+
+- `patch()` refused scripts from `diff()` when text was split by a
+  comment/CDATA/PI; adjacent text runs are now merged first.
 
 ## [v0.13.0] - 2026-09-14
 

@@ -260,7 +260,8 @@ cdef object _node_to_obj(xml_node node,
                           str attr_prefix,
                           str cdata_key,
                           object force_list,
-                          object cdata_sep):
+                          object cdata_sep,
+                          bint strip_ws):
     """Recursively convert *node* to a dict / string / None.
 
     Rules (matching xmltodict behaviour):
@@ -270,9 +271,9 @@ cdef object _node_to_obj(xml_node node,
       - Mixed (attrs and/or children)                 → dict
         - Attributes stored as  attr_prefix + name
         - Repeated sibling tags collapsed into list
-        - Text content stored under cdata_key: the first text child only
-          (what ``child_value()``, ``jsonify`` and the streaming writers do),
-          or, when *cdata_sep* is a str, all the text runs joined by it
+        - Text content stored under cdata_key: the first (non-blank) text run,
+          or, when *cdata_sep* is a str, all the runs joined by it; stripped
+          at both ends when *strip_ws*
     """
     cdef xml_attribute attr_c
     cdef xml_node      child
@@ -280,8 +281,6 @@ cdef object _node_to_obj(xml_node node,
     cdef bint          has_attrs    = False
     cdef bint          has_children = False
     cdef str           text         = None
-    cdef str           raw
-    cdef list          parts
 
     # --- collect attributes ---
     cdef dict result = {}
@@ -294,38 +293,28 @@ cdef object _node_to_obj(xml_node node,
         result[k] = s.decode("utf-8")
         attr_c = attr_c.next_attribute()
 
-    # --- collect text / CDATA ---
-    if cdata_sep is None:
-        s = node.child_value()           # the first text child only
-        raw = s.decode("utf-8") if not s.empty() else None
-    else:
-        # text and CDATA next to each other are one run (as xmltodict reads them);
-        # anything else between two of them ends the run, and runs are joined by cdata_sep
-        parts = []
-        run = None
-        child = node.first_child()
-        while not _node_is_null(child):
-            if child.type() == node_pcdata or child.type() == node_cdata:
-                s = child.value()
-                run = s.decode("utf-8") if run is None else run + s.decode("utf-8")
-            elif run is not None:
-                parts.append(run)
-                run = None
-            child = child.next_sibling()
-        if run is not None:
-            parts.append(run)
-        raw = cdata_sep.join(parts)
-    if raw and raw.strip():
-        text = raw   # preserve original (xmltodict does not strip)
-
-    # --- collect child elements ---
+    # --- children: elements are converted, text and CDATA are read in runs ---
+    # A run is text / CDATA next to each other (comments and PIs don't split it); a child
+    # element ends it. Blank runs don't count. The text is the first run, or all of them
+    # joined by cdata_sep.
+    cdef list runs = []
+    cdef str  run  = None
+    cdef int  ct
     child = node.first_child()
     while not _node_is_null(child):
-        if child.type() == node_element:
+        ct = child.type()
+        if ct == node_pcdata or ct == node_cdata:
+            s = child.value()
+            run = s.decode("utf-8") if run is None else run + s.decode("utf-8")
+        elif ct == node_element:
+            if run is not None:
+                if (cdata_sep is not None or not runs) and run.strip():
+                    runs.append(run)
+                run = None
             has_children = True
             s = child.name()
             tag = s.decode("utf-8")
-            val = _node_to_obj(child, attr_prefix, cdata_key, force_list, cdata_sep)
+            val = _node_to_obj(child, attr_prefix, cdata_key, force_list, cdata_sep, strip_ws)
 
             if tag in result:
                 # already seen: ensure it's a list
@@ -335,6 +324,12 @@ cdef object _node_to_obj(xml_node node,
             else:
                 result[tag] = val
         child = child.next_sibling()
+    if run is not None and (cdata_sep is not None or not runs) and run.strip():
+        runs.append(run)
+    if runs:
+        text = runs[0] if cdata_sep is None else cdata_sep.join(runs)
+        if strip_ws:
+            text = text.strip()
 
     # --- force_list: wrap scalar values into list ---
     if force_list:
@@ -373,7 +368,8 @@ def dictify_parse(str xml,
                     str cdata_key=u"#text",
                     object force_list=None,
                     object encoding=None,
-                    object cdata_separator=None):
+                    object cdata_separator=None,
+                    bint strip_whitespace=False):
     """Parse an XML string into an OrderedDict-compatible dict.
 
     Matches the behaviour of the ``xmltodict`` library:
@@ -395,14 +391,15 @@ def dictify_parse(str xml,
             Pass ``True`` to force all tags into lists.
         encoding: Accepted for API compatibility; pygixml auto-detects
             encoding and this parameter is ignored.
-        cdata_separator (str | None): What to do with text that is split
-            by child elements or CDATA (``Hi<br/>x``, ``a<![CDATA[b]]>c``).
-            ``None`` (default) keeps only the first text run, like
-            :mod:`pygixml.jsonify` and the streaming writers do, so the
-            three agree. A string joins all the text runs of an element
-            with it, as xmltodict's ``cdata_separator`` does: ``""`` gives
-            ``"Hix"``, ``" "`` gives ``"Hi x"``. Text and CDATA next to each
-            other are one run (``a<![CDATA[b]]>c`` is ``"abc"``).
+        cdata_separator (str | None): What to do with text that child
+            elements split (``Hi<br/>x``). Text and CDATA next to each
+            other (also across a comment) are one run: ``a<![CDATA[b]]>c`` is
+            ``\"abc\"``. ``None`` (default) keeps the first run that isn't
+            blank; a string joins all the runs of an element with it, as
+            xmltodict's ``cdata_separator`` does: ``\"\"`` gives ``\"Hix\"``,
+            ``\" \"`` gives ``\"Hi x\"``.
+        strip_whitespace (bool): Strip the text at both ends (xmltodict does
+            by default; here it is off).
 
     Returns:
         dict: Parsed document as a nested dict.
@@ -425,7 +422,7 @@ def dictify_parse(str xml,
 
     cdef string root_name = root_raw.name()
     tag = root_name.decode("utf-8")
-    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list, _check_sep(cdata_separator))
+    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list, _check_sep(cdata_separator), strip_whitespace)
     return {tag: val}
 
 
@@ -433,7 +430,8 @@ def dictify_parse_file(str path,
                          str attr_prefix=u"@",
                          str cdata_key=u"#text",
                          object force_list=None,
-                         object cdata_separator=None):
+                         object cdata_separator=None,
+                         bint strip_whitespace=False):
     """Parse an XML file into a dict. Same semantics as :func:`dictify_parse`.
 
     Args:
@@ -457,7 +455,7 @@ def dictify_parse_file(str path,
 
     cdef string root_name = root_raw.name()
     tag = root_name.decode("utf-8")
-    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list, _check_sep(cdata_separator))
+    val = _node_to_obj(root_raw, attr_prefix, cdata_key, force_list, _check_sep(cdata_separator), strip_whitespace)
     return {tag: val}
 
 
@@ -528,7 +526,7 @@ def dictify_unparse(object input_dict,
 
 def dictify_iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text",
              object force_list=None, size_t stack_size=4096,
-             Py_ssize_t chunk_size=65536):
+             Py_ssize_t chunk_size=65536, object cdata_separator=None):
     """Stream-parse XML and yield each matching element as a plain
     ``dict``, one at a time.
 
@@ -543,5 +541,5 @@ def dictify_iterdict(source, str tag, str attr_prefix="@", str cdata_key="#text"
             print(record["name"], record["@id"])
     """
     for elem in iterfind(source, tag, stack_size=stack_size, chunk_size=chunk_size):
-        yield (<StreamElement>elem).to_dict(attr_prefix, cdata_key, force_list)
+        yield (<StreamElement>elem).to_dict(attr_prefix, cdata_key, force_list, cdata_separator)
         elem.clear()

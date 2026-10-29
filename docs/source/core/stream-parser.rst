@@ -206,7 +206,7 @@ Streaming straight to ``dict`` or JSON
 Wrapping every loop in ``elem.to_dict()`` / ``elem.to_json()`` /
 ``elem.clear()`` is common enough to have its own generators:
 
-.. function:: pygixml.dictify.iterdict(source, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, chunk_size=65536)
+.. function:: pygixml.dictify.iterdict(source, tag, attr_prefix="@", cdata_key="#text", force_list=None, stack_size=4096, chunk_size=65536, cdata_separator=None)
    :no-index:
 
    Generator yielding :meth:`~pygixml.StreamElement.to_dict` for every
