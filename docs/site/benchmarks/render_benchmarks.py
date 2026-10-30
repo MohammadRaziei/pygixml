@@ -231,7 +231,7 @@ def _build_memory_section(memory):
                     f" Among the O(n), DOM-based approaches only (a fair comparison -- same "
                     f"complexity class): <strong>{_mlabel(ref_on)}</strong> is the reference "
                     f"(uses the least memory most consistently across the sizes tested); on average "
-                    f"(E[memory/{_mlabel(ref_on)}], mean of each size's own ratio): {parts} as much."
+                    f"({_tex_e('other', _mlabel(ref_on), 'm')}, mean of each size's own ratio): {parts} as much."
                 )
 
     chart_js = f"""
@@ -440,6 +440,20 @@ HTML_OP_META = [
 ]
 
 
+def _tex_text(s):
+    """Escape the TeX specials a library label could contain, for \\text{...}."""
+    for ch in "_&%#$":
+        s = s.replace(ch, "\\" + ch)
+    return s
+
+
+def _tex_e(num, den, q="t"):
+    """The "mean of each entry's own ratio" in KaTeX (the page renders \\(...\\)):
+    E[q_num / q_den], q = "t" (time) or "m" (memory)."""
+    return (r"\(\mathbb{E}\left[\frac{%s_{\text{%s}}}{%s_{\text{%s}}}\right]\)"
+            % (q, _tex_text(num), q, _tex_text(den)))
+
+
 def _fmt_ms(x):
     if x < 1:
         return f"{x:.3f}ms"
@@ -524,7 +538,7 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None):
             winner_summary = (
                 f"<strong>{LIB_LABELS.get(ref_lib, ref_lib)}</strong> is the reference "
                 f"(fastest most consistently across the corpus). "
-                f"On average (E[time/{LIB_LABELS.get(ref_lib, ref_lib)}], mean of each entry's own "
+                f"On average ({_tex_e('other', LIB_LABELS.get(ref_lib, ref_lib), 't')}, mean of each entry's own "
                 f"ratio, not a ratio of medians)"
                 + (f": {rest} as long." if rest else ".")
             )
@@ -548,7 +562,7 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None):
             memory_summary = (
                 f"<strong>{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}</strong> uses the least memory "
                 f"(uses the least memory most consistently across the corpus). "
-                f"On average (E[memory/{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}])"
+                f"On average ({_tex_e('other', LIB_LABELS.get(mem_ref_lib, mem_ref_lib), 'm')})"
                 + (f": {rest_mem} as much." if rest_mem else ".")
             )
 
@@ -698,7 +712,7 @@ def _build_jsonify_narrative(xml_to_json_op, o1_note):
     if speed_ratio is not None:
         parts.append(
             f": on average <strong>{speed_ratio:.1f}\u00d7</strong> the speed of xmljson "
-            f"(E[time<sub>xmljson</sub>/time<sub>pygixml</sub>], mean of each small entry's own ratio)"
+            f"({_tex_e('xmljson', 'pygixml', 't')}, mean of each small entry's own ratio)"
         )
     parts.append(". ")
     if mem_ratio is not None:
@@ -706,7 +720,7 @@ def _build_jsonify_narrative(xml_to_json_op, o1_note):
             f"Even on memory -- where this is the DOM path, not <code>stream_dump</code>, so "
             f"both sides are genuinely O(n) here, a fair same-complexity-class comparison -- "
             f"pygixml still uses on average <strong>{mem_ratio:.1f}\u00d7 less</strong> memory than "
-            f"xmljson on these same small files (E[memory<sub>xmljson</sub>/memory<sub>pygixml</sub>]). "
+            f"xmljson on these same small files ({_tex_e('xmljson', 'pygixml', 'm')}). "
         )
     parts.append(
         "</p><p>Once the document stops being small, the calculus changes: that's exactly when "
@@ -860,14 +874,14 @@ def _build_cli_section(cli):
             trend_pyg.append({"x": mb, "y": round(p["seconds"] * 1000, 4)})
             trend_xq.append({"x": mb, "y": round(x["seconds"] * 1000, 4)})
 
-    e_ratio = _e_ratio(pairs)
+    # pairs are (pygixml, xq); E[xq/pygixml] is the ratio the sentence names.
+    e_ratio = _e_ratio([(x, p) for p, x in pairs])
     summary = ""
     if e_ratio is not None:
-        direction = "as long as" if e_ratio >= 1 else "of the time"
         summary = (
-            f"On average (E[time<sub>xq</sub>/time<sub>pygixml</sub>], mean of each corpus "
-            f"entry's own ratio): <strong>pygixml</strong>'s CLI takes <strong>{1/e_ratio:.1f}\u00d7</strong> "
-            f"xq's time, i.e. xq takes <strong>{e_ratio:.1f}\u00d7</strong> as long, across {len(pairs)} corpus entries."
+            f"On average ({_tex_e('xq', 'pygixml', 't')}, mean of each corpus "
+            f"entry's own ratio): <strong>xq</strong> takes <strong>{e_ratio:.1f}\u00d7</strong> "
+            f"as long as <strong>pygixml</strong>'s CLI, across {len(pairs)} corpus entries."
         )
 
     trend_pyg.sort(key=lambda p: p["x"])
@@ -898,6 +912,17 @@ new Chart(document.getElementById('chart-cli-trend'), {{
 
     return {"trend_chart_js": trend_chart_js, "summary": summary, "repeats": repeats,
             "commands": commands}
+
+
+# KaTeX comes from a CDN (pinned version + SRI hashes, so a changed file is refused),
+# not embedded: it would add ~400KB to the page. Chart.js and the data stay embedded.
+KATEX_VERSION = "0.19.0"
+KATEX_CDN = "https://cdn.jsdelivr.net/npm/katex@" + KATEX_VERSION + "/dist/"
+KATEX_SRI = {
+    "css": "sha384-3rdsX6e5mueWyoweR9NIVmtEsUkokpBT/0ALqKKIBMr9j4qhHkaIkAcGgsE6uVlp",
+    "js": "sha384-QFFtAGzvvj+bfgCGxXJlNZZR1nXEZgvG8tDLCCY1F19xl20WlfTYgguB4VcNdxYk",
+    "auto": "sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz",
+}
 
 
 def build(results_dir, output_path, chartjs_path):
@@ -979,6 +1004,7 @@ def build(results_dir, output_path, chartjs_path):
         has_cli=bool(cli_sec["trend_chart_js"] or cli_sec["summary"]), cli=cli_sec,
         system_info=system_info,
         chartjs_source=chartjs_source,
+        katex_cdn=KATEX_CDN, katex_sri=KATEX_SRI,
         embedded_json=json.dumps(embedded),
         chart_scripts="\n".join(chart_scripts),
     )
