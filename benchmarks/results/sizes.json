@@ -2,10 +2,10 @@
   "pygixml": {
     "available": true,
     "name": "pygixml",
-    "version": "0.12.2",
-    "size": "402.5 KB",
-    "total_size": "402.5 KB",
-    "filename": "pygixml-0.12.2-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+    "version": "0.14.1",
+    "size": "643.6 KB",
+    "total_size": "643.6 KB",
+    "filename": "pygixml-0.14.1-cp310-abi3-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
     "dependencies": [],
     "capability": "dom, streaming iterparse, objectify, dictify, jsonify, cli"
   },
@@ -27,7 +27,7 @@
     "total_size": "13.3 KB",
     "filename": "xmltodict-1.0.4-py3-none-any.whl",
     "dependencies": [],
-    "capability": "dom → dict (+ streaming callback mode)"
+    "capability": "dom \u2192 dict (+ streaming callback mode)"
   },
   "xmljson": {
     "available": true,
@@ -37,21 +37,16 @@
     "total_size": "9.9 KB",
     "filename": "xmljson-0.2.1-py2.py3-none-any.whl",
     "dependencies": [],
-    "capability": "lxml/ElementTree tree → dict adapter"
+    "capability": "lxml/ElementTree tree \u2192 dict adapter"
   },
   "yq": {
     "available": true,
     "name": "yq",
-    "version": "4.2.0",
-    "size": "24.9 KB",
-    "total_size": "917.6 KB",
-    "filename": "yq-4.2.0-py3-none-any.whl",
+    "version": "4.4.5",
+    "size": "29.5 KB",
+    "total_size": "925.0 KB",
+    "filename": "yq-4.4.5-py3-none-any.whl",
     "dependencies": [
-      {
-        "name": "xmltodict",
-        "version": "1.0.4",
-        "size": "13.3 KB"
-      },
       {
         "name": "argcomplete",
         "version": "3.7.2",
@@ -64,8 +59,13 @@
       },
       {
         "name": "tomlkit",
-        "version": "0.15.1",
-        "size": "48.3 KB"
+        "version": "0.15.2",
+        "size": "51.0 KB"
+      },
+      {
+        "name": "xmltodict",
+        "version": "1.0.4",
+        "size": "13.3 KB"
       }
     ],
     "capability": "cli: jq-style query/convert (installs the `xq` XML binary used below)"
@@ -84,7 +84,7 @@
         "size": "25.0 KB"
       }
     ],
-    "capability": "dom → lazy attribute-style object (read-only)"
+    "capability": "dom \u2192 lazy attribute-style object (read-only)"
   },
   "elementtree": {
     "available": true,

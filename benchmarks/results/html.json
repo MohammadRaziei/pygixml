@@ -1,0 +1,523 @@
+{
+  "operation_notes": {
+    "html_parse": "HTML string in, tree out, tree discarded",
+    "html_extract_links": "parse, then collect (href, text) of every <a>"
+  },
+  "repeats": 7,
+  "metric": "best (min) wall-clock seconds over repeats",
+  "results": [
+    {
+      "genre": "article",
+      "size": "small",
+      "bytes": 20503,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00013493403093889356
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.0001963069662451744
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.005309543979819864
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.0035267749917693436
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.005990906967781484
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.00012658798368647695
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00017226196359843016
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.00027446600142866373
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.005518342950381339
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.003691069025080651
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.0061774750356562436
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0001735289697535336
+        }
+      }
+    },
+    {
+      "genre": "article",
+      "size": "medium",
+      "bytes": 200440,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.0015749259619042277
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.0017770400154404342
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.0662920149625279
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.034186204022262245
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.05712444899836555
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0008900280226953328
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.001962293987162411
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.002565664006397128
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.0657041069935076
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.03532591799739748
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.05767857300816104
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0012233119923621416
+        }
+      }
+    },
+    {
+      "genre": "article",
+      "size": "large",
+      "bytes": 2000312,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.017019502993207425
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.01872673397883773
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 2.8583023389801383
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.3949485879857093
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.6253239730140194
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.008897077990695834
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.020984044997021556
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.029982676031067967
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 2.844680588983465
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.41594442998757586
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.6314616670133546
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.014337924018036574
+        }
+      }
+    },
+    {
+      "genre": "table",
+      "size": "small",
+      "bytes": 20170,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00023378798505291343
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.00033967598574236035
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.009053116024006158
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.007037898001726717
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.010433483985252678
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.00015728699509054422
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00028511398704722524
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.00043980299960821867
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.00921986298635602
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.007179629988968372
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.010799727984704077
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.00020063197007402778
+        }
+      }
+    },
+    {
+      "genre": "table",
+      "size": "medium",
+      "bytes": 200236,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00236040900927037
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.003224146959837526
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.0880319100106135
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.0688660410232842
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.10185698902932927
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0015111190150491893
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00281404796987772
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.004131991998292506
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.09006873902399093
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.06957324000541121
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.10429918701993302
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0019440469914115965
+        }
+      }
+    },
+    {
+      "genre": "table",
+      "size": "large",
+      "bytes": 2000156,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.023866110015660524
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.03949266899144277
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 1.072289704985451
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.8672549760085531
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 1.2370057379594073
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.022082124021835625
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.028560721955727786
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.05274530401220545
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 1.1021285320166498
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.8699744530022144
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 1.2805559430271387
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.03230022400384769
+        }
+      }
+    },
+    {
+      "genre": "listing",
+      "size": "small",
+      "bytes": 20248,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.00022715498926118016
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.0002863049739971757
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.007947127043735236
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.005202053056564182
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.008028727024793625
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0001256809919141233
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.0002529239864088595
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.0003688430297188461
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.007986985030584037
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.005410559009760618
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.008121513994410634
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0001607579761184752
+        }
+      }
+    },
+    {
+      "genre": "listing",
+      "size": "medium",
+      "bytes": 200114,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.0021352890180423856
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.0027380369720049202
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.08392462303163484
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.050177550001535565
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.07720982900355011
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.001227162021677941
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.0025325689930468798
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.0036008789902552962
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 0.08643214503536001
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.0519857740146108
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.07833928102627397
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.0015510249650105834
+        }
+      }
+    },
+    {
+      "genre": "listing",
+      "size": "large",
+      "bytes": 2000104,
+      "html_parse": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.02178311499301344
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.033571283041965216
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 1.819367548043374
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.6079227139707655
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.9262531719869003
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.01678314700257033
+        }
+      },
+      "html_extract_links": {
+        "pygixml": {
+          "available": true,
+          "seconds": 0.026150749996304512
+        },
+        "lxml": {
+          "available": true,
+          "seconds": 0.04533486597938463
+        },
+        "bs4_html_parser": {
+          "available": true,
+          "seconds": 1.8511388510232791
+        },
+        "bs4_lxml": {
+          "available": true,
+          "seconds": 0.6286255100276321
+        },
+        "html5lib": {
+          "available": true,
+          "seconds": 0.9230564690078609
+        },
+        "selectolax": {
+          "available": true,
+          "seconds": 0.02385966497240588
+        }
+      }
+    }
+  ]
+}
