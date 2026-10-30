@@ -19,12 +19,14 @@ cmake --build build --target pygixml_benchmark
 
 That's the one target you need: it pulls in every benchmark, in the
 right dependency order, and finishes by writing
-**`results/report.html`**: a single, standalone HTML file (Chart.js
-and every raw JSON result are embedded in it) with a "download JSON"
-button per dataset. Open it in a browser; nothing else is required:
-no server, no network, no sibling files.
+**`results/benchmarks.json`**: one JSON file with every raw result.
+There is no HTML here on purpose: the documentation build renders the
+public page from that JSON (from the repository root,
+`cmake --build build --target sphinx_docs` writes
+`docs/benchmarks/index.html`; the renderer is
+`docs/site/benchmarks/render_benchmarks.py`).
 
-`results/` is the **only** thing meant to be committed from this whole
+`results/benchmarks.json` is the **only** thing meant to be committed from this whole
 build: everything else (the venv, the corpus, per-run JSON) lives
 under `build/` and is disposable.
 
@@ -44,7 +46,7 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_scaling` | Time vs. N: the O(n) vs. O(n²) story |
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
 | `pygixml_bench_system_info` | Record the machine's OS, CPU model, core count, and RAM |
-| `pygixml_bench_report` | Render everything above into `results/report.html` |
+| `pygixml_bench_report` | Bundle everything above into `results/benchmarks.json` |
 
 `cmake --build build --target help` lists all of these plus CMake's
 own built-ins.
@@ -56,7 +58,7 @@ own built-ins.
 # via file://) instead of the default main-branch GitHub install
 cmake -S . -B build -DPYGIXML_BENCH_GITHUB_URL="git+https://github.com/YOURFORK/pygixml.git@yourbranch"
 
-# where report.html ends up
+# where benchmarks.json ends up
 cmake -S . -B build -DPYGIXML_BENCH_RESULTS_DIR=/somewhere/else
 ```
 
@@ -196,11 +198,11 @@ several orders of magnitude in size (a 20-byte config value next to a
 4MB catalog): averaging the raw numbers first lets the largest entry
 dominate the result; ratio-then-average weighs every entry's *relative*
 performance equally, regardless of its absolute size. See
-`_e_ratio()` in `report/generate_report.py`.
+`_e_ratio()` in `docs/site/benchmarks/render_benchmarks.py`.
 
 ## What the report doesn't say (on purpose)
 
-`results/report.html` is the results, not the write-up: it doesn't
+The benchmarks page is the results, not the write-up: it doesn't
 explain how the corpus was built, why timing uses best-of-N, or what
 went wrong along the way: that's this file. The one exception is the
 machine it ran on (CPU model, core count, RAM, OS, Python version),

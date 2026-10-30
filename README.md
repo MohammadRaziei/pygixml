@@ -729,8 +729,9 @@ cmake --build benchmarks/build --target pygixml_bench_report
 
 Compares pygixml's parse/`dictify`/`objectify`/`jsonify` against
 **lxml**, **ElementTree**, **xmltodict**, and **xmljson**: speed,
-memory at scale, and install size. Writes a standalone, interactive
-`benchmarks/results/report.html`; see
+memory at scale, and install size. Writes the raw numbers to
+`benchmarks/results/benchmarks.json`; the docs build (`sphinx_docs`) renders
+the interactive page from it. See
 [`benchmarks/README.md`](benchmarks/README.md) for the full
 methodology, or the live copy on the
 [Performance page](https://mohammadraziei.github.io/pygixml/performance.html).

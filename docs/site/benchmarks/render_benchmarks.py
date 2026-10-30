@@ -1,24 +1,22 @@
 """
-generate_report.py: combine every benchmarks/python/*.json result into
-one standalone HTML report: Chart.js and all the raw JSON data are
-embedded directly in the file (via the vendored
-benchmarks/report/vendor/chart.umd.min.js and inline <script> tags),
-so the output needs nothing else to view or to keep -- no server, no
-network, no sibling files. That's also why this is the one artifact
-meant to live in benchmarks/results/: everything upstream of it
-(corpus, venv, per-point JSON) is disposable build output.
+render_benchmarks.py: render the public benchmarks page from the one JSON
+the benchmark suite commits (benchmarks/results/benchmarks.json).
+
+Called by the documentation build (`cmake --build build --target
+sphinx_docs`), which writes docs/benchmarks/index.html. The output is a
+single standalone HTML file: Chart.js and the raw data are embedded, so
+it needs no server, no network and no sibling files.
 
 What this file deliberately does NOT contain: how the corpus was
 generated, why timing uses best-of-N, or the ru_maxrss/execve bug we
 hit measuring memory. That's methodology and war stories for people
 reading the source, not benchmark results for someone skimming a
 report -- it lives in benchmarks/README.md instead. This file also
-never computes an "N times better/less" ratio: pygixml and its
-DOM-building competitors are on different complexity curves in the
-memory/scaling story (O(1) vs O(n)), so any single ratio is only true
-at the one input size it was computed from, and gets worse (in
-pygixml's favor) as input grows -- the log-log chart shows that
-honestly; a ratio badge would understate it.
+never computes an "N times better/less" ratio between an O(1) and an
+O(n) approach: pygixml's stream_dump and its DOM-building competitors
+are on different complexity curves in the memory/scaling story, so any
+single ratio is only true at the one input size it was computed from;
+the log-log chart shows that honestly.
 """
 import argparse
 import datetime
@@ -438,15 +436,6 @@ def _build_throughput_section(throughput, throughput_memory):
         for mrow in throughput_memory.get(key, []):
             mem_by_entry[(mrow["genre"], mrow["size"])] = mrow.get("libraries", {})
 
-        # One small, honest bar chart PER CORPUS ENTRY, not one chart
-        # trying to hold all of them at once. Within a single entry, the
-        # 2-3 competing libraries' times are within the same order of
-        # magnitude, so a plain LINEAR, zero-baseline bar chart is
-        # accurate (no log-scale trick needed) *and* instantly readable:
-        # the shortest bar just wins, full stop -- no axis-reading
-        # required. Small multiples, not one overloaded chart, is how
-        # you compare many groups at once without hiding anything.
-        entries = []
         wins = {lib: 0 for lib in libs}
         mem_wins = {lib: 0 for lib in libs}
         time_trend_points = {lib: [] for lib in libs}
@@ -467,17 +456,9 @@ def _build_throughput_section(throughput, throughput_memory):
                 time_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
                                                 "y": round(c["seconds"] * 1000, 4)})
 
-            bar_labels = [LIB_LABELS.get(lib, lib) for lib, _ in cells]
-            bar_ms = [round(c["seconds"] * 1000, 4) for _, c in cells]
-            bar_colors = [LIB_COLORS.get(lib, "#8b93a7") for lib, _ in cells]
-            values_text = "  \u00b7  ".join(
-                f"{LIB_LABELS.get(lib, lib)} {_fmt_ms(c['seconds'] * 1000)}" for lib, c in cells
-            )
-
             entry_mem = mem_by_entry.get((r["genre"], r["size"]), {})
             mem_cells = [(lib, entry_mem.get(lib)) for lib, _ in cells]
             mem_cells = [(lib, m) for lib, m in mem_cells if m and m.get("available")]
-            mem_text = ""
             if mem_cells:
                 mem_cells_sorted = sorted(mem_cells, key=lambda lm: lm[1]["peak_rss_mb"])
                 n_mem_comparisons += 1
@@ -485,53 +466,6 @@ def _build_throughput_section(throughput, throughput_memory):
                 for lib, m in mem_cells:
                     mem_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
                                                    "y": round(m["peak_rss_mb"], 2)})
-                mem_text = "  \u00b7  ".join(
-                    f"{LIB_LABELS.get(lib, lib)} {m['peak_rss_mb']:.1f}MB" for lib, m in mem_cells_sorted
-                )
-
-            chart_js = f"""
-new Chart(document.getElementById('chart-time-{key}-{i}'), {{
-  type: 'bar',
-  data: {{ labels: {json.dumps(bar_labels)}, datasets: [{{
-    data: {json.dumps(bar_ms)}, backgroundColor: {json.dumps(bar_colors)}
-  }}] }},
-  options: {{
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    scales: {{
-      x: {{ title: {{ display: true, text: 'ms' }} }},
-      y: {{ grid: {{ display: false }} }}
-    }},
-    plugins: {{ legend: {{ display: false }} }}
-  }}
-}});
-"""
-            mem_chart_js = ""
-            if mem_cells:
-                mem_bar_labels = [LIB_LABELS.get(lib, lib) for lib, _ in mem_cells_sorted]
-                mem_bar_vals = [round(m["peak_rss_mb"], 2) for _, m in mem_cells_sorted]
-                mem_bar_colors = [LIB_COLORS.get(lib, "#8b93a7") for lib, _ in mem_cells_sorted]
-                mem_chart_js = f"""
-new Chart(document.getElementById('chart-mem-{key}-{i}'), {{
-  type: 'bar',
-  data: {{ labels: {json.dumps(mem_bar_labels)}, datasets: [{{
-    data: {json.dumps(mem_bar_vals)}, backgroundColor: {json.dumps(mem_bar_colors)}
-  }}] }},
-  options: {{
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    scales: {{
-      x: {{ title: {{ display: true, text: 'MB' }} }},
-      y: {{ grid: {{ display: false }} }}
-    }},
-    plugins: {{ legend: {{ display: false }} }}
-  }}
-}});
-"""
-            entries.append({"id": f"chart-time-{key}-{i}", "label": label,
-                             "chart_js": chart_js, "values_text": values_text,
-                             "mem_id": f"chart-mem-{key}-{i}" if mem_cells else None,
-                             "mem_chart_js": mem_chart_js, "mem_text": mem_text})
 
         winner_summary = ""
         ref_lib = None
@@ -678,7 +612,6 @@ new Chart(document.getElementById('chart-tp-{key}'), {{
             "mem_e_ratios": mem_e_ratios if n_mem_comparisons else {},
             "rows": rows,  # raw rows, for cross-op narrative building in build()
             "mem_by_entry": mem_by_entry,
-            "entries": entries,
             "time_trend_chart_js": time_trend_chart_js, "has_time_trend": has_time_trend,
             "mem_trend_chart_js": mem_trend_chart_js, "has_mem_trend": has_mem_trend,
             "tp_chart_js": tp_chart_js,
@@ -929,51 +862,21 @@ new Chart(document.getElementById('chart-cli-trend'), {{
 }});
 """
 
-    # One small linear bar chart per corpus entry -- same treatment as
-    # the throughput section's per-entry panels, tucked in <details>.
-    entries = []
-    for i, r in enumerate(rows):
-        cells = []
-        for lib_key, lib_label, color in (("pygixml_cli", "pygixml", LIB_COLORS["pygixml"]), ("xq", "xq", "#b98bff")):
-            c = r.get(lib_key, {})
-            if c.get("available"):
-                cells.append((lib_label, c["seconds"], color))
-        if not cells:
-            continue
-        cells.sort(key=lambda t: t[1])
-        bar_labels = [c[0] for c in cells]
-        bar_ms = [round(c[1] * 1000, 4) for c in cells]
-        bar_colors = [c[2] for c in cells]
-        values_text = "  \u00b7  ".join(f"{c[0]} {_fmt_ms(c[1] * 1000)}" for c in cells)
-        chart_js = f"""
-new Chart(document.getElementById('chart-cli-{i}'), {{
-  type: 'bar',
-  data: {{ labels: {json.dumps(bar_labels)}, datasets: [{{
-    data: {json.dumps(bar_ms)}, backgroundColor: {json.dumps(bar_colors)}
-  }}] }},
-  options: {{
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    scales: {{ x: {{ title: {{ display: true, text: 'ms' }} }}, y: {{ grid: {{ display: false }} }} }},
-    plugins: {{ legend: {{ display: false }} }}
-  }}
-}});
-"""
-        entries.append({"id": f"chart-cli-{i}", "label": f"{r.get('genre','?')}/{r.get('size','?')}",
-                         "chart_js": chart_js, "values_text": values_text})
-
     return {"trend_chart_js": trend_chart_js, "summary": summary, "repeats": repeats,
-            "commands": commands, "entries": entries}
+            "commands": commands}
 
 
-def build(results_dir, output_path, chartjs_path):
-    throughput = _load(os.path.join(results_dir, "throughput.json"))
-    throughput_memory = _load(os.path.join(results_dir, "throughput_memory.json"))
-    scaling = _load(os.path.join(results_dir, "scaling.json"))
-    memory = _load(os.path.join(results_dir, "memory.json"))
-    sizes = _load(os.path.join(results_dir, "sizes.json"))
-    cli = _load(os.path.join(results_dir, "cli.json"))
-    system_info = _load(os.path.join(results_dir, "system_info.json"))
+def build(json_path, output_path, chartjs_path):
+    bundle = _load(json_path)
+    if bundle is None:
+        raise SystemExit(f"render_benchmarks: {json_path} not found")
+    throughput = bundle.get("throughput")
+    throughput_memory = bundle.get("throughput_memory")
+    scaling = bundle.get("scaling")
+    memory = bundle.get("memory")
+    sizes = bundle.get("sizes")
+    cli = bundle.get("cli")
+    system_info = bundle.get("system_info")
 
     mem = _build_memory_section(memory)
     scl = _build_scaling_section(scaling)
@@ -1003,12 +906,7 @@ def build(results_dir, output_path, chartjs_path):
 
     chart_scripts = [mem["chart_js"], mem["speed_chart_js"], scl["chart_js"], scl["dom_chart_js"], siz["chart_js"],
                       dictify_mode_chart_js, cli_sec["trend_chart_js"]]
-    for entry in cli_sec["entries"]:
-        chart_scripts.append(entry["chart_js"])
     for op in thr["ops"]:
-        for entry in op["entries"]:
-            chart_scripts.append(entry["chart_js"])
-            chart_scripts.append(entry["mem_chart_js"])
         chart_scripts.append(op["time_trend_chart_js"])
         chart_scripts.append(op["mem_trend_chart_js"])
         chart_scripts.append(op["tp_chart_js"])
@@ -1042,7 +940,7 @@ def build(results_dir, output_path, chartjs_path):
         has_memory=bool(memory), has_scaling=bool(scaling), has_throughput=bool(throughput),
         has_throughput_memory=bool(throughput_memory),
         has_sizes=bool(sizes), size_rows=siz["rows"],
-        has_cli=bool(cli_sec["entries"]), cli=cli_sec,
+        has_cli=bool(cli_sec["trend_chart_js"] or cli_sec["summary"]), cli=cli_sec,
         system_info=system_info,
         chartjs_source=chartjs_source,
         embedded_json=json.dumps(embedded),
@@ -1058,13 +956,13 @@ def build(results_dir, output_path, chartjs_path):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("results_dir", help="directory containing throughput.json, scaling.json, memory.json, sizes.json, system_info.json")
-    p.add_argument("output", help="path to write the standalone report.html")
+    p.add_argument("json", help="benchmarks/results/benchmarks.json (written by benchmarks/report/bundle_results.py)")
+    p.add_argument("output", help="path to write the standalone benchmarks page (index.html)")
     p.add_argument("--chartjs-path", default=os.path.join(HERE, "vendor", "chart.umd.min.js"),
                     help="path to a Chart.js UMD build (CMake fetches this fresh; "
                          "defaults to a local vendor/ copy for running by hand)")
     args = p.parse_args()
 
-    out = build(args.results_dir, args.output, args.chartjs_path)
+    out = build(args.json, args.output, args.chartjs_path)
     size_kb = os.path.getsize(out) / 1024
-    print(f"generate_report: wrote {out} ({size_kb:.0f}KB, standalone)")
+    print(f"render_benchmarks: wrote {out} ({size_kb:.0f}KB, standalone)")

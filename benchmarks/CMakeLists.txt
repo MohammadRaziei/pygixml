@@ -13,9 +13,10 @@ project(PygixmlBenchmarks LANGUAGES NONE)
 # See README.md in this directory for the full rundown, and every
 # individual target below for what it does on its own
 # (`cmake --build build --target help` lists them all). This directory
-# is fully self-contained: nothing here writes outside of results/ --
-# the root project's `pygixml_site` target reads results/report.html
-# directly to publish the public benchmarks page.
+# is fully self-contained: nothing here writes outside of results/, and
+# the only thing written there is results/benchmarks.json. The public
+# benchmarks page is rendered from that JSON by the root project's
+# `sphinx_docs` target.
 #
 # To benchmark a local, not-yet-published patch instead of whatever is
 # on GitHub, override this at configure time rather than editing it
@@ -26,7 +27,7 @@ set(PYGIXML_BENCH_GITHUB_URL
     CACHE STRING "Where to install pygixml itself from (a fresh git checkout, not the local source tree)")
 
 set(PYGIXML_BENCH_RESULTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/results"
-    CACHE PATH "Where the final standalone report.html is written -- the one artifact meant to be committed")
+    CACHE PATH "Where the final benchmarks.json is written -- the one artifact meant to be committed")
 
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
