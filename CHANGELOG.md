@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Streaming is faster, output unchanged (byte-identical on the benchmark corpus):
+  `jsonify.stream_dump` is 5-10x faster (every append used to flush and seek the
+  output file; it now only seeks when it has to patch or splice), `iterparse` /
+  `iterfind` / `dictify.iterdict` are about 1.5-2.4x faster (text collected in C
+  buffers instead of one `bytes` object per character, names decoded and interned
+  straight from yxml's buffers), and `StreamElement.to_json` /
+  `jsonify.iterjsonl` are about 2-3x faster (no per-character `str` objects while
+  escaping; strings that need no escaping skip the slow path).
+
 ## [v0.14.1] - 2026-10-30
 
 ### Fixed

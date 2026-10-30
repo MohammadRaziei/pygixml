@@ -1235,11 +1235,41 @@ cdef extern from *:
 #     ElementTree's path syntax: "tag", "a/b/c", "*" and ".//tag".
 #     Attribute predicates ("tag[@id='x']") are not supported.
 
-from libc.stdlib cimport malloc, free
-from libc.string cimport strlen
+from libc.stdlib cimport malloc, realloc, free
+from libc.string cimport strlen, memcpy
 from collections import deque
 import io
 import os
+
+
+cdef extern from "Python.h":
+    # Decode / intern straight from yxml's C buffers: no intermediate bytes object.
+    object _utf8_to_str "PyUnicode_DecodeUTF8"(const char *s, Py_ssize_t size, const char *errors)
+    object _intern_utf8 "PyUnicode_InternFromString"(const char *s)
+
+
+cdef struct _CBuf:
+    char *p
+    size_t n
+    size_t cap
+
+
+cdef inline int _cbuf_add(_CBuf *b, const char *s, size_t k) except -1:
+    """Append k bytes (yxml hands text over one character at a time, so this is hot)."""
+    cdef size_t cap
+    cdef char *tmp
+    if b.n + k > b.cap:
+        cap = b.cap * 2 if b.cap else 256
+        while cap < b.n + k:
+            cap *= 2
+        tmp = <char*>realloc(b.p, cap)
+        if tmp is NULL:
+            raise MemoryError()
+        b.p = tmp
+        b.cap = cap
+    memcpy(b.p + b.n, s, k)
+    b.n += k
+    return 0
 
 
 cdef enum:
@@ -1282,37 +1312,37 @@ cdef _raise_yxml_error(yxml_t *x, int ret):
 # StreamElement.to_json() so converting a streamed element straight to JSON
 # text never needs the `json` module or an intermediate dict/list.
 cdef str _json_escape_str(str s):
-    cdef list out = ['"']
+    # Py_UCS4 (not a 1-char str per character) and a no-escape fast path: most
+    # strings need nothing, so they cost one scan and one concatenation.
     cdef Py_ssize_t i, n = len(s)
     cdef Py_ssize_t start = 0
-    cdef str c
+    cdef Py_UCS4 c
+    cdef list out = None
+    cdef str esc
     for i in range(n):
         c = s[i]
-        if c == '"' or c == '\\':
-            if i > start:
-                out.append(s[start:i])
-            out.append('\\' + c)
-            start = i + 1
-        elif c == '\n':
-            if i > start:
-                out.append(s[start:i])
-            out.append('\\n')
-            start = i + 1
-        elif c == '\r':
-            if i > start:
-                out.append(s[start:i])
-            out.append('\\r')
-            start = i + 1
-        elif c == '\t':
-            if i > start:
-                out.append(s[start:i])
-            out.append('\\t')
-            start = i + 1
-        elif ord(c) < 0x20:
-            if i > start:
-                out.append(s[start:i])
-            out.append(f"\\u{ord(c):04x}")
-            start = i + 1
+        if c >= 0x20 and c != 0x22 and c != 0x5C:
+            continue
+        if out is None:
+            out = ['"']
+        if i > start:
+            out.append(s[start:i])
+        if c == 0x22:
+            esc = '\\"'
+        elif c == 0x5C:
+            esc = '\\\\'
+        elif c == 10:
+            esc = '\\n'
+        elif c == 13:
+            esc = '\\r'
+        elif c == 9:
+            esc = '\\t'
+        else:
+            esc = f"\\u{<int>c:04x}"
+        out.append(esc)
+        start = i + 1
+    if out is None:
+        return '"' + s + '"'
     if start < n:
         out.append(s[start:n])
     out.append('"')
@@ -1744,9 +1774,12 @@ cdef class PullParser:
     # can never appear underneath a real StreamElement -- see the
     # build/skip decision in feed().
     cdef list _elem_stack
-    cdef bytearray _text_buf
-    cdef bytearray _attrval_buf
-    cdef bytearray _pi_buf
+    cdef _CBuf _text_buf
+    cdef _CBuf _attrval_buf
+    cdef _CBuf _pi_buf
+    # True while the top of _elem_stack is a real StreamElement (not a skip marker):
+    # the one question asked for every character of text, so it's cached, not looked up.
+    cdef bint _content_ok
     cdef str _cur_attr
     cdef str _cur_pi
     cdef bint _closed
@@ -1767,9 +1800,11 @@ cdef class PullParser:
         self._queue = deque()
         self._pending = None
         self._elem_stack = []
-        self._text_buf = bytearray()
-        self._attrval_buf = bytearray()
-        self._pi_buf = bytearray()
+        self._text_buf.p = self._attrval_buf.p = self._pi_buf.p = NULL
+        self._text_buf.n = self._text_buf.cap = 0
+        self._attrval_buf.n = self._attrval_buf.cap = 0
+        self._pi_buf.n = self._pi_buf.cap = 0
+        self._content_ok = False
         self._cur_attr = None
         self._cur_pi = None
         self._closed = False
@@ -1787,6 +1822,9 @@ cdef class PullParser:
         if self._stack_buf is not NULL:
             free(self._stack_buf)
             self._stack_buf = NULL
+        free(self._text_buf.p)
+        free(self._attrval_buf.p)
+        free(self._pi_buf.p)
 
     @property
     def line(self):
@@ -1803,10 +1841,10 @@ cdef class PullParser:
         return self._closed
 
     cdef inline void _flush_text(self):
-        if not self._text_buf:
+        if self._text_buf.n == 0:
             return
-        text = self._text_buf.decode("utf-8")
-        self._text_buf = bytearray()
+        text = _utf8_to_str(self._text_buf.p, <Py_ssize_t>self._text_buf.n, NULL)
+        self._text_buf.n = 0
         if self._elem_stack:
             top = self._elem_stack[len(self._elem_stack) - 1]
             if top is not None:
@@ -1837,6 +1875,7 @@ cdef class PullParser:
             if self._want_start and (self._tag_filter is None or elem.tag == self._tag_filter):
                 self._queue.append(("start", elem))
             self._elem_stack.append(elem)
+            self._content_ok = True
 
     def feed(self, bytes data):
         """Feed a chunk of well-formed, UTF-8 encoded XML bytes.
@@ -1848,18 +1887,16 @@ cdef class PullParser:
             raise PygiXMLError("PullParser is already closed")
 
         cdef Py_ssize_t i, n = len(data)
-        cdef unsigned char c
+        cdef const unsigned char *buf = data   # plain pointer: no per-byte bounds check
         cdef int ret
         cdef Py_ssize_t symlen
-        cdef bytes name
         cdef str tagname
         cdef char *cdata
         cdef StreamElement elem
         cdef object top
 
         for i in range(n):
-            c = data[i]
-            ret = yxml_parse(&self._x, c)
+            ret = yxml_parse(&self._x, buf[i])
 
             if ret == YXML_OK:
                 continue
@@ -1867,9 +1904,8 @@ cdef class PullParser:
             elif ret == YXML_ELEMSTART:
                 self._finalize_pending()
                 self._flush_text()
-                symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.elem)
-                name = self._x.elem[:symlen]
-                tagname = name.decode("utf-8")
+                # Interned: records repeat the same few tag names millions of times.
+                tagname = _intern_utf8(<const char*>self._x.elem)
                 # Build a real StreamElement when there's no filter, when
                 # we're already inside the subtree of a matched element
                 # (top of the stack is a real element, not a skip
@@ -1884,12 +1920,14 @@ cdef class PullParser:
                 else:
                     self._pending = None
                     self._elem_stack.append(None)
+                    self._content_ok = False
 
             elif ret == YXML_CONTENT:
-                self._finalize_pending()
-                if self._elem_stack and self._elem_stack[len(self._elem_stack) - 1] is not None:
+                if self._pending is not None:
+                    self._finalize_pending()
+                if self._content_ok:
                     cdata = self._x.data
-                    self._text_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+                    _cbuf_add(&self._text_buf, cdata, strlen(cdata))
                 # else: content inside a not-built (skipped) element --
                 # nothing references it, so don't bother decoding/copying it.
 
@@ -1897,6 +1935,7 @@ cdef class PullParser:
                 self._finalize_pending()
                 self._flush_text()
                 top = self._elem_stack.pop()
+                self._content_ok = len(self._elem_stack) > 0 and self._elem_stack[len(self._elem_stack) - 1] is not None
                 if top is not None:
                     elem = <StreamElement>top
                     if self._want_end and (self._tag_filter is None or elem.tag == self._tag_filter):
@@ -1905,39 +1944,35 @@ cdef class PullParser:
 
             elif ret == YXML_ATTRSTART:
                 if self._pending is not None:
-                    symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.attr)
-                    name = self._x.attr[:symlen]
-                    self._cur_attr = name.decode("utf-8")
-                    self._attrval_buf = bytearray()
+                    self._cur_attr = _intern_utf8(<const char*>self._x.attr)
+                    self._attrval_buf.n = 0
                 else:
                     self._cur_attr = None
 
             elif ret == YXML_ATTRVAL:
                 if self._cur_attr is not None:
                     cdata = self._x.data
-                    self._attrval_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+                    _cbuf_add(&self._attrval_buf, cdata, strlen(cdata))
 
             elif ret == YXML_ATTREND:
                 if self._pending is not None and self._cur_attr is not None:
                     (<StreamElement>self._pending).attrib[self._cur_attr] = \
-                        self._attrval_buf.decode("utf-8")
+                        _utf8_to_str(self._attrval_buf.p, <Py_ssize_t>self._attrval_buf.n, NULL)
                 self._cur_attr = None
 
             elif ret == YXML_PISTART:
                 self._finalize_pending()
                 self._flush_text()
-                symlen = <Py_ssize_t>yxml_symlen(&self._x, self._x.pi)
-                name = self._x.pi[:symlen]
-                self._cur_pi = name.decode("utf-8")
-                self._pi_buf = bytearray()
+                self._cur_pi = _intern_utf8(<const char*>self._x.pi)
+                self._pi_buf.n = 0
 
             elif ret == YXML_PICONTENT:
                 cdata = self._x.data
-                self._pi_buf += cdata[:<Py_ssize_t>strlen(cdata)]
+                _cbuf_add(&self._pi_buf, cdata, strlen(cdata))
 
             elif ret == YXML_PIEND:
                 if self._want_pi:
-                    self._queue.append(("pi", (self._cur_pi, self._pi_buf.decode("utf-8"))))
+                    self._queue.append(("pi", (self._cur_pi, _utf8_to_str(self._pi_buf.p, <Py_ssize_t>self._pi_buf.n, NULL))))
                 self._cur_pi = None
 
             else:
@@ -1960,6 +1995,13 @@ cdef class PullParser:
         self._flush_text()
         if self._elem_stack:
             raise PygiXMLError("unexpected end of input: unclosed element(s)")
+
+    cdef list _drain(self):
+        """All queued events as one list, queue emptied (what iterparse uses:
+        one generator layer less per event than read_events)."""
+        cdef list out = list(self._queue)
+        self._queue.clear()
+        return out
 
     def read_events(self):
         """Iterate over ``(event, value)`` pairs accumulated so far.
@@ -2021,7 +2063,7 @@ def iterparse(source, events=("end",), tag=None,
             "(expected a path, bytes/bytearray, or a file-like object with .read())"
         )
 
-    parser = PullParser(events=events, tag=tag, stack_size=stack_size)
+    cdef PullParser parser = PullParser(events=events, tag=tag, stack_size=stack_size)
     try:
         while True:
             chunk = fh.read(chunk_size)
@@ -2034,9 +2076,11 @@ def iterparse(source, events=("end",), tag=None,
                 if chunk[:3] == b"\xef\xbb\xbf":   # strip a leading UTF-8 BOM
                     chunk = chunk[3:]
             parser.feed(chunk)
-            yield from parser.read_events()
+            if parser._queue:
+                yield from parser._drain()
         parser.close()
-        yield from parser.read_events()
+        if parser._queue:
+            yield from parser._drain()
     finally:
         if should_close:
             fh.close()

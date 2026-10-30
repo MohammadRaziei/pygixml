@@ -420,8 +420,14 @@ cdef extern from *:
     struct PJFileEditor {
         FILE* fp;
         long  tail_pos;   // current logical end-of-file write position
+        // Where the FILE* is positioned right now, or -1 if unknown (after
+        // any seek whose caller then does its own fread/fwrite). Appending
+        // at the tail is the hot path: when cur == tail_pos the stdio
+        // buffer is just written to, with no fflush/fseek (each of which
+        // was a syscall per tiny write before).
+        long  cur;
 
-        explicit PJFileEditor(FILE* f) : fp(f), tail_pos(0) {}
+        explicit PJFileEditor(FILE* f) : fp(f), tail_pos(0), cur(0) {}
 
         inline long pos() {
             fflush(fp);
@@ -431,12 +437,20 @@ cdef extern from *:
         inline void seek(long off) {
             fflush(fp);
             fseek(fp, off, SEEK_SET);
+            cur = -1;   // callers read/write by hand after this
+        }
+
+        // Seek to the logical end, with nothing written by hand afterwards.
+        inline void seek_tail() {
+            seek(tail_pos);
+            cur = tail_pos;
         }
 
         inline void write_at_tail(const char* s, size_t n) {
-            seek(tail_pos);
+            if (cur != tail_pos) seek(tail_pos);
             fwrite(s, 1, n, fp);
             tail_pos += (long)n;
+            cur = tail_pos;
         }
         inline void write_at_tail(const std::string& s) {
             write_at_tail(s.data(), s.size());
@@ -449,7 +463,7 @@ cdef extern from *:
         inline void patch_byte(long off, char c) {
             seek(off);
             fwrite(&c, 1, 1, fp);
-            seek(tail_pos);   // restore logical write position
+            seek_tail();   // restore logical write position
         }
 
         // Insert `ins` (length n) right before `gap_start`, by shifting
@@ -492,7 +506,7 @@ cdef extern from *:
             fwrite(ins, 1, n, fp);
 
             tail_pos += (long)n;
-            seek(tail_pos);
+            seek_tail();
             return true;
         }
         bool splice_insert(long gap_start, const std::string& s) {
@@ -549,7 +563,7 @@ cdef extern from *:
                 fwrite(new_content.data(), 1, new_content.size(), fp);
                 tail_pos -= shrink;
             }
-            seek(tail_pos);
+            seek_tail();
             return true;
         }
     };
@@ -646,6 +660,7 @@ cdef extern from *:
             return -1;
         }
 
+        setvbuf(fout, NULL, _IOFBF, 1 << 16);   // before any I/O on fout
         PJFileEditor ed(fout);
 
         std::vector<char> ystack(stack_size);
