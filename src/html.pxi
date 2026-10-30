@@ -3187,8 +3187,8 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
 
     Names are only decoded for a document made by :func:`parse_html` (it
     remembers where it came from); a document from ``parse_string`` /
-    ``load_string`` / ``load_file`` keeps its names exactly. An
-    :class:`XMLNode` does not know its document, so it is always decoded.
+    ``load_string`` / ``load_file`` keeps its names exactly. A node
+    follows its document (a node without one, from ``from_mem_id_unsafe``, is decoded).
 
     Args:
         node: an :class:`XMLNode` or :class:`XMLDocument`.
@@ -3227,9 +3227,11 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
         if t == node_null:
             raise PygiXMLHTMLError("can't serialize a null node")
         if t == node_document:
-            out = xml_to_html_cpp(n._node.first_child(), True, pretty, ind, doctype, unw_c, True)
+            out = xml_to_html_cpp(n._node.first_child(), True, pretty, ind, doctype, unw_c,
+                              n._owner is None or (<XMLDocument>n._owner)._from_html)
         else:
-            out = xml_to_html_cpp(n._node, False, pretty, ind, doctype, unw_c, True)
+            out = xml_to_html_cpp(n._node, False, pretty, ind, doctype, unw_c,
+                              n._owner is None or (<XMLDocument>n._owner)._from_html)
     else:
         raise PygiXMLHTMLError(
             f"expected XMLNode or XMLDocument, not {type(node).__name__}"

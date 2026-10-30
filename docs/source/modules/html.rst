@@ -218,5 +218,5 @@ Names on the way back
 :func:`~pygixml.xml_to_html` decodes ``_xHHHH_`` names only for a document
 made by :func:`~pygixml.parse_html`, which remembers that it came from HTML.
 A document from ``parse_string`` / ``load_string`` / ``load_file`` (or one
-cleared with ``reset()``) keeps its names exactly. An ``XMLNode`` does not
-know its document, so ``node.to_html()`` always decodes.
+cleared with ``reset()``) keeps its names exactly. A node follows its
+document, so ``node.to_html()`` behaves the same way.

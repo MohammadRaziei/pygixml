@@ -494,7 +494,7 @@ cdef class XMLDocument:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._doc.append_child(name_bytes)
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self)
     
     def first_child(self):
         """Return the first child element, or ``None`` if the document is
@@ -510,7 +510,7 @@ cdef class XMLDocument:
             'root'
         """
         cdef xml_node node = self._doc.first_child()
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self)
     
     def child(self, str name):
         """Return the first child element whose tag matches *name*, or
@@ -530,7 +530,7 @@ cdef class XMLDocument:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._doc.child(name_bytes)
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self)
 
     def to_string(self, indent="  "):
         """Serialize the document to an XML string.
@@ -631,14 +631,16 @@ cdef class XMLNode:
         'value'
     """
     cdef xml_node _node
+    cdef object _owner   # the XMLDocument: keeps the tree alive while this node lives
 
     def __init__(self):
         pass
 
     @staticmethod
-    cdef XMLNode create_from_cpp(xml_node node):
+    cdef XMLNode create_from_cpp(xml_node node, object owner):
         cdef XMLNode wrapper = XMLNode()
         wrapper._node = node
+        wrapper._owner = owner
         return wrapper
 
     @property
@@ -840,7 +842,7 @@ cdef class XMLNode:
             'a'
         """
         cdef xml_node node = self._node.first_child()
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     def child(self, str name):
         """Return the first child element whose tag matches *name*, or
@@ -860,7 +862,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.child(name_bytes)
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     def append_child(self, str name):
         """Append a new child element and return it.
@@ -879,7 +881,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.append_child(name_bytes)
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     def prepend_child(self, str name):
         """Preppend a new child element and return it.
@@ -898,7 +900,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._node.prepend_child(name_bytes)
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     def insert_child_before(self, str name, XMLNode node):
         """Insert a new child element before an existing child and return it.
@@ -920,7 +922,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node new_node = self._node.insert_child_before(name_bytes, node._node)
-        return XMLNode.create_from_cpp(new_node)
+        return XMLNode.create_from_cpp(new_node, self._owner)
 
     def insert_child_after(self, str name, XMLNode node):
         """Insert a new child element after an existing child and return it.
@@ -942,7 +944,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node new_node = self._node.insert_child_after(name_bytes, node._node)
-        return XMLNode.create_from_cpp(new_node)
+        return XMLNode.create_from_cpp(new_node, self._owner)
 
     def remove_child(self, XMLNode node):
         """Remove a direct child element from this node.
@@ -1000,7 +1002,7 @@ cdef class XMLNode:
         cdef xml_node node = self._node.next_sibling()
         if node.type() == node_null:
             return None
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     @property
     def previous_sibling(self):
@@ -1009,7 +1011,7 @@ cdef class XMLNode:
         cdef xml_node node = self._node.previous_sibling()
         if node.type() == node_null:
             return None
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     @property
     def next_element_sibling(self):
@@ -1034,7 +1036,7 @@ cdef class XMLNode:
         """The parent element node.  Returns ``None`` for the document
         root."""
         cdef xml_node node = self._node.parent()
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
     
     def first_attribute(self):
         """Return the first attribute on this element, or ``None`` if it
@@ -1050,7 +1052,7 @@ cdef class XMLNode:
             'id'
         """
         cdef xml_attribute attr = self._node.first_attribute()
-        return XMLAttribute.create_from_cpp(attr)
+        return XMLAttribute.create_from_cpp(attr, self._owner)
 
     def attribute(self, str name):
         """Return the attribute with the given *name*, or ``None``.
@@ -1069,7 +1071,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_attribute attr = self._node.attribute(name_bytes)
-        return XMLAttribute.create_from_cpp(attr)
+        return XMLAttribute.create_from_cpp(attr, self._owner)
 
     def append_attribute(self, str name):
         """Append a new attribute and return it.
@@ -1088,7 +1090,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_attribute attr = self._node.append_attribute(name_bytes)
-        return XMLAttribute.create_from_cpp(attr)
+        return XMLAttribute.create_from_cpp(attr, self._owner)
 
     def prepend_attribute(self, str name):
         """Prepend a new attribute and return it.
@@ -1107,7 +1109,7 @@ cdef class XMLNode:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_attribute attr = self._node.prepend_attribute(name_bytes)
-        return XMLAttribute.create_from_cpp(attr)
+        return XMLAttribute.create_from_cpp(attr, self._owner)
 
     def remove_attribute(self, XMLAttribute attr):
         """Remove an attribute from this node.
@@ -1262,7 +1264,7 @@ cdef class XMLNode:
             XMLNode | None
         """
         cdef xml_node node = find_node_by_address(self._node, mem_id)
-        return XMLNode.create_from_cpp(node)
+        return XMLNode.create_from_cpp(node, self._owner)
 
     @staticmethod
     def from_mem_id_unsafe(size_t mem_id):
@@ -1367,7 +1369,7 @@ cdef class XMLNode:
         if not recursive:
             while current.type() != node_null:
                 if current.type() == node_element:
-                    yield XMLNode.create_from_cpp(current)
+                    yield XMLNode.create_from_cpp(current, self._owner)
                 current = current.next_sibling()
             return
 
@@ -1381,7 +1383,7 @@ cdef class XMLNode:
             current = stack.back()
             stack.pop_back()
             if current.type() == node_element:
-                yield XMLNode.create_from_cpp(current)
+                yield XMLNode.create_from_cpp(current, self._owner)
             child = current.last_child()
             while child.type() != node_null:
                 stack.push_back(child)
@@ -1473,11 +1475,13 @@ cdef class XMLAttribute:
         '42'
     """
     cdef xml_attribute _attr
+    cdef object _owner
     
     @staticmethod
-    cdef XMLAttribute create_from_cpp(xml_attribute attr):
+    cdef XMLAttribute create_from_cpp(xml_attribute attr, object owner):
         cdef XMLAttribute wrapper = XMLAttribute()
         wrapper._attr = attr
+        wrapper._owner = owner
         return wrapper
     
     @property
@@ -1536,7 +1540,7 @@ cdef class XMLAttribute:
             >>> next_attr = attr.next_attribute
         """
         cdef xml_attribute attr = self._attr.next_attribute()
-        return XMLAttribute.create_from_cpp(attr)
+        return XMLAttribute.create_from_cpp(attr, self._owner)
 
     def __iter__(self):
         """Iterate over all attributes starting from this one.
@@ -1583,11 +1587,13 @@ cdef class XPathNode:
         'item'
     """
     cdef xpath_node _xpath_node
+    cdef object _owner
 
     @staticmethod
-    cdef XPathNode create_from_cpp(xpath_node xpath_node):
+    cdef XPathNode create_from_cpp(xpath_node xpath_node, object owner):
         cdef XPathNode wrapper = XPathNode()
         wrapper._xpath_node = xpath_node
+        wrapper._owner = owner
         return wrapper
 
     @property
@@ -1595,21 +1601,21 @@ cdef class XPathNode:
         """The matched element, or ``None`` if the query matched an
         attribute instead."""
         cdef xml_node n = self._xpath_node.node()
-        return XMLNode.create_from_cpp(n)
+        return XMLNode.create_from_cpp(n, self._owner)
 
     @property
     def attribute(self):
         """The matched attribute, or ``None`` if the query matched an
         element instead."""
         cdef xml_attribute attr = self._xpath_node.attribute()
-        return XMLAttribute.create_from_cpp(attr)
+        return XMLAttribute.create_from_cpp(attr, self._owner)
 
     @property
     def parent(self):
         """The parent of the matched node (``None`` for attributes or the
         document root)."""
         cdef xml_node n = self._xpath_node.parent()
-        return XMLNode.create_from_cpp(n)
+        return XMLNode.create_from_cpp(n, self._owner)
 
 
 cdef class XPathNodeSet:
@@ -1627,14 +1633,16 @@ cdef class XPathNodeSet:
         '1'
     """
     cdef xpath_node_set _xpath_node_set
+    cdef object _owner
 
     def __cinit__(self):
         self._xpath_node_set = xpath_node_set()
 
     @staticmethod
-    cdef XPathNodeSet create_from_cpp(xpath_node_set xpath_node_set):
+    cdef XPathNodeSet create_from_cpp(xpath_node_set xpath_node_set, object owner):
         cdef XPathNodeSet wrapper = XPathNodeSet()
         wrapper._xpath_node_set = xpath_node_set
+        wrapper._owner = owner
         return wrapper
 
     def __len__(self):
@@ -1650,7 +1658,7 @@ cdef class XPathNodeSet:
         if index >= self._xpath_node_set.size():
             raise IndexError("XPath node set index out of range")
         cdef xpath_node node = self._xpath_node_set[index]
-        return XPathNode.create_from_cpp(node)
+        return XPathNode.create_from_cpp(node, self._owner)
 
     def __iter__(self):
         """Iterate over matched :class:`XPathNode` objects."""
@@ -1704,7 +1712,7 @@ cdef class XPathQuery:
             ...     print(node.node.text())
         """
         cdef xpath_node_set result = self._query.evaluate_node_set(context_node._node)
-        return XPathNodeSet.create_from_cpp(result)
+        return XPathNodeSet.create_from_cpp(result, context_node._owner)
     
     def evaluate_node(self, XMLNode context_node):
         """Evaluate query and return first node.
@@ -1721,7 +1729,7 @@ cdef class XPathQuery:
             >>> print(node.node.text())
         """
         cdef xpath_node result = self._query.evaluate_node(context_node._node)
-        return XPathNode.create_from_cpp(result)
+        return XPathNode.create_from_cpp(result, context_node._owner)
     
     def evaluate_boolean(self, XMLNode context_node):
         """Evaluate query and return boolean result.

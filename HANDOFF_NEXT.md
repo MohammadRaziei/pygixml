@@ -54,3 +54,10 @@ Read this first; `Handoff.md` (older) still has the build layout and the HTML/di
 
 ## Changed files vs the original upload
 src: `html.pxi diff.pxi dictify.pxi jsonify.pxi stream.pxi`, `pygixml/__init__.py convertcmd.py formats.py`. tests: `test_dictify.py test_diff.py test_html.py` changed, `test_names.py test_html_case.py test_text_runs.py` new. docs: `dictify.rst diff.rst html.rst jsonify.rst core/stream-parser.rst`. Also `README.md CHANGELOG.md Handoff.md`.
+
+
+## Session 3 (after 0.14.0 was published)
+
+- DONE: XMLNode/XMLAttribute/XPathNode/XPathNodeSet keep their XMLDocument (`_owner`); `node.to_html()` follows the document's `_from_html`. Tests: 867 passed.
+- Not verified: the new lifetime test was not run against the old code (it may pass by luck without the fix); ASan/UBSan still not run; CI on macOS/MSVC/clang for these changes not seen.
+- Still open: reset()/load_string() on a document invalidates existing nodes (pugixml frees them); NBSP whitespace rule differs between dictify and the JSON writers; objectify/iterparse/PullParser not checked against the run rule.

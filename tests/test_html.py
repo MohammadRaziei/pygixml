@@ -439,3 +439,10 @@ def test_to_html_decodes_only_documents_from_html():
     h2.reset()
     h2.load_string("<o_x003A_p/>")
     assert "o_x003A_p" in h2.to_html()
+
+
+def test_node_to_html_follows_its_document():
+    h = pygixml.parse_html("<o:p>t</o:p>")
+    assert "o:p" in h.first_child().to_html()
+    p = pygixml.parse_string("<r><a_x003A_b/></r>")
+    assert "a_x003A_b" in p.root.child("a_x003A_b").to_html()

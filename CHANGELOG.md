@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use-after-free: a node, attribute or XPath result kept no reference to its
+  document, so `parse_string(xml).root.child("a")` read freed memory once the
+  document was collected. `XMLNode`, `XMLAttribute`, `XPathNode` and
+  `XPathNodeSet` now hold their `XMLDocument`. `XMLNode.from_mem_id_unsafe`
+  still has no owner, by design.
+
+### Changed
+
+- `node.to_html()` follows its document: a node from a `parse_html` document
+  decodes `_xHHHH_` names, a node from plain XML keeps them (a node without a
+  document is decoded, as before).
+
 ## [v0.14.0] - 2026-10-30
 
 ### Added

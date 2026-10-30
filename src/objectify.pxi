@@ -983,7 +983,7 @@ cdef class ObjectifiedElement:
     @property
     def xml(self):
         """Serialised XML of this node and its subtree."""
-        cdef XMLNode wrapper = XMLNode.create_from_cpp(self._node)
+        cdef XMLNode wrapper = XMLNode.create_from_cpp(self._node, self._doc_ref)
         return wrapper.to_string()
 
 

@@ -408,3 +408,24 @@ class TestMemoryOperations:
             # For leaf nodes, verify content
             if original_node.name.startswith("leaf"):
                 assert found_node.child_value() == original_node.child_value()
+
+
+def test_nodes_keep_document_alive():
+    # a node (or attribute / xpath result) must keep its document alive
+    import gc
+    import pygixml
+
+    xml = "<r>" + "".join(f'<i k="{n}">v{n}</i>' for n in range(200)) + "</r>"
+    root = pygixml.parse_string(xml).root          # document is not referenced
+    attr = pygixml.parse_string(xml).root.child("i").attribute("k")
+    hit = pygixml.parse_string(xml).root.select_node("//i[@k='7']").node
+    nodes = pygixml.parse_string(xml).root.select_nodes("//i")
+    first = nodes[0].node
+    del nodes
+    junk = [pygixml.parse_string("<z>" + "y" * 1000 + "</z>") for _ in range(50)]
+    gc.collect()
+    assert root.child("i").text() == "v0"
+    assert attr.value == "0"
+    assert hit.text() == "v7"
+    assert first.text() == "v0"
+    assert len(junk) == 50
