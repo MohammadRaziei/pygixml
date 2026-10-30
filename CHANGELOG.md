@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document now gets a new tree and those nodes keep reading the old one;
   without live nodes the tree is reused in place, so reloading in a loop is
   as fast as before.
+- `objectify` reads an element's text in runs, like `dictify` / `jsonify`:
+  `<p>a<![CDATA[b]]>c</p>` is `'abc'` (it was `'a'`). Blank runs are skipped, a
+  no-break space is text.
 
 - Whitespace-only text was decided differently: the C++ writers (`jsonify`, `iterjsonl`)
   treat only space, tab, CR and LF as blank, while `dictify`, `iterdict` and

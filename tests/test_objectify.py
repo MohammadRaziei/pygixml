@@ -1044,3 +1044,22 @@ class TestFromNode:
             doc.root, namespaces={"ns": "http://ns.com"}
         )
         assert str(root.ns_item) == "x"
+
+def test_text_is_read_in_runs_like_dictify():
+    # text and CDATA next to each other (also across a comment/PI) are one run; blank runs don't count
+    from pygixml import objectify
+
+    for xml, want in [
+        ("<r><p>a<![CDATA[b]]>c</p></r>", "abc"),
+        ("<r><p>x<!--c-->y</p></r>", "xy"),
+        ("<r><p>x<?q d?>y</p></r>", "xy"),
+        ("<r><p>a<b/>c</p></r>", "a"),
+        ("<r><p> <b/>x</p></r>", "x"),
+        ("<r><p>\u00a0<b/>x</p></r>", "\u00a0"),
+        ("<r><p><![CDATA[ ]]><b/>z</p></r>", "z"),
+        ("<r><p/></r>", ""),
+    ]:
+        p = objectify.from_string(xml).p
+        assert str(p) == want and p.text_content == want, xml
+    assert objectify.from_string("<r><n>3</n></r>").n() == 3
+    assert objectify.from_string("<r><n>1<![CDATA[2]]></n></r>").n() == 12

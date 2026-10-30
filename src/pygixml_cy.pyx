@@ -428,6 +428,12 @@ cdef class XMLDocument:
             PygiXMLError: When the input is not well-formed XML (raised
                 by :func:`parse_string`; this method returns ``False``
                 instead).
+
+        .. note::
+           Nodes, attributes and XPath results taken before this call keep
+           reading the *old* content (they hold the old tree, which is
+           freed with the last of them); only the document sees the new one.
+           Without such objects the tree is reused in place.
         """
         self._detach_if_shared()
         (<_TreeHolder>self._holder).from_html = False
@@ -459,6 +465,12 @@ cdef class XMLDocument:
             True
             >>> doc.root.name
             'root'
+
+        .. note::
+           Nodes, attributes and XPath results taken before this call keep
+           reading the *old* content (they hold the old tree, which is
+           freed with the last of them); only the document sees the new one.
+           Without such objects the tree is reused in place.
         """
         self._detach_if_shared()
         (<_TreeHolder>self._holder).from_html = False
@@ -499,6 +511,12 @@ cdef class XMLDocument:
             >>> doc = pygixml.parse_string('<root>content</root>')
             >>> doc.reset()
             >>> doc.root  # None: document is empty
+
+        .. note::
+           Nodes, attributes and XPath results taken before this call keep
+           reading the *old* content (they hold the old tree, which is
+           freed with the last of them); only the document sees the new one.
+           Without such objects the tree is reused in place.
         """
         self._detach_if_shared()
         (<_TreeHolder>self._holder).from_html = False

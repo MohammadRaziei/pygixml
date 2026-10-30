@@ -154,6 +154,20 @@ cdef dict _inherit_nsmap(dict parent_nsmap, xml_node node):
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+cdef extern from *:
+    # defined in jsonify.pxi: the text of an element read in runs (see there)
+    const char* element_text(xml_node node, bool sep_on, const string& sep, string& buf)
+
+
+cdef str _obj_text(xml_node node):
+    """First non-blank text run of *node* (text and CDATA next to each other
+    are one run), or None. Same rule as dictify / jsonify."""
+    cdef string buf
+    cdef string sep
+    cdef const char* t = element_text(node, False, sep, buf)
+    return None if t == NULL else (<bytes>t).decode("utf-8")
+
+
 cdef object _infer_type(str raw):
     """Convert a string to the most specific Python scalar.
 
@@ -856,17 +870,15 @@ cdef class ObjectifiedElement:
 
     def __call__(self):
         """Type-inferred text content; ``None`` for empty/structural nodes."""
-        cdef string raw = self._node.child_value()
-        if raw.empty():
+        cdef str raw = _obj_text(self._node)
+        if raw is None:
             return None
-        return _infer_type(raw.decode("utf-8"))
+        return _infer_type(raw)
 
     def __str__(self):
         """Raw text content, always a plain ``str``."""
-        cdef string raw = self._node.child_value()
-        if raw.empty():
-            return ""
-        return raw.decode("utf-8")
+        cdef str raw = _obj_text(self._node)
+        return "" if raw is None else raw
 
     def __repr__(self):
         return f"ObjectifiedElement(<{self._node.name().decode('utf-8')}>)"
@@ -962,8 +974,8 @@ cdef class ObjectifiedElement:
     @property
     def text_content(self):
         """Raw text content, always a ``str``."""
-        cdef string raw = self._node.child_value()
-        return raw.decode("utf-8") if not raw.empty() else ""
+        cdef str raw = _obj_text(self._node)
+        return "" if raw is None else raw
 
     @property
     def attrib(self):
