@@ -1,0 +1,150 @@
+{
+  "lxml_plus_xmljson": {
+    "available": true,
+    "points": [
+      {
+        "approach": "lxml_plus_xmljson",
+        "n": 5000,
+        "bytes": 989889,
+        "available": true,
+        "peak_rss_mb": 42.7734375,
+        "seconds": 0.13572654099999681
+      },
+      {
+        "approach": "lxml_plus_xmljson",
+        "n": 20000,
+        "bytes": 4014985,
+        "available": true,
+        "peak_rss_mb": 114.7890625,
+        "seconds": 0.6047984319999955
+      },
+      {
+        "approach": "lxml_plus_xmljson",
+        "n": 80000,
+        "bytes": 16195094,
+        "available": true,
+        "peak_rss_mb": 414.2421875,
+        "seconds": 2.4286260509999806
+      },
+      {
+        "approach": "lxml_plus_xmljson",
+        "n": 320000,
+        "bytes": 65761981,
+        "available": true,
+        "peak_rss_mb": 1540.1015625,
+        "seconds": 10.329019332999962
+      }
+    ]
+  },
+  "pygixml_dom": {
+    "available": true,
+    "points": [
+      {
+        "approach": "pygixml_dom",
+        "n": 5000,
+        "bytes": 989889,
+        "available": true,
+        "peak_rss_mb": 25.87109375,
+        "seconds": 0.011530427000025156
+      },
+      {
+        "approach": "pygixml_dom",
+        "n": 20000,
+        "bytes": 4014985,
+        "available": true,
+        "peak_rss_mb": 56.328125,
+        "seconds": 0.05024335100000599
+      },
+      {
+        "approach": "pygixml_dom",
+        "n": 80000,
+        "bytes": 16195094,
+        "available": true,
+        "peak_rss_mb": 178.75,
+        "seconds": 0.22540547899996
+      },
+      {
+        "approach": "pygixml_dom",
+        "n": 320000,
+        "bytes": 65761981,
+        "available": true,
+        "peak_rss_mb": 627.03515625,
+        "seconds": 0.9382500250000021
+      }
+    ]
+  },
+  "pygixml_stream_dump": {
+    "available": true,
+    "points": [
+      {
+        "approach": "pygixml_stream_dump",
+        "n": 5000,
+        "bytes": 989889,
+        "available": true,
+        "peak_rss_mb": 15.734375,
+        "seconds": 0.2737508810000122
+      },
+      {
+        "approach": "pygixml_stream_dump",
+        "n": 20000,
+        "bytes": 4014985,
+        "available": true,
+        "peak_rss_mb": 15.72265625,
+        "seconds": 1.0650017309999953
+      },
+      {
+        "approach": "pygixml_stream_dump",
+        "n": 80000,
+        "bytes": 16195094,
+        "available": true,
+        "peak_rss_mb": 15.65234375,
+        "seconds": 4.3862300999999775
+      },
+      {
+        "approach": "pygixml_stream_dump",
+        "n": 320000,
+        "bytes": 65761981,
+        "available": true,
+        "peak_rss_mb": 15.7265625,
+        "seconds": 17.248722944999997
+      }
+    ]
+  },
+  "xmltodict": {
+    "available": true,
+    "points": [
+      {
+        "approach": "xmltodict",
+        "n": 5000,
+        "bytes": 989889,
+        "available": true,
+        "peak_rss_mb": 30.60546875,
+        "seconds": 0.12717660499998829
+      },
+      {
+        "approach": "xmltodict",
+        "n": 20000,
+        "bytes": 4014985,
+        "available": true,
+        "peak_rss_mb": 59.328125,
+        "seconds": 0.5038592770000037
+      },
+      {
+        "approach": "xmltodict",
+        "n": 80000,
+        "bytes": 16195094,
+        "available": true,
+        "peak_rss_mb": 153.94140625,
+        "seconds": 2.374255667
+      },
+      {
+        "approach": "xmltodict",
+        "n": 320000,
+        "bytes": 65761981,
+        "available": true,
+        "peak_rss_mb": 551.97265625,
+        "seconds": 10.041938405999986
+      }
+    ]
+  }
+}

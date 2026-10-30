@@ -1,0 +1,205 @@
+{
+  "repeats": 5,
+  "metric": "best (min) wall-clock seconds over repeats, process startup included",
+  "commands": {
+    "pygixml_cli": "python -m pygixml jsonify <file>",
+    "xq": "xq . <file>"
+  },
+  "results": [
+    {
+      "genre": "rss",
+      "size": "small",
+      "bytes": 32122,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.03873239899996861,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.09137682200002928,
+        "error": null
+      }
+    },
+    {
+      "genre": "rss",
+      "size": "medium",
+      "bytes": 322067,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.0383733820000316,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.1175112140000465,
+        "error": null
+      }
+    },
+    {
+      "genre": "rss",
+      "size": "large",
+      "bytes": 3249652,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.06469251699991219,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.3925132089999579,
+        "error": null
+      }
+    },
+    {
+      "genre": "catalog",
+      "size": "small",
+      "bytes": 39123,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.035651207000000795,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.09369104399991102,
+        "error": null
+      }
+    },
+    {
+      "genre": "catalog",
+      "size": "medium",
+      "bytes": 389019,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.040506489999984296,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.15988711300008163,
+        "error": null
+      }
+    },
+    {
+      "genre": "catalog",
+      "size": "large",
+      "bytes": 3901895,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.0748720599999615,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.8811790029999429,
+        "error": null
+      }
+    },
+    {
+      "genre": "records",
+      "size": "small",
+      "bytes": 19035,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.04172052600006282,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.10854531199993289,
+        "error": null
+      }
+    },
+    {
+      "genre": "records",
+      "size": "medium",
+      "bytes": 194739,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.04298920899998393,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.14257609200001298,
+        "error": null
+      }
+    },
+    {
+      "genre": "records",
+      "size": "large",
+      "bytes": 1987163,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.058294995000096606,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.5439594550000493,
+        "error": null
+      }
+    },
+    {
+      "genre": "config",
+      "size": "fixed",
+      "bytes": 170298,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.0363876879999907,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.11283916400009275,
+        "error": null
+      }
+    },
+    {
+      "genre": "real_svg_icons",
+      "size": "small",
+      "bytes": 123181,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.039205714999980046,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.10486887000001843,
+        "error": null
+      }
+    },
+    {
+      "genre": "real_svg_icons",
+      "size": "medium",
+      "bytes": 189638,
+      "pygixml_cli": {
+        "available": true,
+        "seconds": 0.03640598700008013,
+        "error": null
+      },
+      "xq": {
+        "available": true,
+        "seconds": 0.10497041600001467,
+        "error": null
+      }
+    },
+    {
+      "genre": "real_svg_icons",
+      "size": "large",
+      "bytes": 288734,
+      "pygixml_cli": {
+        "available": false,
+        "seconds": null,
+        "error": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/home/claude/pygixml/benchmarks/build/python/venv/lib/python3.12/site-packages/pygixml/__main__.py\", line 63, in <module>\n    main()\n  File \"/home/claud"
+      },
+      "xq": {
+        "available": false,
+        "seconds": null,
+        "error": "xq: Error running jq: ExpatError: not well-formed (invalid token): line 925, column 45.\n"
+      }
+    }
+  ]
+}

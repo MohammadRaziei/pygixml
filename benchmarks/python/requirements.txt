@@ -3,10 +3,12 @@
 lxml
 xmltodict
 xmljson
+beautifulsoup4       # html benchmark (bench_html.py)
+html5lib             # html benchmark
+selectolax           # html benchmark
 yq                   # provides the `xq` command, benchmarked in bench_cli.py
 untangle             # objectify-style XML->object mapper, sizes-only comparison in bench_sizes.py
 
 # Benchmark tooling
 pip-size            # github.com/MohammadRaziei/pip-size -- real install-size comparison
-jinja2               # renders the standalone HTML report
 tqdm                 # progress bars for the longer-running sweeps (throughput, scaling)

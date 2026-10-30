@@ -19,14 +19,15 @@ cmake --build build --target pygixml_benchmark
 
 That's the one target you need: it pulls in every benchmark, in the
 right dependency order, and finishes by writing
-**`results/benchmarks.json`**: one JSON file with every raw result.
+**`results/*.json`**: one raw JSON file per benchmark (`throughput.json`,
+`html.json`, `scaling.json`, ...), not one merged file.
 There is no HTML here on purpose: the documentation build renders the
 public page from that JSON (from the repository root,
 `cmake --build build --target sphinx_docs` writes
 `docs/benchmarks/index.html`; the renderer is
 `docs/site/benchmarks/render_benchmarks.py`).
 
-`results/benchmarks.json` is the **only** thing meant to be committed from this whole
+`results/*.json` is the **only** thing meant to be committed from this whole
 build: everything else (the venv, the corpus, per-run JSON) lives
 under `build/` and is disposable.
 
@@ -46,7 +47,8 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_scaling` | Time vs. N: the O(n) vs. O(n²) story |
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
 | `pygixml_bench_system_info` | Record the machine's OS, CPU model, core count, and RAM |
-| `pygixml_bench_report` | Bundle everything above into `results/benchmarks.json` |
+| `pygixml_bench_html` | HTML parsing: `parse_html` vs lxml.html / BeautifulSoup / html5lib / selectolax |
+| `pygixml_bench_report` | Copy every JSON above into `results/` |
 
 `cmake --build build --target help` lists all of these plus CMake's
 own built-ins.
@@ -58,7 +60,7 @@ own built-ins.
 # via file://) instead of the default main-branch GitHub install
 cmake -S . -B build -DPYGIXML_BENCH_GITHUB_URL="git+https://github.com/YOURFORK/pygixml.git@yourbranch"
 
-# where benchmarks.json ends up
+# where the JSON files end up
 cmake -S . -B build -DPYGIXML_BENCH_RESULTS_DIR=/somewhere/else
 ```
 

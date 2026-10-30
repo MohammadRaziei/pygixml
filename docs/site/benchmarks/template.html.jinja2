@@ -539,6 +539,32 @@ section.major { padding-top: 56px; }
 
 {% endif %}
 
+{% if has_html %}
+<!-- ========================= HTML ========================= -->
+<section id="html" class="major">
+  <div class="section-rule"></div>
+  <div class="kicker">HTML</div>
+  <h2>Parsing messy HTML</h2>
+  <p class="lede">
+    <code>pygixml.parse_html</code> against the usual Python HTML parsers, on generated pages that
+    are broken the way real pages are. Best-of-N timing, same as everywhere else on this page.
+  </p>
+  {% for op in html_ops %}
+  <div class="subsection">
+    <h3 class="op-title">{{ op.title }}</h3>
+    <p class="op-note">{{ op.note }}</p>
+    {{ op_body(op) }}
+  </div>
+  {% endfor %}
+  <div class="section-download">
+    <button class="dl-btn" onclick="downloadJSON('html')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      html.json
+    </button>
+  </div>
+</section>
+{% endif %}
+
 {% if has_cli %}
 <!-- ========================= CLI ========================= -->
 <section id="cli" class="major">

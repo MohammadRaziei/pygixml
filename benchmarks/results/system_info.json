@@ -1,0 +1,10 @@
+{
+  "os": "Linux 6.18.44-fc-v42",
+  "platform": "Linux-6.18.44-fc-v42-x86_64-with-glibc2.39",
+  "architecture": "x86_64",
+  "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "logical_cores": 1,
+  "ram_gib": 3.9,
+  "python_implementation": "CPython",
+  "python_version": "3.12.3"
+}

@@ -183,7 +183,7 @@ add_custom_target(pygixml_chartjs DEPENDS "${CHARTJS_UMD_MIN}")
 
 # Define a custom target for building the documentation: Sphinx, plus
 # the benchmarks page (docs/benchmarks/index.html), which is rendered from
-# the one JSON the benchmark suite commits, benchmarks/results/benchmarks.json.
+# the JSON files the benchmark suite commits, benchmarks/results/*.json.
 add_custom_target(sphinx_docs
     # Create output directory for Sphinx documentation
     COMMAND ${CMAKE_COMMAND} -E echo "-- Building Sphinx documentation..."
@@ -191,9 +191,9 @@ add_custom_target(sphinx_docs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/docs
     # Build HTML docs
     COMMAND ${Python3_EXECUTABLE} -m sphinx -b html ${CMAKE_CURRENT_SOURCE_DIR}/docs/source ${CMAKE_CURRENT_BINARY_DIR}/docs
-    # Benchmarks page: load benchmarks.json, write docs/benchmarks/index.html
+    # Benchmarks page: load benchmarks/results/*.json, write docs/benchmarks/index.html
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/docs/site/benchmarks/render_benchmarks.py
-        ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results/benchmarks.json
+        ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results
         ${CMAKE_CURRENT_BINARY_DIR}/docs/benchmarks/index.html
         --chartjs-path ${CHARTJS_UMD_MIN}
     COMMENT "Building documentation with Sphinx (+ benchmarks page)..."
@@ -234,7 +234,7 @@ add_custom_target(pygixml_landing DEPENDS ${SITE_OUT}/index.html ${SITE_OUT}/lan
 
 # Assembles the full public site tree: site/{index.html, docs/, benchmarks/}.
 # Depends on sphinx_docs, which builds both Sphinx's output and the
-# benchmarks page (rendered from the committed benchmarks/results/benchmarks.json).
+# benchmarks page (rendered from the committed benchmarks/results/*.json).
 add_custom_target(pygixml_site
     COMMAND ${CMAKE_COMMAND} -E make_directory ${SITE_OUT}
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/docs ${SITE_OUT}/docs

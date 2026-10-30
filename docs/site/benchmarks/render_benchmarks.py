@@ -1,6 +1,6 @@
 """
-render_benchmarks.py: render the public benchmarks page from the one JSON
-the benchmark suite commits (benchmarks/results/benchmarks.json).
+render_benchmarks.py: render the public benchmarks page from the JSON files
+the benchmark suite commits (benchmarks/results/*.json, one per benchmark).
 
 Called by the documentation build (`cmake --build build --target
 sphinx_docs`), which writes docs/benchmarks/index.html. The output is a
@@ -35,6 +35,10 @@ LIB_LABELS = {
     "xmljson": "xmljson",
     "yq": "yq",
     "untangle": "untangle",
+    "bs4_html_parser": "BeautifulSoup (html.parser)",
+    "bs4_lxml": "BeautifulSoup (lxml)",
+    "html5lib": "html5lib",
+    "selectolax": "selectolax",
 }
 LIB_COLORS = {
     "pygixml": "#e67225",
@@ -48,6 +52,10 @@ LIB_COLORS = {
     "xmljson": "#b98bff",
     "yq": "#ffb454",
     "untangle": "#6ee7b7",
+    "bs4_html_parser": "#b98bff",
+    "bs4_lxml": "#8f6bd6",
+    "html5lib": "#5b8cff",
+    "selectolax": "#35d0ba",
 }
 # Color is never the only way to tell two series apart here (colorblind
 # readers can't rely on hue alone) -- every multi-series chart also
@@ -61,6 +69,10 @@ LIB_POINT_STYLES = {
     "elementtree": "rect",
     "xmltodict": "star",
     "xmljson": "crossRot",
+    "bs4_html_parser": "crossRot",
+    "bs4_lxml": "cross",
+    "html5lib": "rect",
+    "selectolax": "star",
 }
 LIB_DASH = {
     "pygixml": [],
@@ -71,6 +83,10 @@ LIB_DASH = {
     "elementtree": [2, 2],
     "xmltodict": [8, 3, 2, 3],
     "xmljson": [1, 3],
+    "bs4_html_parser": [1, 3],
+    "bs4_lxml": [4, 4],
+    "html5lib": [2, 2],
+    "selectolax": [8, 3, 2, 3],
 }
 
 
@@ -406,6 +422,24 @@ OP_META = [
 ]
 
 
+HTML_OP_META = [
+    {
+        "key": "html_parse",
+        "title": "parse: HTML string in, tree out, tree discarded",
+        "note": "pygixml.parse_html against lxml.html, BeautifulSoup (both of its common backends), \n"
+                "html5lib and selectolax (Lexbor). The pages are deliberately messy: unclosed \n"
+                "p/li/td/tr, void tags, entities, valueless attributes. No memory numbers here yet.",
+    },
+    {
+        "key": "html_extract_links",
+        "title": "extract links: parse, then collect (href, text) of every <a>",
+        "note": "The same parse plus a real query on the result, with each library's own idiom "
+                "(XPath, find_all, CSS selector). The run warns if the libraries disagree on the "
+                "number of links found.",
+    },
+]
+
+
 def _fmt_ms(x):
     if x < 1:
         return f"{x:.3f}ms"
@@ -414,7 +448,7 @@ def _fmt_ms(x):
     return f"{x:.1f}ms"
 
 
-def _build_throughput_section(throughput, throughput_memory):
+def _build_throughput_section(throughput, throughput_memory, op_meta=None):
     if not throughput:
         return {"ops": [], "repeats": "?"}
 
@@ -424,7 +458,7 @@ def _build_throughput_section(throughput, throughput_memory):
     throughput_memory = throughput_memory or {}
 
     ops_out = []
-    for meta in OP_META:
+    for meta in (op_meta or OP_META):
         key = meta["key"]
         libs = sorted({lib for r in rows for lib in r.get(key, {})})
         if not libs:
@@ -866,23 +900,20 @@ new Chart(document.getElementById('chart-cli-trend'), {{
             "commands": commands}
 
 
-def build(json_path, output_path, chartjs_path):
-    bundle = _load(json_path)
-    if bundle is None:
-        raise SystemExit(f"render_benchmarks: {json_path} not found")
-    throughput = bundle.get("throughput")
-    throughput_memory = bundle.get("throughput_memory")
-    scaling = bundle.get("scaling")
-    memory = bundle.get("memory")
-    sizes = bundle.get("sizes")
-    cli = bundle.get("cli")
-    system_info = bundle.get("system_info")
+def build(results_dir, output_path, chartjs_path):
+    """results_dir holds one JSON per benchmark (throughput.json, html.json, ...)."""
+    if not os.path.isdir(results_dir):
+        raise SystemExit(f"render_benchmarks: {results_dir} is not a directory")
+    throughput, throughput_memory, scaling, memory, sizes, cli, system_info, html = (
+        _load(os.path.join(results_dir, n + ".json"))
+        for n in ("throughput", "throughput_memory", "scaling", "memory", "sizes", "cli", "system_info", "html"))
 
     mem = _build_memory_section(memory)
     scl = _build_scaling_section(scaling)
     thr = _build_throughput_section(throughput, throughput_memory)
     siz = _build_size_section(sizes)
     cli_sec = _build_cli_section(cli)
+    html_sec = _build_throughput_section(html, None, HTML_OP_META)
 
     ops_by_key = thr["ops_by_key"]
     jsonify_narrative = _build_jsonify_narrative(ops_by_key.get("xml_to_json"), mem["o1_note"])
@@ -894,7 +925,7 @@ def build(json_path, output_path, chartjs_path):
 
     embedded = {
         "throughput": throughput, "throughput_memory": throughput_memory, "scaling": scaling,
-        "memory": memory, "sizes": sizes, "cli": cli, "system_info": system_info,
+        "memory": memory, "sizes": sizes, "cli": cli, "system_info": system_info, "html": html,
     }
 
     headline = "pygixml, measured honestly"
@@ -909,6 +940,10 @@ def build(json_path, output_path, chartjs_path):
     for op in thr["ops"]:
         chart_scripts.append(op["time_trend_chart_js"])
         chart_scripts.append(op["mem_trend_chart_js"])
+        chart_scripts.append(op["tp_chart_js"])
+
+    for op in html_sec["ops"]:
+        chart_scripts.append(op["time_trend_chart_js"])
         chart_scripts.append(op["tp_chart_js"])
 
     env = Environment(loader=FileSystemLoader(HERE), autoescape=False)
@@ -930,6 +965,7 @@ def build(json_path, output_path, chartjs_path):
         op_iterparse=ops_by_key.get("iterparse"),
         op_jsonify=ops_by_key.get("xml_to_json"),
         op_jsonl=ops_by_key.get("xml_to_jsonl"),
+        has_html=bool(html_sec["ops"]), html_ops=html_sec["ops"],
         op_objectify=ops_by_key.get("to_object"),
         op_dictify_dom=ops_by_key.get("dict_convert"),
         op_dictify_stream=ops_by_key.get("dict_stream"),
@@ -956,13 +992,13 @@ def build(json_path, output_path, chartjs_path):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("json", help="benchmarks/results/benchmarks.json (written by benchmarks/report/bundle_results.py)")
+    p.add_argument("results_dir", help="benchmarks/results/ (one JSON per benchmark: throughput.json, html.json, ...)")
     p.add_argument("output", help="path to write the standalone benchmarks page (index.html)")
     p.add_argument("--chartjs-path", default=os.path.join(HERE, "vendor", "chart.umd.min.js"),
                     help="path to a Chart.js UMD build (CMake fetches this fresh; "
                          "defaults to a local vendor/ copy for running by hand)")
     args = p.parse_args()
 
-    out = build(args.json, args.output, args.chartjs_path)
+    out = build(args.results_dir, args.output, args.chartjs_path)
     size_kb = os.path.getsize(out) / 1024
     print(f"render_benchmarks: wrote {out} ({size_kb:.0f}KB, standalone)")
