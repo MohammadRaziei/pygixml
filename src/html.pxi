@@ -3171,7 +3171,7 @@ def parse_html(html, str root="root", options=None, case="lower"):
         ok = <bint>doc._doc.load_string(xml.c_str(), opts)
     if not ok:
         raise PygiXMLHTMLError("normalised HTML was rejected by the XML parser")
-    doc._from_html = True
+    (<_TreeHolder>doc._holder).from_html = True
     return doc
 
 
@@ -3220,7 +3220,7 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
     if isinstance(node, XMLDocument):
         d = <XMLDocument>node
         out = xml_to_html_cpp(d._doc.first_child(), True, pretty, ind, doctype, unw_c,
-                              d._from_html)
+                              (<_TreeHolder>d._holder).from_html)
     elif isinstance(node, XMLNode):
         n = <XMLNode>node
         t = n._node.type()
@@ -3228,10 +3228,10 @@ def xml_to_html(node, bint pretty=False, indent="  ", bint doctype=False, unwrap
             raise PygiXMLHTMLError("can't serialize a null node")
         if t == node_document:
             out = xml_to_html_cpp(n._node.first_child(), True, pretty, ind, doctype, unw_c,
-                              n._owner is None or (<XMLDocument>n._owner)._from_html)
+                              n._owner is None or (<_TreeHolder>n._owner).from_html)
         else:
             out = xml_to_html_cpp(n._node, False, pretty, ind, doctype, unw_c,
-                              n._owner is None or (<XMLDocument>n._owner)._from_html)
+                              n._owner is None or (<_TreeHolder>n._owner).from_html)
     else:
         raise PygiXMLHTMLError(
             f"expected XMLNode or XMLDocument, not {type(node).__name__}"

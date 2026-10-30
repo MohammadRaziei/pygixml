@@ -308,7 +308,7 @@ cdef object _node_to_obj(xml_node node,
             run = s.decode("utf-8") if run is None else run + s.decode("utf-8")
         elif ct == node_element:
             if run is not None:
-                if (cdata_sep is not None or not runs) and run.strip():
+                if (cdata_sep is not None or not runs) and not _blank(run):
                     runs.append(run)
                 run = None
             has_children = True
@@ -324,12 +324,12 @@ cdef object _node_to_obj(xml_node node,
             else:
                 result[tag] = val
         child = child.next_sibling()
-    if run is not None and (cdata_sep is not None or not runs) and run.strip():
+    if run is not None and (cdata_sep is not None or not runs) and not _blank(run):
         runs.append(run)
     if runs:
         text = runs[0] if cdata_sep is None else cdata_sep.join(runs)
         if strip_ws:
-            text = text.strip()
+            text = text.strip(_XML_WS)
 
     # --- force_list: wrap scalar values into list ---
     if force_list:
@@ -356,6 +356,14 @@ cdef object _node_to_obj(xml_node node,
 # ---------------------------------------------------------------------------
 # parse
 # ---------------------------------------------------------------------------
+
+_XML_WS = " \t\r\n"
+
+
+cdef inline bint _blank(str s):
+    # XML whitespace only, as in the C++ writers: a no-break space is text.
+    return not s.strip(_XML_WS)
+
 
 cdef object _check_sep(object cdata_separator):
     if cdata_separator is not None and not isinstance(cdata_separator, str):

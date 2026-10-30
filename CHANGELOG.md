@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document was collected. `XMLNode`, `XMLAttribute`, `XPathNode` and
   `XPathNodeSet` now hold their `XMLDocument`. `XMLNode.from_mem_id_unsafe`
   still has no owner, by design.
+- `reset()`, `load_string()` and `load_file()` freed the tree under nodes
+  that still pointed into it (use-after-free). If nodes are alive, the
+  document now gets a new tree and those nodes keep reading the old one;
+  without live nodes the tree is reused in place, so reloading in a loop is
+  as fast as before.
+
+- Whitespace-only text was decided differently: the C++ writers (`jsonify`, `iterjsonl`)
+  treat only space, tab, CR and LF as blank, while `dictify`, `iterdict` and
+  `StreamElement.to_dict` / `to_json` used Python's `str.isspace`, which also
+  counts U+00A0 and U+2003. So `<p>&#xA0;</p>` was `None` in one engine and
+  `'\xa0'` in another, and an HTML `&nbsp;` was lost. All engines now use XML
+  whitespace; a no-break space is text. `strip_whitespace` strips the same set.
 
 ### Changed
 

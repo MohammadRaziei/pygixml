@@ -429,3 +429,38 @@ def test_nodes_keep_document_alive():
     assert hit.text() == "v7"
     assert first.text() == "v0"
     assert len(junk) == 50
+
+
+def test_reload_with_live_nodes_is_safe():
+    # reset()/load_* must not free a tree that a node still points into
+    import gc
+    import pygixml
+
+    for reload in (lambda d: d.load_string("<new><z/></new>"), lambda d: d.reset()):
+        doc = pygixml.parse_string("<old>" + "<i>x</i>" * 100 + "</old>")
+        node = doc.root
+        child = node.child("i")
+        attr_doc = pygixml.parse_string('<old a="1"/>')
+        attr = attr_doc.root.attribute("a")
+        reload(doc)
+        reload(attr_doc)
+        junk = [pygixml.parse_string("<q>" + "w" * 500 + "</q>") for _ in range(50)]
+        gc.collect()
+        assert node.name == "old" and child.text() == "x" and attr.value == "1"
+        assert len(junk) == 50
+    doc = pygixml.parse_string("<a/>")
+    old = doc.root
+    doc.load_string("<b/>")
+    assert doc.root.name == "b" and old.name == "a"
+
+
+def test_reload_without_nodes_still_works_repeatedly():
+    import pygixml
+
+    doc = pygixml.XMLDocument()
+    for n in range(300):
+        doc.load_string(f"<r n='{n}'><c/></r>")
+        assert doc.root.attribute("n").value == str(n)
+    doc.reset()
+    doc.load_string("<ok/>")
+    assert doc.root.name == "ok"

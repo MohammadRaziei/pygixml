@@ -1473,14 +1473,14 @@ cdef class StreamElement:
         cdef list runs = None
         cdef object t = self.text
         cdef StreamElement child
-        if t is not None and not t.isspace():
+        if t is not None and not _blank(t):
             if sep is None:
                 return t
             runs = [t]
         if self._children is not None:
             for child in self._children:
                 t = child.tail
-                if t is not None and not t.isspace():
+                if t is not None and not _blank(t):
                     if sep is None:
                         return t
                     if runs is None:
@@ -1538,7 +1538,7 @@ cdef class StreamElement:
             text = self._text_value(sep)
         else:                                  # a leaf: its text is the whole text
             text = self.text
-            if text is not None and text.isspace():
+            if text is not None and _blank(text):
                 text = None
         has_text = text is not None
 
@@ -1622,7 +1622,7 @@ cdef class StreamElement:
             text = self._text_value(sep)
         else:                                  # a leaf: its text is the whole text
             text = self.text
-            if text is not None and text.isspace():
+            if text is not None and _blank(text):
                 text = None
         has_text = text is not None
 

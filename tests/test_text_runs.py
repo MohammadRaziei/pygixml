@@ -46,7 +46,7 @@ def _gen(r, depth=0, tag=None):
         if k < 0.4:
             items.append((True, _gen(r, depth + 1)))
         elif k < 0.75:
-            items.append((False, r.choice(["x", "yy", " z ", "t&amp;t", "é", " ", "\n  "])))
+            items.append((False, r.choice(["x", "yy", " z ", "t&amp;t", "é", "\u00a0", "\u2003 ", " ", "\n  "])))
         else:
             items.append((False, r.choice(["<![CDATA[c]]>", "<!--n-->", "<?p d?>", "<![CDATA[ ]]>"])))
     # pugixml drops whitespace-only plain text when it parses, the other readers keep it. They
@@ -120,3 +120,19 @@ def test_the_cases_that_used_to_differ():
         ("<a>\n  <b/>tail</a>", {"b": None, "#text": "tail"}),
     ]:
         assert dictify.parse(xml)["a"] == want, xml
+
+
+@pytest.mark.parametrize("opt", OPTIONS, ids=["none", "empty", "space", "bar"])
+def test_no_break_space_is_text_not_whitespace(tmp_path, opt):
+    # XML whitespace is space, tab, CR and LF; U+00A0 / U+2003 are real text in every engine
+    # (an HTML &nbsp; must survive the way the C++ writers already kept it)
+    sep = opt.get("cdata_separator")
+    for xml in ("<p>\u00a0</p>", "<p>\u00a0<b/>x</p>", "<p>\u2003<b/>\u00a0</p>", "<p>a<b/>\u00a0</p>"):
+        ref = reference(ET.fromstring(xml), sep)
+        assert dictify.parse(xml, **opt) == {"p": ref}, xml
+        assert json.loads(jsonify.dumps_str(xml, **opt)) == {"p": ref}, xml
+        f = tmp_path / "n.xml"
+        f.write_text(xml, encoding="utf-8")
+        assert json.loads(jsonify.dumps_file(str(f), **opt)) == {"p": ref}, xml
+    assert dictify.parse("<p>\u00a0</p>") == {"p": "\u00a0"}
+    assert dictify.parse("<p> \u00a0 </p>", strip_whitespace=True) == {"p": "\u00a0"}

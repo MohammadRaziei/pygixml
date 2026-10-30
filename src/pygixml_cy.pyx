@@ -8,6 +8,7 @@ Python wrapper for pugixml using Cython
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp cimport bool
+from cpython.ref cimport Py_REFCNT
 
 # Import pugixml headers
 cdef extern from "pugixml.hpp" namespace "pugi":
@@ -334,6 +335,18 @@ cdef inline XMLNode _node_from_raw_ptr(size_t addr):
     return wrapper
 
 
+cdef class _TreeHolder:
+    """Owns one pugixml tree. Nodes hold this, not the XMLDocument, so a tree
+    stays alive for as long as a node points into it, even after the document
+    was reloaded (see XMLDocument._detach_if_shared)."""
+    cdef xml_document* p
+    cdef bint from_html   # set by parse_html; makes to_html decode names
+
+    def __dealloc__(self):
+        if self.p != NULL:
+            del self.p
+
+
 cdef class XMLDocument:
     """An XML document, providing document-level operations.
 
@@ -357,8 +370,8 @@ cdef class XMLDocument:
     When processing many files in a loop, reuse a single document with
     :meth:`reset` to avoid repeated allocations.
     """
-    cdef xml_document* _doc
-    cdef bint _from_html   # set by parse_html; makes to_html decode names
+    cdef xml_document* _doc   # alias of _holder.p
+    cdef object _holder       # _TreeHolder
 
     def __cinit__(self):
         """Create an empty ``XMLDocument``.
@@ -366,12 +379,25 @@ cdef class XMLDocument:
         The document starts with no content.  Use :meth:`load_string`,
         :meth:`load_file`, or :meth:`append_child` to populate it.
         """
-        self._doc = new xml_document()
+        self._fresh()
 
-    def __dealloc__(self):
-        if self._doc != NULL:
-            del self._doc
-    
+    cdef int _fresh(self) except -1:
+        cdef _TreeHolder h = _TreeHolder()
+        h.p = new xml_document()
+        self._holder = h
+        self._doc = h.p
+        return 0
+
+    cdef int _detach_if_shared(self) except -1:
+        # Nodes still pointing into the old tree (each holds a reference to
+        # the holder) must not see it freed by reset()/load: give this
+        # document a new tree and let the old one die with its last node.
+        # Without live nodes the tree is reused in place, as before.
+        # ponytail: 2 = this document + the temporary reference of the call.
+        if Py_REFCNT(self._holder) > 2:
+            self._fresh()
+        return 0
+
     def load_string(self, str content, options=0xFFFFFFFF):
         """Parse XML from a string and replace the current document content.
 
@@ -403,7 +429,8 @@ cdef class XMLDocument:
                 by :func:`parse_string`; this method returns ``False``
                 instead).
         """
-        self._from_html = False
+        self._detach_if_shared()
+        (<_TreeHolder>self._holder).from_html = False
         cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes content_bytes = content.encode('utf-8')
         if opts == 0xFFFFFFFF:
@@ -433,7 +460,8 @@ cdef class XMLDocument:
             >>> doc.root.name
             'root'
         """
-        self._from_html = False
+        self._detach_if_shared()
+        (<_TreeHolder>self._holder).from_html = False
         cdef unsigned int opts = options if options != 0xFFFFFFFF else 0xFFFFFFFF
         cdef bytes path_bytes = path.encode('utf-8')
         if opts == 0xFFFFFFFF:
@@ -472,7 +500,8 @@ cdef class XMLDocument:
             >>> doc.reset()
             >>> doc.root  # None: document is empty
         """
-        self._from_html = False
+        self._detach_if_shared()
+        (<_TreeHolder>self._holder).from_html = False
         self._doc.reset()
     
     def append_child(self, str name):
@@ -494,7 +523,7 @@ cdef class XMLDocument:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._doc.append_child(name_bytes)
-        return XMLNode.create_from_cpp(node, self)
+        return XMLNode.create_from_cpp(node, self._holder)
     
     def first_child(self):
         """Return the first child element, or ``None`` if the document is
@@ -510,7 +539,7 @@ cdef class XMLDocument:
             'root'
         """
         cdef xml_node node = self._doc.first_child()
-        return XMLNode.create_from_cpp(node, self)
+        return XMLNode.create_from_cpp(node, self._holder)
     
     def child(self, str name):
         """Return the first child element whose tag matches *name*, or
@@ -530,7 +559,7 @@ cdef class XMLDocument:
         """
         cdef bytes name_bytes = name.encode('utf-8')
         cdef xml_node node = self._doc.child(name_bytes)
-        return XMLNode.create_from_cpp(node, self)
+        return XMLNode.create_from_cpp(node, self._holder)
 
     def to_string(self, indent="  "):
         """Serialize the document to an XML string.
