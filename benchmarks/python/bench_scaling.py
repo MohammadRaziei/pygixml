@@ -27,9 +27,7 @@ finishes in reasonable time; unlike pygixml.jsonify.dumps, none of
 them have a documented superlinear risk, so there's no need to push
 them to the sizes that would demonstrate one.
 """
-import gc
 import json
-import time
 
 try:
     from tqdm import tqdm
@@ -38,6 +36,7 @@ except ImportError:
         return iterable
 
 from corpus import gen_records, gen_interleaved
+from timing import DEFAULT_REPEATS, METRIC, timed
 
 RECORD_NS = [500, 2000, 8000, 32000, 128000]
 INTERLEAVED_NS = [500, 2000, 8000, 32000, 128000]
@@ -45,10 +44,7 @@ DOM_COMPETITOR_NS = [500, 2000, 8000, 32000]  # kept smaller -- see docstring
 
 
 def _time_once(fn):
-    gc.collect()
-    t0 = time.perf_counter()
-    fn()
-    return time.perf_counter() - t0
+    return timed(fn)   # (name kept: every point is now the trimmed mean of DEFAULT_REPEATS runs)
 
 
 def run(tmp_dir):
@@ -89,6 +85,8 @@ def run(tmp_dir):
             "interleaved_shape": stream_dump_curve(gen_interleaved, INTERLEAVED_NS, "scaling: interleaved shape"),
         },
         "dom_competitors_records_shape": {},
+        "repeats": DEFAULT_REPEATS,
+        "metric": METRIC,
     }
 
     # DOM competitors, records shape only (the realistic one), moderate N

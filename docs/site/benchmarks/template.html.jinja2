@@ -473,7 +473,7 @@ section.major { padding-top: 56px; }
     {% if memory_has_speed %}
     <div class="panel">
       <h4>stream_dump speed vs. input size (log scale, lower is better)</h4>
-      <p class="op-note">Best of 3 timed repeats per process, after one untimed warm-up call.</p>
+      <p class="op-note">Trimmed mean of the timed repeats per process, after one untimed warm-up call.</p>
       <div class="chart-box tall"><canvas id="chart-memory-speed"></canvas></div>
     </div>
     {% endif %}
@@ -548,7 +548,7 @@ section.major { padding-top: 56px; }
   <h2>Parsing messy HTML</h2>
   <p class="lede">
     <code>pygixml.parse_html</code> against the usual Python HTML parsers, on generated pages that
-    are broken the way real pages are. Best-of-N timing, same as everywhere else on this page. In the charts each point is the geometric mean over the three page shapes at that size.
+    are broken the way real pages are. Trimmed-mean timing, same as everywhere else on this page. In the charts each point is the geometric mean over the three page shapes at that size.
   </p>
   {% for op in html_ops %}
   <div class="subsection">
@@ -575,7 +575,7 @@ section.major { padding-top: 56px; }
   <p class="lede">
     <code>{{ cli.commands.pygixml_cli }}</code> against <code>{{ cli.commands.xq }}</code>
     (installed by <code>pip install yq</code>) &mdash; real subprocess invocations end to end,
-    process startup included on both sides, best of {{ cli.repeats }} runs.
+    process startup included on both sides, trimmed mean of {{ cli.repeats }} runs.
   </p>
   {% if cli.summary %}<p class="op-winner">{{ cli.summary | safe }}</p>{% endif %}
 

@@ -144,13 +144,13 @@ add_custom_command(
 add_custom_target(pygixml_bench_sizes DEPENDS "${SIZES_JSON}")
 
 # ----------------------------------------------------------- throughput --
-# Repeats per (library, corpus entry, operation) cell -- best (min) of
-# these is kept. Configurable because "how many repeats is enough" is a
+# Repeats per (library, corpus entry, operation) cell -- the trimmed mean
+# of these is kept (fastest and slowest tenth dropped, see timing.py). Configurable because "how many repeats is enough" is a
 # real tradeoff (noise vs. wall-clock CI time), not something to bake
 # in; 7 is a reasonable default for a quiet machine.
 
-set(PYGIXML_BENCH_REPEATS "7" CACHE STRING
-    "Timed repeats per (library, corpus entry, operation) cell in bench_throughput.py; best (min) is kept")
+set(PYGIXML_BENCH_REPEATS "10" CACHE STRING
+    "Timed repeats per (library, corpus entry, operation) cell in bench_throughput.py and bench_html.py; their trimmed mean is kept")
 
 set(THROUGHPUT_JSON "${RESULTS_DIR}/throughput.json")
 

@@ -5,8 +5,8 @@ package), the closest thing the ecosystem has to a `jq`-for-XML.
 
 Both sides do the same job end to end, as a shell command would run
 it: read an XML file, write JSON, process exit and all -- not an
-in-process function call. Every corpus entry is timed as
-best_of(REPEATS) wall-clock seconds, subprocess startup included on
+in-process function call. Every corpus entry is timed as the
+trimmed mean (timing.py) of REPEATS wall-clock runs, subprocess startup included on
 both sides (real usage pays that cost every invocation too).
 """
 import json
@@ -14,11 +14,13 @@ import subprocess
 import sys
 import time
 
-REPEATS = 5
+from timing import DEFAULT_REPEATS, METRIC, trimmed_mean
+
+REPEATS = DEFAULT_REPEATS
 
 
 def best_of(cmd, repeats=REPEATS):
-    best = None
+    samples = []
     err = None
     for _ in range(repeats):
         t0 = time.perf_counter()
@@ -30,11 +32,10 @@ def best_of(cmd, repeats=REPEATS):
         if r.returncode != 0:
             err = r.stderr.decode(errors="replace")[:300] or f"exit {r.returncode}"
             continue
-        if best is None or dt < best:
-            best = dt
-    if best is None:
+        samples.append(dt)
+    if not samples:
         return None, err or "no successful run"
-    return best, None
+    return trimmed_mean(samples), None
 
 
 def run(manifest_paths, python_exe, xq_bin, repeats=REPEATS):
@@ -59,7 +60,7 @@ def run(manifest_paths, python_exe, xq_bin, repeats=REPEATS):
 
     return {
         "repeats": repeats,
-        "metric": "best (min) wall-clock seconds over repeats, process startup included",
+        "metric": METRIC + ", process startup included",
         "commands": {
             "pygixml_cli": "python -m pygixml jsonify <file>",
             "xq": "xq . <file>",

@@ -118,7 +118,7 @@ manifest shape so every benchmark script treats them identically:
 
 ### Timing
 
-Best (minimum) wall-clock time over 7 repeats per (library, corpus
+Trimmed mean (fastest and slowest tenth dropped) of the wall-clock time over 10 repeats per (library, corpus
 entry, operation) cell: standard practice for micro-benchmarks, since
 it's the closest a single run gets to "no other process happened to
 interrupt this one." Every one of pygixml's conversion layers gets its
@@ -147,7 +147,7 @@ of a Python loop doing it.
 
 ## Tuning
 
-`PYGIXML_BENCH_REPEATS` (CMake cache variable, default `7`): timed
+`PYGIXML_BENCH_REPEATS` (CMake cache variable, default `10`): timed
 repeats per (library, corpus entry, operation) cell in
 `bench_throughput.py`; the best (minimum) of these is kept. Raise it on
 a noisy machine, lower it for a faster iteration loop:
@@ -205,7 +205,7 @@ performance equally, regardless of its absolute size. See
 ## What the report doesn't say (on purpose)
 
 The benchmarks page is the results, not the write-up: it doesn't
-explain how the corpus was built, why timing uses best-of-N, or what
+explain how the corpus was built, why timing uses a trimmed mean, or what
 went wrong along the way: that's this file. The one exception is the
 machine it ran on (CPU model, core count, RAM, OS, Python version),
 which appears in the report's footer via `system_info.py`, since

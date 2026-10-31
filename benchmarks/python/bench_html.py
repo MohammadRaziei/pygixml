@@ -18,7 +18,8 @@ import argparse
 import json
 import random
 import sys
-import time
+
+from timing import DEFAULT_REPEATS, METRIC, timed
 
 SIZES = {"small": 20_000, "medium": 200_000, "large": 2_000_000}
 WORDS = ("alpha beta gamma delta lorem ipsum dolor sit amet parser tree node "
@@ -108,12 +109,7 @@ def _libraries():
 
 
 def _best(fn, arg, repeats):
-    best = float("inf")
-    for _ in range(repeats):
-        t = time.perf_counter()
-        fn(arg)
-        best = min(best, time.perf_counter() - t)
-    return {"available": True, "seconds": best}
+    return {"available": True, "seconds": timed(lambda: fn(arg), repeats)}
 
 
 def run(repeats):
@@ -142,7 +138,7 @@ def run(repeats):
             "html_extract_links": "parse, then collect (href, text) of every <a>",
         },
         "repeats": repeats,
-        "metric": "best (min) wall-clock seconds over repeats",
+        "metric": METRIC,
         "results": results,
     }
 
@@ -150,7 +146,7 @@ def run(repeats):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("output", help="path to write html.json")
-    p.add_argument("--repeats", type=int, default=5)
+    p.add_argument("--repeats", type=int, default=DEFAULT_REPEATS)
     a = p.parse_args()
     out = run(a.repeats)
     with open(a.output, "w", encoding="utf-8") as f:

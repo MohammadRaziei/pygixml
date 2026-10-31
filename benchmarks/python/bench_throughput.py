@@ -63,14 +63,11 @@ slow at another):
                       that's a real, reportable gap, not an oversight.
 
 Each (library, genre, size) cell is repeated REPEATS times (configurable
-via --repeats / PYGIXML_BENCH_REPEATS, default 7) and the
-best (min) wall-clock time is kept -- standard practice for
-micro-benchmarks, since it's the closest single run gets to "no other
-process happened to interrupt this one."
+via --repeats / PYGIXML_BENCH_REPEATS, default 10) and the trimmed mean of
+the wall-clock times is kept (the fastest and slowest tenth dropped; see
+timing.py for why that and not the minimum).
 """
-import gc
 import json
-import time
 
 try:
     from tqdm import tqdm
@@ -78,24 +75,12 @@ except ImportError:
     def tqdm(iterable, **kwargs):
         return iterable
 
-DEFAULT_REPEATS = 7
-
-
-def _best_time(fn, repeats):
-    best = None
-    for _ in range(repeats):
-        gc.collect()
-        t0 = time.perf_counter()
-        fn()
-        dt = time.perf_counter() - t0
-        if best is None or dt < best:
-            best = dt
-    return best
+from timing import DEFAULT_REPEATS, METRIC, timed
 
 
 def _try(label, fn, repeats):
     try:
-        dt = _best_time(fn, repeats)
+        dt = timed(fn, repeats)
         return {"available": True, "seconds": dt}
     except Exception as e:
         return {"available": False, "error": f"{type(e).__name__}: {e}"}
@@ -267,7 +252,7 @@ def run(manifest, repeats=DEFAULT_REPEATS):
             "xml_to_jsonl": "XML in, one JSON object per record out (JSON Lines); needs a uniformly repeated tag",
         },
         "repeats": repeats,
-        "metric": "best (min) wall-clock seconds over repeats",
+        "metric": METRIC,
         "results": results,
     }
 
@@ -284,7 +269,7 @@ if __name__ == "__main__":
     p.add_argument("output", help="path to write results JSON")
     p.add_argument("--repeats", type=int, default=DEFAULT_REPEATS,
                     help=f"timed repeats per (library, corpus entry, operation) cell; "
-                         f"best (min) of these is kept (default: {DEFAULT_REPEATS})")
+                         f"their trimmed mean is kept (default: {DEFAULT_REPEATS})")
     args = p.parse_args()
 
     manifest = []
