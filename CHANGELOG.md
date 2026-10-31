@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `jsonify.stream_dump` is now linear when sibling tags alternate (`a b a b ...`):
+  later siblings used to be spliced into place one at a time, shifting everything
+  written since, so 128,000 alternating pairs took about 140 s; they are now moved
+  next to their tag's first run in one pass when the parent closes (0.3 s for the
+  same input). Output is byte-identical (checked on the test corpus and 1,600
+  fuzzed documents). Extra memory: two integers per non-contiguous sibling.
 - Streaming is faster, output unchanged (byte-identical on the benchmark corpus):
   `jsonify.stream_dump` is 5-10x faster (every append used to flush and seek the
   output file; it now only seeks when it has to patch or splice), `iterparse` /

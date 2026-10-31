@@ -395,8 +395,16 @@ cdef extern from *:
         // tail (like any other write), and defer the actual splice/
         // relocation until close_child() learns where the value ended.
         bool pending_splice     = false;
-        long pending_gap_start  = -1;  // where to relocate the value to
+        long pending_gap_start  = -1;  // (in-memory editor only) where to relocate the value to
         long pending_value_start = -1; // where the (comma+)value append began
+        // Later, non-contiguous occurrences are NOT spliced into place one by
+        // one (each splice shifts everything written since: quadratic when two
+        // tags alternate). They stay where they were appended, recorded here
+        // as byte ranges [start, end), and close_level() moves them all next
+        // to this tag's first run in a single pass.
+        std::vector<std::pair<long, long> > chunks;
+        long gap      = -1;     // where they go: the end of the first run
+        bool in_chunk = false;  // the most recent value belongs to chunks.back()
     };
 
     struct PJLevel {
@@ -563,6 +571,87 @@ cdef extern from *:
                 fwrite(new_content.data(), 1, new_content.size(), fp);
                 tail_pos -= shrink;
             }
+            seek_tail();
+            return true;
+        }
+
+        // One insertion of the single-pass rebuild below: at `pos`, first the
+        // byte ranges in `chunks` (may be NULL), then the text `tail`.
+        struct Insert {
+            long pos;
+            const std::vector<std::pair<long, long> >* chunks;
+            std::string tail;
+        };
+
+        // Rewrite [first changed offset, tail_pos): the `removed` ranges
+        // (sorted by start, disjoint) are taken out of where they were
+        // appended, and each Insert (sorted by pos) puts its chunks and text
+        // in at `pos`. Every byte is read once and written once: linear,
+        // however much the tags interleaved. The new content is built in an
+        // anonymous temp file and then copied back over the region.
+        bool rebuild(const std::vector<Insert>& ins,
+                     const std::vector<std::pair<long, long> >& removed) {
+            long r0 = tail_pos;
+            for (size_t i = 0; i < ins.size(); ++i) if (ins[i].pos < r0) r0 = ins[i].pos;
+            for (size_t i = 0; i < removed.size(); ++i) if (removed[i].first < r0) r0 = removed[i].first;
+
+            FILE* tmp = tmpfile();
+            if (!tmp) return false;
+            std::vector<char> buf(PYGIXML_SHIFT_BUF);
+            bool ok = true;
+
+            // fp[a, b) -> tmp
+            auto copy_raw = [&](long a, long b) {
+                while (ok && a < b) {
+                    long n = (b - a < (long)buf.size()) ? (b - a) : (long)buf.size();
+                    seek(a);
+                    if ((long)fread(buf.data(), 1, (size_t)n, fp) != n) { ok = false; break; }
+                    if ((long)fwrite(buf.data(), 1, (size_t)n, tmp) != n) { ok = false; break; }
+                    a += n;
+                }
+            };
+            // same, leaving out the removed ranges (a only moves forward)
+            size_t ri = 0;
+            auto copy_skipping = [&](long a, long b) {
+                while (ok && a < b) {
+                    while (ri < removed.size() && removed[ri].second <= a) ++ri;
+                    if (ri < removed.size() && removed[ri].first <= a) { a = removed[ri].second; continue; }
+                    long stop = b;
+                    if (ri < removed.size() && removed[ri].first < b) stop = removed[ri].first;
+                    copy_raw(a, stop);
+                    a = stop;
+                }
+            };
+
+            long cur = r0;
+            for (size_t i = 0; ok && i < ins.size(); ++i) {
+                copy_skipping(cur, ins[i].pos);
+                if (ins[i].pos > cur) cur = ins[i].pos;
+                if (ins[i].chunks) {
+                    for (size_t k = 0; ok && k < ins[i].chunks->size(); ++k)
+                        copy_raw((*ins[i].chunks)[k].first, (*ins[i].chunks)[k].second);
+                }
+                if (ok && fwrite(ins[i].tail.data(), 1, ins[i].tail.size(), tmp) != ins[i].tail.size()) ok = false;
+            }
+            if (ok) copy_skipping(cur, tail_pos);
+
+            long newlen = 0;
+            if (ok) {
+                fflush(tmp);
+                newlen = ftell(tmp);
+                rewind(tmp);
+                seek(r0);
+                long left = newlen;
+                while (left > 0) {
+                    long n = (left < (long)buf.size()) ? left : (long)buf.size();
+                    if ((long)fread(buf.data(), 1, (size_t)n, tmp) != n) { ok = false; break; }
+                    if ((long)fwrite(buf.data(), 1, (size_t)n, fp) != n) { ok = false; break; }
+                    left -= n;
+                }
+            }
+            fclose(tmp);
+            if (!ok) return false;
+            tail_pos = r0 + newlen;
             seek_tail();
             return true;
         }
@@ -775,6 +864,10 @@ cdef extern from *:
                 if (&other == &slot) continue;
                 if (other.bracket_pos >= old_start) other.bracket_pos += shift;
                 if (other.last_value_end >= old_start) other.last_value_end += shift;
+                if (other.gap >= old_start) other.gap += shift;
+                for (auto& c : other.chunks) {
+                    if (c.first >= old_start) { c.first += shift; c.second += shift; }
+                }
             }
             slot.is_list = true;
             return shift;
@@ -856,7 +949,7 @@ cdef extern from *:
                 slot.last_value_end += open_bracket(parent, slot);
             }
             slot.pending_splice = true;
-            slot.pending_gap_start = slot.last_value_end;
+            if (!slot.in_chunk) slot.gap = slot.last_value_end;   // end of the first run
             slot.pending_value_start = ed.tail_pos;
             ed.write_at_tail(',');
             ed.write_at_tail(nl);
@@ -876,44 +969,22 @@ cdef extern from *:
 
             if (!slot.pending_splice) {
                 slot.last_value_end = ed.tail_pos;
+                if (slot.in_chunk) slot.chunks.back().second = ed.tail_pos;  // grew by one value
                 return;
             }
 
             // The ',' + new value were appended at the true tail (from
-            // pending_value_start to the current tail). Relocate that
-            // whole blob into the gap right after this tag's previous
-            // value (pending_gap_start), then fix up every other child
-            // slot of this parent whose offsets point at or after the
-            // gap -- they all just shifted forward by the blob's length.
-            long blob_start = slot.pending_value_start;
-            long blob_end   = ed.tail_pos;
-            long blob_len   = blob_end - blob_start;
-            long gap_start  = slot.pending_gap_start;
-
-            std::vector<char> blob(blob_len);
-            ed.seek(blob_start);
-            size_t nrd = fread(blob.data(), 1, (size_t)blob_len, fout);
-            (void)nrd;  // best-effort; overall ok/errbuf path covers I/O
-                        // failures elsewhere in this function
-            // Roll the tail back to before the blob -- it will be
-            // re-appended (at its final, correct position) by
-            // splice_insert below.
-            ed.tail_pos = blob_start;
-
-            ed.splice_insert(gap_start, blob.data(), blob.size());
-            long shift = blob_len;
-
-            for (auto& kv : parent.children) {
-                PJChildSlot& other = kv.second;
-                if (&other == &slot && !other.pending_splice) continue;
-                if (&other == &slot) continue;  // fixed explicitly below
-                if (other.bracket_pos >= gap_start) other.bracket_pos += shift;
-                if (other.last_value_end >= gap_start) other.last_value_end += shift;
-            }
-
+            // pending_value_start to here). Leave them there and remember
+            // the range: close_level() moves every such range next to its
+            // tag's first run in one pass. (Splicing each one into the gap
+            // right away shifted everything written since, once per value.)
+            slot.chunks.push_back(std::make_pair(slot.pending_value_start, ed.tail_pos));
+            slot.in_chunk = true;
             slot.pending_splice = false;
-            slot.last_value_end = gap_start + shift;
+            slot.last_value_end = ed.tail_pos;
         };
+
+        bool rebuild_failed = false;   // set by close_level() if the reorder hit an I/O error
 
         // Closes out a level: writes any trailing text field, closes any
         // child tags that ended up as lists (']'), and writes the final
@@ -944,10 +1015,40 @@ cdef extern from *:
             // ANOTHER list whose content comes later in the file -- so we
             // must process strictly left-to-right and shift the remaining
             // pending offsets by however many bytes each splice inserted.
+            bool any_chunks = false;
+            for (auto& kv : lv.children) if (!kv.second.chunks.empty()) { any_chunks = true; break; }
+
             std::vector<std::pair<long, std::string>> pending_closes;
-            for (auto& kv : lv.children) {
-                if (kv.second.is_list) {
-                    pending_closes.push_back({kv.second.last_value_end, kv.first});
+            if (any_chunks) {
+                // Some tag interleaved with another: move every deferred value next
+                // to its first run and insert every ']' in ONE pass over the object.
+                const std::string close_seq = nl + pad_for(lv.depth + 1) + "]";
+                std::vector<PJFileEditor::Insert> ins;
+                std::vector<std::pair<long, long> > removed;
+                for (auto& kv : lv.children) {
+                    PJChildSlot& sl = kv.second;
+                    if (!sl.is_list) continue;
+                    PJFileEditor::Insert in;
+                    if (sl.chunks.empty()) {
+                        in.pos = sl.last_value_end;
+                        in.chunks = NULL;
+                    } else {
+                        in.pos = sl.gap;
+                        in.chunks = &sl.chunks;
+                        removed.insert(removed.end(), sl.chunks.begin(), sl.chunks.end());
+                    }
+                    in.tail = close_seq;
+                    ins.push_back(in);
+                }
+                std::stable_sort(ins.begin(), ins.end(),
+                    [](const PJFileEditor::Insert& a, const PJFileEditor::Insert& b) { return a.pos < b.pos; });
+                std::sort(removed.begin(), removed.end());
+                if (!ed.rebuild(ins, removed)) rebuild_failed = true;
+            } else {
+                for (auto& kv : lv.children) {
+                    if (kv.second.is_list) {
+                        pending_closes.push_back({kv.second.last_value_end, kv.first});
+                    }
                 }
             }
             std::sort(pending_closes.begin(), pending_closes.end());
@@ -1073,6 +1174,7 @@ cdef extern from *:
                         // document root -- close its own object, then
                         // close the outer wrapper opened at ELEMSTART.
                         close_level(finished, 1);
+                        if (rebuild_failed) { snprintf(errbuf, errbuf_size, "cannot reorder interleaved siblings in %s", json_path); ok = false; break; }
                         ed.write_at_tail(nl);
                         ed.write_at_tail('}');
                     } else {
@@ -1083,6 +1185,7 @@ cdef extern from *:
                         // nesting-stack size does not know about that,
                         // so it must not be used here.
                         close_level(finished, finished.depth);
+                        if (rebuild_failed) { snprintf(errbuf, errbuf_size, "cannot reorder interleaved siblings in %s", json_path); ok = false; break; }
                         close_child(parent, finished.tag);
                     }
                     break;
@@ -1887,17 +1990,16 @@ def jsonify_stream_dump(
       case when same-tag siblings are adjacent in the XML, and it never
       needs to move any bytes around.
     * If XML interleaves a different child in between two same-tag
-      siblings, the engine "splices": it shifts just the bytes written
-      in between forward (using a small fixed-size buffer, in chunks) to
-      open a gap for the new sibling, then continues. This costs time
-      proportional to how much was interleaved, not to the file size,
-      and is the only case where any data movement happens at all.
+      siblings, the later siblings are left where they were written and
+      their byte ranges remembered; when the parent element closes, one
+      pass over that element moves every range next to its tag's first
+      run (using a temporary file). Time stays linear however much the
+      tags alternate. The only extra memory is two integers per
+      *non-contiguous* sibling (the remembered ranges), not the data.
 
-    Because of that splice fallback, worst-case time can exceed
-    :func:`stream_jsonl`'s for documents where repeated sibling
-    tags are heavily interleaved with unrelated children: for typical
-    record-oriented XML (where ``<tag>`` repeats appear consecutively)
-    this never triggers and the function runs at full streaming speed.
+    For typical record-oriented XML (where ``<tag>`` repeats appear
+    consecutively) none of this triggers and the function runs at full
+    streaming speed.
 
     Parameters
     ----------
