@@ -1167,7 +1167,7 @@ cdef extern from *:
                     break;
 
                 case YXML_ELEMEND: {
-                    PJLevel finished = levels.back();
+                    PJLevel finished = std::move(levels.back());   // not a copy of its child map
                     levels.pop_back();
 
                     if (levels.empty()) {
