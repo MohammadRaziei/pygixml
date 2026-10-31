@@ -48,14 +48,14 @@
     "filename": "yq-4.4.5-py3-none-any.whl",
     "dependencies": [
       {
-        "name": "xmltodict",
-        "version": "1.0.4",
-        "size": "13.3 KB"
-      },
-      {
         "name": "argcomplete",
         "version": "3.7.2",
         "size": "42.3 KB"
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.3",
+        "size": "788.9 KB"
       },
       {
         "name": "tomlkit",
@@ -63,9 +63,9 @@
         "size": "51.0 KB"
       },
       {
-        "name": "pyyaml",
-        "version": "6.0.3",
-        "size": "788.9 KB"
+        "name": "xmltodict",
+        "version": "1.0.4",
+        "size": "13.3 KB"
       }
     ],
     "capability": "cli: jq-style query/convert (installs the `xq` XML binary used below)"

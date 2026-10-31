@@ -10,21 +10,21 @@
           "library": "pygixml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 16.609375
+          "peak_rss_mb": 16.62890625
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 18.6484375
+          "peak_rss_mb": 18.90625
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 13.44921875
+          "peak_rss_mb": 13.4296875
         }
       }
     },
@@ -38,21 +38,21 @@
           "library": "pygixml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 18.5625
+          "peak_rss_mb": 18.79296875
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 21.2265625
+          "peak_rss_mb": 21.1875
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 15.265625
+          "peak_rss_mb": 15.2265625
         }
       }
     },
@@ -66,21 +66,21 @@
           "library": "pygixml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 36.8671875
+          "peak_rss_mb": 36.9375
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 42.9921875
+          "peak_rss_mb": 43.44140625
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 33.52734375
+          "peak_rss_mb": 34.05078125
         }
       }
     },
@@ -94,21 +94,21 @@
           "library": "pygixml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 16.93359375
+          "peak_rss_mb": 16.69140625
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 19.10546875
+          "peak_rss_mb": 19.22265625
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 13.80078125
+          "peak_rss_mb": 13.7421875
         }
       }
     },
@@ -122,21 +122,21 @@
           "library": "pygixml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 19.609375
+          "peak_rss_mb": 19.58203125
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 23.2109375
+          "peak_rss_mb": 23.51171875
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 17.88671875
+          "peak_rss_mb": 17.828125
         }
       }
     },
@@ -150,21 +150,21 @@
           "library": "pygixml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 46.0078125
+          "peak_rss_mb": 46.25
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 67.8671875
+          "peak_rss_mb": 68.0390625
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 58.9140625
+          "peak_rss_mb": 58.71875
         }
       }
     },
@@ -178,21 +178,21 @@
           "library": "pygixml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 16.7578125
+          "peak_rss_mb": 16.41015625
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 18.73828125
+          "peak_rss_mb": 18.86328125
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 13.59765625
+          "peak_rss_mb": 13.42578125
         }
       }
     },
@@ -206,21 +206,21 @@
           "library": "pygixml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 18.37109375
+          "peak_rss_mb": 18.33984375
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 21.46875
+          "peak_rss_mb": 21.5703125
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 15.296875
+          "peak_rss_mb": 15.35546875
         }
       }
     },
@@ -234,21 +234,21 @@
           "library": "pygixml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 34.62109375
+          "peak_rss_mb": 34.65625
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 46.60546875
+          "peak_rss_mb": 46.453125
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 33.98828125
+          "peak_rss_mb": 34.1328125
         }
       }
     },
@@ -262,21 +262,21 @@
           "library": "pygixml",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 17.796875
+          "peak_rss_mb": 18.0
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 20.33984375
+          "peak_rss_mb": 20.4296875
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 16.11328125
+          "peak_rss_mb": 16.48828125
         }
       }
     },
@@ -290,21 +290,21 @@
           "library": "pygixml",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 17.33984375
+          "peak_rss_mb": 17.2734375
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 19.66796875
+          "peak_rss_mb": 19.83984375
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 14.0390625
+          "peak_rss_mb": 14.01953125
         }
       }
     },
@@ -318,21 +318,21 @@
           "library": "pygixml",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 17.45703125
+          "peak_rss_mb": 17.38671875
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 19.97265625
+          "peak_rss_mb": 19.94921875
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 14.453125
+          "peak_rss_mb": 14.43359375
         }
       }
     },
@@ -346,21 +346,21 @@
           "library": "pygixml",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 17.94921875
+          "peak_rss_mb": 17.76953125
         },
         "lxml": {
           "operation": "parse",
           "library": "lxml",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 20.33984375
+          "peak_rss_mb": 20.484375
         },
         "elementtree": {
           "operation": "parse",
           "library": "elementtree",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 14.8984375
+          "peak_rss_mb": 14.83984375
         }
       }
     }
@@ -376,21 +376,21 @@
           "library": "pygixml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 16.75390625
+          "peak_rss_mb": 16.9765625
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 18.953125
+          "peak_rss_mb": 18.9453125
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 13.50390625
+          "peak_rss_mb": 13.5546875
         }
       }
     },
@@ -404,21 +404,21 @@
           "library": "pygixml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 17.38671875
+          "peak_rss_mb": 17.37109375
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 19.51171875
+          "peak_rss_mb": 19.9140625
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 14.05859375
+          "peak_rss_mb": 13.97265625
         }
       }
     },
@@ -432,21 +432,21 @@
           "library": "pygixml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 23.1328125
+          "peak_rss_mb": 23.33984375
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 28.65234375
+          "peak_rss_mb": 28.453125
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 20.60546875
+          "peak_rss_mb": 20.52734375
         }
       }
     },
@@ -460,21 +460,21 @@
           "library": "pygixml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 17.19140625
+          "peak_rss_mb": 17.0859375
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 19.171875
+          "peak_rss_mb": 19.34375
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 13.3984375
+          "peak_rss_mb": 13.72265625
         }
       }
     },
@@ -488,21 +488,21 @@
           "library": "pygixml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 18.2890625
+          "peak_rss_mb": 17.84765625
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 20.20703125
+          "peak_rss_mb": 20.4453125
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 14.37109375
+          "peak_rss_mb": 14.3828125
         }
       }
     },
@@ -516,21 +516,21 @@
           "library": "pygixml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 24.921875
+          "peak_rss_mb": 24.73828125
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 29.8203125
+          "peak_rss_mb": 30.61328125
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 21.67578125
+          "peak_rss_mb": 22.078125
         }
       }
     },
@@ -544,21 +544,21 @@
           "library": "pygixml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 17.08203125
+          "peak_rss_mb": 17.140625
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 19.1171875
+          "peak_rss_mb": 19.22265625
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 13.5625
+          "peak_rss_mb": 13.42578125
         }
       }
     },
@@ -572,21 +572,21 @@
           "library": "pygixml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 17.81640625
+          "peak_rss_mb": 17.76171875
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 19.640625
+          "peak_rss_mb": 20.05078125
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 14.0625
+          "peak_rss_mb": 13.9765625
         }
       }
     },
@@ -600,21 +600,21 @@
           "library": "pygixml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 21.1328125
+          "peak_rss_mb": 21.0078125
         },
         "lxml": {
           "operation": "iterparse",
           "library": "lxml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 26.6640625
+          "peak_rss_mb": 27.0078125
         },
         "elementtree": {
           "operation": "iterparse",
           "library": "elementtree",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 18.53125
+          "peak_rss_mb": 18.4140625
         }
       }
     }
@@ -630,14 +630,14 @@
           "library": "pygixml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 17.03515625
+          "peak_rss_mb": 17.0625
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 22.87109375
+          "peak_rss_mb": 22.859375
         }
       }
     },
@@ -651,14 +651,14 @@
           "library": "pygixml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 19.89453125
+          "peak_rss_mb": 19.98046875
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 24.70703125
+          "peak_rss_mb": 24.8828125
         }
       }
     },
@@ -672,7 +672,7 @@
           "library": "pygixml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 47.12890625
+          "peak_rss_mb": 47.69140625
         },
         "xmltodict": {
           "operation": "dict_convert",
@@ -693,14 +693,14 @@
           "library": "pygixml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 17.375
+          "peak_rss_mb": 17.39453125
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 23.015625
+          "peak_rss_mb": 22.80859375
         }
       }
     },
@@ -714,14 +714,14 @@
           "library": "pygixml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 23.08203125
+          "peak_rss_mb": 23.55078125
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 27.39453125
+          "peak_rss_mb": 27.44921875
         }
       }
     },
@@ -735,14 +735,14 @@
           "library": "pygixml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 79.5078125
+          "peak_rss_mb": 79.6796875
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 65.9765625
+          "peak_rss_mb": 65.96484375
         }
       }
     },
@@ -756,14 +756,14 @@
           "library": "pygixml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 17.08203125
+          "peak_rss_mb": 17.2890625
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 23.203125
+          "peak_rss_mb": 23.11328125
         }
       }
     },
@@ -777,14 +777,14 @@
           "library": "pygixml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 21.00390625
+          "peak_rss_mb": 21.13671875
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 25.01953125
+          "peak_rss_mb": 25.0625
         }
       }
     },
@@ -798,14 +798,14 @@
           "library": "pygixml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 51.27734375
+          "peak_rss_mb": 51.140625
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 41.5859375
+          "peak_rss_mb": 42.05078125
         }
       }
     },
@@ -819,14 +819,14 @@
           "library": "pygixml",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 18.73828125
+          "peak_rss_mb": 18.90234375
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 25.4296875
+          "peak_rss_mb": 25.44921875
         }
       }
     },
@@ -840,14 +840,14 @@
           "library": "pygixml",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 17.828125
+          "peak_rss_mb": 18.2421875
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 23.734375
+          "peak_rss_mb": 24.00390625
         }
       }
     },
@@ -861,14 +861,14 @@
           "library": "pygixml",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 18.31640625
+          "peak_rss_mb": 18.10546875
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 24.3203125
+          "peak_rss_mb": 24.60546875
         }
       }
     },
@@ -882,14 +882,14 @@
           "library": "pygixml",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 18.65625
+          "peak_rss_mb": 19.0859375
         },
         "xmltodict": {
           "operation": "dict_convert",
           "library": "xmltodict",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 24.7578125
+          "peak_rss_mb": 24.9296875
         }
       }
     }
@@ -905,14 +905,14 @@
           "library": "pygixml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 16.87109375
+          "peak_rss_mb": 16.93359375
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 22.87109375
+          "peak_rss_mb": 22.97265625
         }
       }
     },
@@ -926,14 +926,14 @@
           "library": "pygixml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 17.66015625
+          "peak_rss_mb": 17.64453125
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 23.5546875
+          "peak_rss_mb": 23.95703125
         }
       }
     },
@@ -947,14 +947,14 @@
           "library": "pygixml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 23.328125
+          "peak_rss_mb": 23.14453125
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 30.50390625
+          "peak_rss_mb": 31.328125
         }
       }
     },
@@ -968,14 +968,14 @@
           "library": "pygixml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 17.171875
+          "peak_rss_mb": 16.9921875
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 22.95703125
+          "peak_rss_mb": 23.0390625
         }
       }
     },
@@ -989,14 +989,14 @@
           "library": "pygixml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 17.796875
+          "peak_rss_mb": 18.08984375
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 24.19140625
+          "peak_rss_mb": 23.9765625
         }
       }
     },
@@ -1010,14 +1010,14 @@
           "library": "pygixml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 24.70703125
+          "peak_rss_mb": 24.83984375
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 32.96875
+          "peak_rss_mb": 32.83984375
         }
       }
     },
@@ -1031,14 +1031,14 @@
           "library": "pygixml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 16.859375
+          "peak_rss_mb": 17.0390625
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 22.39453125
+          "peak_rss_mb": 22.99609375
         }
       }
     },
@@ -1052,14 +1052,14 @@
           "library": "pygixml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 17.71875
+          "peak_rss_mb": 17.875
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 23.28515625
+          "peak_rss_mb": 23.37109375
         }
       }
     },
@@ -1073,14 +1073,14 @@
           "library": "pygixml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 21.26953125
+          "peak_rss_mb": 21.29296875
         },
         "xmltodict": {
           "operation": "dict_stream",
           "library": "xmltodict",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 27.5390625
+          "peak_rss_mb": 27.578125
         }
       }
     }
@@ -1096,14 +1096,14 @@
           "library": "pygixml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 16.9609375
+          "peak_rss_mb": 16.625
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 19.6015625
+          "peak_rss_mb": 19.9609375
         }
       }
     },
@@ -1117,14 +1117,14 @@
           "library": "pygixml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 18.66796875
+          "peak_rss_mb": 18.98046875
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 21.44140625
+          "peak_rss_mb": 22.171875
         }
       }
     },
@@ -1138,14 +1138,14 @@
           "library": "pygixml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 36.89453125
+          "peak_rss_mb": 37.36328125
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 43.6796875
+          "peak_rss_mb": 44.0546875
         }
       }
     },
@@ -1159,14 +1159,14 @@
           "library": "pygixml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 17.0625
+          "peak_rss_mb": 17.20703125
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 20.03515625
+          "peak_rss_mb": 20.1953125
         }
       }
     },
@@ -1180,14 +1180,14 @@
           "library": "pygixml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 19.765625
+          "peak_rss_mb": 19.1796875
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 24.37109375
+          "peak_rss_mb": 24.40234375
         }
       }
     },
@@ -1201,14 +1201,14 @@
           "library": "pygixml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 46.05859375
+          "peak_rss_mb": 46.41015625
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 68.45703125
+          "peak_rss_mb": 68.98828125
         }
       }
     },
@@ -1222,14 +1222,14 @@
           "library": "pygixml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 16.4453125
+          "peak_rss_mb": 16.85546875
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 19.52734375
+          "peak_rss_mb": 19.6328125
         }
       }
     },
@@ -1243,14 +1243,14 @@
           "library": "pygixml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 18.640625
+          "peak_rss_mb": 18.29296875
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 22.49609375
+          "peak_rss_mb": 22.3125
         }
       }
     },
@@ -1264,14 +1264,14 @@
           "library": "pygixml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 34.94921875
+          "peak_rss_mb": 35.0625
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 47.37890625
+          "peak_rss_mb": 47.62890625
         }
       }
     },
@@ -1292,7 +1292,7 @@
           "library": "lxml",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 21.28125
+          "peak_rss_mb": 21.21875
         }
       }
     },
@@ -1306,14 +1306,14 @@
           "library": "pygixml",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 17.296875
+          "peak_rss_mb": 17.609375
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 20.33203125
+          "peak_rss_mb": 20.375
         }
       }
     },
@@ -1327,14 +1327,14 @@
           "library": "pygixml",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 17.5859375
+          "peak_rss_mb": 17.39453125
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 20.39453125
+          "peak_rss_mb": 20.85546875
         }
       }
     },
@@ -1348,14 +1348,14 @@
           "library": "pygixml",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 17.79296875
+          "peak_rss_mb": 18.09765625
         },
         "lxml": {
           "operation": "to_object",
           "library": "lxml",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 21.23046875
+          "peak_rss_mb": 21.12109375
         }
       }
     }
@@ -1371,21 +1371,21 @@
           "library": "pygixml",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 16.87890625
+          "peak_rss_mb": 17.1484375
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 22.8671875
+          "peak_rss_mb": 23.2421875
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 32122,
           "available": true,
-          "peak_rss_mb": 18.7734375
+          "peak_rss_mb": 19.21875
         }
       }
     },
@@ -1399,21 +1399,21 @@
           "library": "pygixml",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 19.4453125
+          "peak_rss_mb": 19.72265625
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 24.62109375
+          "peak_rss_mb": 24.70703125
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 322067,
           "available": true,
-          "peak_rss_mb": 22.5625
+          "peak_rss_mb": 22.78515625
         }
       }
     },
@@ -1427,21 +1427,21 @@
           "library": "pygixml",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 44.69140625
+          "peak_rss_mb": 44.5703125
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 44.51953125
+          "peak_rss_mb": 44.57421875
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 3249652,
           "available": true,
-          "peak_rss_mb": 58.4296875
+          "peak_rss_mb": 58.578125
         }
       }
     },
@@ -1455,21 +1455,21 @@
           "library": "pygixml",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 17.12109375
+          "peak_rss_mb": 17.2578125
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 22.9453125
+          "peak_rss_mb": 23.3515625
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 39123,
           "available": true,
-          "peak_rss_mb": 19.32421875
+          "peak_rss_mb": 19.5390625
         }
       }
     },
@@ -1483,21 +1483,21 @@
           "library": "pygixml",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 20.92578125
+          "peak_rss_mb": 20.765625
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 27.46484375
+          "peak_rss_mb": 27.73828125
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 389019,
           "available": true,
-          "peak_rss_mb": 26.25390625
+          "peak_rss_mb": 26.50390625
         }
       }
     },
@@ -1511,21 +1511,21 @@
           "library": "pygixml",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 54.9765625
+          "peak_rss_mb": 55.30078125
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 71.02734375
+          "peak_rss_mb": 71.11328125
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 3901895,
           "available": true,
-          "peak_rss_mb": 87.42578125
+          "peak_rss_mb": 87.69140625
         }
       }
     },
@@ -1539,21 +1539,21 @@
           "library": "pygixml",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 16.796875
+          "peak_rss_mb": 17.09375
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 22.9921875
+          "peak_rss_mb": 23.1875
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 19035,
           "available": true,
-          "peak_rss_mb": 19.2578125
+          "peak_rss_mb": 18.96484375
         }
       }
     },
@@ -1567,21 +1567,21 @@
           "library": "pygixml",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 19.0546875
+          "peak_rss_mb": 18.90234375
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 24.54296875
+          "peak_rss_mb": 24.4921875
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 194739,
           "available": true,
-          "peak_rss_mb": 23.99609375
+          "peak_rss_mb": 24.15234375
         }
       }
     },
@@ -1595,21 +1595,21 @@
           "library": "pygixml",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 38.9921875
+          "peak_rss_mb": 38.57421875
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 41.46484375
+          "peak_rss_mb": 41.98046875
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 1987163,
           "available": true,
-          "peak_rss_mb": 68.84375
+          "peak_rss_mb": 69.1015625
         }
       }
     },
@@ -1623,21 +1623,21 @@
           "library": "pygixml",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 18.23046875
+          "peak_rss_mb": 17.90625
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 25.2265625
+          "peak_rss_mb": 25.3359375
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 170298,
           "available": true,
-          "peak_rss_mb": 21.296875
+          "peak_rss_mb": 21.1015625
         }
       }
     },
@@ -1651,21 +1651,21 @@
           "library": "pygixml",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 17.765625
+          "peak_rss_mb": 17.98828125
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 23.74609375
+          "peak_rss_mb": 23.78515625
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 123181,
           "available": true,
-          "peak_rss_mb": 20.11328125
+          "peak_rss_mb": 20.02734375
         }
       }
     },
@@ -1679,21 +1679,21 @@
           "library": "pygixml",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 18.28125
+          "peak_rss_mb": 18.6875
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 24.33203125
+          "peak_rss_mb": 24.48828125
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 189495,
           "available": true,
-          "peak_rss_mb": 19.90625
+          "peak_rss_mb": 20.23828125
         }
       }
     },
@@ -1707,21 +1707,21 @@
           "library": "pygixml",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 19.48828125
+          "peak_rss_mb": 19.21484375
         },
         "xmltodict": {
           "operation": "xml_to_json",
           "library": "xmltodict",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 24.9453125
+          "peak_rss_mb": 25.140625
         },
         "xmljson": {
           "operation": "xml_to_json",
           "library": "xmljson",
           "bytes": 287724,
           "available": true,
-          "peak_rss_mb": 20.62109375
+          "peak_rss_mb": 20.81640625
         }
       }
     }

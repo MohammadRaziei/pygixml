@@ -7,32 +7,32 @@
         "n": 5000,
         "bytes": 989889,
         "available": true,
-        "peak_rss_mb": 42.23828125,
-        "seconds": 0.07127953297458589
+        "peak_rss_mb": 43.30078125,
+        "seconds": 0.07238716912979726
       },
       {
         "approach": "lxml_plus_xmljson",
         "n": 20000,
         "bytes": 4014985,
         "available": true,
-        "peak_rss_mb": 114.0703125,
-        "seconds": 0.30331935099093243
+        "peak_rss_mb": 114.5234375,
+        "seconds": 0.3027247365025687
       },
       {
         "approach": "lxml_plus_xmljson",
         "n": 80000,
         "bytes": 16195094,
         "available": true,
-        "peak_rss_mb": 413.67578125,
-        "seconds": 1.2115202220156789
+        "peak_rss_mb": 414.23046875,
+        "seconds": 1.2400332510005683
       },
       {
         "approach": "lxml_plus_xmljson",
         "n": 320000,
         "bytes": 65761981,
         "available": true,
-        "peak_rss_mb": 1539.04296875,
-        "seconds": 5.663460748968646
+        "peak_rss_mb": 1546.70703125,
+        "seconds": 5.22615714125277
       }
     ]
   },
@@ -44,32 +44,32 @@
         "n": 5000,
         "bytes": 989889,
         "available": true,
-        "peak_rss_mb": 26.84765625,
-        "seconds": 0.007771184958983213
+        "peak_rss_mb": 26.8671875,
+        "seconds": 0.007859593744797166
       },
       {
         "approach": "pygixml_dom",
         "n": 20000,
         "bytes": 4014985,
         "available": true,
-        "peak_rss_mb": 57.375,
-        "seconds": 0.03211606101831421
+        "peak_rss_mb": 57.421875,
+        "seconds": 0.03509829787071794
       },
       {
         "approach": "pygixml_dom",
         "n": 80000,
         "bytes": 16195094,
         "available": true,
-        "peak_rss_mb": 179.6328125,
-        "seconds": 0.13212500396184623
+        "peak_rss_mb": 179.84765625,
+        "seconds": 0.1372908317571273
       },
       {
         "approach": "pygixml_dom",
         "n": 320000,
         "bytes": 65761981,
         "available": true,
-        "peak_rss_mb": 627.9453125,
-        "seconds": 0.6400817759567872
+        "peak_rss_mb": 628.19921875,
+        "seconds": 0.6190352618723409
       }
     ]
   },
@@ -81,32 +81,32 @@
         "n": 5000,
         "bytes": 989889,
         "available": true,
-        "peak_rss_mb": 16.2578125,
-        "seconds": 0.17037312302272767
+        "peak_rss_mb": 16.66796875,
+        "seconds": 0.16236380513146287
       },
       {
         "approach": "pygixml_stream_dump",
         "n": 20000,
         "bytes": 4014985,
         "available": true,
-        "peak_rss_mb": 16.65234375,
-        "seconds": 0.6844155350117944
+        "peak_rss_mb": 16.48828125,
+        "seconds": 0.6743744707491715
       },
       {
         "approach": "pygixml_stream_dump",
         "n": 80000,
         "bytes": 16195094,
         "available": true,
-        "peak_rss_mb": 16.6484375,
-        "seconds": 2.6789976149448194
+        "peak_rss_mb": 16.6015625,
+        "seconds": 2.797210323617037
       },
       {
         "approach": "pygixml_stream_dump",
         "n": 320000,
         "bytes": 65761981,
         "available": true,
-        "peak_rss_mb": 16.30859375,
-        "seconds": 11.8985508409678
+        "peak_rss_mb": 16.65234375,
+        "seconds": 10.830582070375385
       }
     ]
   },
@@ -118,32 +118,32 @@
         "n": 5000,
         "bytes": 989889,
         "available": true,
-        "peak_rss_mb": 31.49609375,
-        "seconds": 0.06445587700000033
+        "peak_rss_mb": 31.9609375,
+        "seconds": 0.0653758703629137
       },
       {
         "approach": "xmltodict",
         "n": 20000,
         "bytes": 4014985,
         "available": true,
-        "peak_rss_mb": 61.109375,
-        "seconds": 0.2608211790211499
+        "peak_rss_mb": 61.53515625,
+        "seconds": 0.26796746462059673
       },
       {
         "approach": "xmltodict",
         "n": 80000,
         "bytes": 16195094,
         "available": true,
-        "peak_rss_mb": 155.66796875,
-        "seconds": 1.1329421600094065
+        "peak_rss_mb": 155.6640625,
+        "seconds": 1.1598934867288335
       },
       {
         "approach": "xmltodict",
         "n": 320000,
         "bytes": 65761981,
         "available": true,
-        "peak_rss_mb": 552.953125,
-        "seconds": 5.206581277016085
+        "peak_rss_mb": 553.1640625,
+        "seconds": 5.683493416625424
       }
     ]
   }
