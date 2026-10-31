@@ -21,6 +21,7 @@ the log-log chart shows that honestly.
 import argparse
 import datetime
 import json
+import math
 import os
 
 from jinja2 import Environment, FileSystemLoader
@@ -422,14 +423,6 @@ OP_META = [
 ]
 
 
-# Chart.js labels every 1..9 x 10^n on a log axis and the labels collide
-# ("0.90.00"); keep 1, 2 and 5 of each decade.
-_LOG_TICKS_JS = """function (v) {
-  var m = v / Math.pow(10, Math.floor(Math.log10(v)));
-  return [1, 2, 5].some(function (k) { return Math.abs(m - k) < 1e-6; }) ? String(Number(v.toPrecision(2))) : '';
-}"""
-
-
 HTML_OP_META = [
     {
         "key": "html_parse",
@@ -470,7 +463,31 @@ def _fmt_ms(x):
     return f"{x:.1f}ms"
 
 
-def _build_throughput_section(throughput, throughput_memory, op_meta=None):
+def _collapse_sizes(points):
+    """One point per size label: mean x, geometric mean y. For corpora whose genres
+    share the same sizes (the HTML pages), joining every entry in x order would draw
+    vertical zigzags between genres of the same size."""
+    groups = {}
+    for p in points:
+        groups.setdefault(p["size"], []).append(p)
+    out = []
+    for g in groups.values():
+        g = [p for p in g if p["y"] > 0]
+        if g:
+            out.append({"x": round(sum(p["x"] for p in g) / len(g), 4),
+                        "y": round(math.exp(sum(math.log(p["y"]) for p in g) / len(g)), 4)})
+    return out
+
+
+# Chart.js labels every 1..9 x 10^n on a log axis and the labels collide
+# ("0.90.00"); keep 1, 2 and 5 of each decade.
+_LOG_TICKS_JS = """function (v) {
+  var m = v / Math.pow(10, Math.floor(Math.log10(v)));
+  return [1, 2, 5].some(function (k) { return Math.abs(m - k) < 1e-6; }) ? String(Number(v.toPrecision(2))) : '';
+}"""
+
+
+def _build_throughput_section(throughput, throughput_memory, op_meta=None, collapse_genres=False):
     if not throughput:
         return {"ops": [], "repeats": "?"}
 
@@ -511,7 +528,7 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None):
             for lib, c in cells:
                 time_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
                                                 "y": round(c["seconds"] * 1000, 4),
-                                                "genre": r["genre"]})
+                                                **({"size": r["size"]} if collapse_genres else {})})
 
             entry_mem = mem_by_entry.get((r["genre"], r["size"]), {})
             mem_cells = [(lib, entry_mem.get(lib)) for lib, _ in cells]
@@ -523,7 +540,7 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None):
                 for lib, m in mem_cells:
                     mem_trend_points[lib].append({"x": round(r["bytes"] / (1024 * 1024), 4),
                                                    "y": round(m["peak_rss_mb"], 2),
-                                                   "genre": r["genre"]})
+                                                   **({"size": r["size"]} if collapse_genres else {})})
 
         winner_summary = ""
         ref_lib = None
@@ -576,29 +593,31 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None):
                 + (f": {rest_mem} as much." if rest_mem else ".")
             )
 
-        # Time / memory / throughput vs input size, one chart each. A line joins
-        # points of ONE library and ONE corpus genre: genres of similar size (the
-        # HTML pages are all ~20KB / ~200KB / ~2MB) would otherwise be joined into
-        # vertical zigzags, which says nothing about how a library scales.
+        # Time-vs-size and memory-vs-size: the same "does the trend hold
+        # as files grow" question the throughput chart answers, just for
+        # the two other metrics -- same treatment (connected lines, log
+        # x, one line per library) for consistency.
         def _trend_chart(canvas_id, points_by_lib, y_title, y_log):
             datasets = []
             for lib in libs:
-                by_genre = {}
-                for p in points_by_lib.get(lib, []):
-                    by_genre.setdefault(p["genre"], []).append(p)
+                pts = points_by_lib.get(lib, [])
+                if collapse_genres:
+                    pts = _collapse_sizes(pts)
+                pts = sorted(pts, key=lambda p: p["x"])
+                if not pts:
+                    continue
                 color = LIB_COLORS.get(lib, "#8b93a7")
-                for genre, pts in by_genre.items():
-                    datasets.append({
-                        "label": LIB_LABELS.get(lib, lib), "data": sorted(pts, key=lambda p: p["x"]),
-                        "borderColor": color, "backgroundColor": color,
-                        "pointStyle": LIB_POINT_STYLES.get(lib, "circle"),
-                        "borderDash": LIB_DASH.get(lib, []),
-                        "showLine": True, "tension": 0.25,
-                        "pointRadius": 5, "pointHoverRadius": 8,
-                    })
+                datasets.append({
+                    "label": LIB_LABELS.get(lib, lib), "data": pts,
+                    "borderColor": color, "backgroundColor": color,
+                    "pointStyle": LIB_POINT_STYLES.get(lib, "circle"),
+                    "borderDash": LIB_DASH.get(lib, []),
+                    "showLine": True, "tension": 0.25,
+                    "pointRadius": 5, "pointHoverRadius": 8,
+                })
             if not datasets:
                 return "", False
-            y_type = "'logarithmic'" if y_log else "'linear'"
+            y_scale = "'logarithmic'" if y_log else "'linear'"
             y_ticks = f"ticks: {{ callback: {_LOG_TICKS_JS} }}," if y_log else ""
             js = f"""
 new Chart(document.getElementById('{canvas_id}'), {{
@@ -609,22 +628,9 @@ new Chart(document.getElementById('{canvas_id}'), {{
     scales: {{
       x: {{ type: 'logarithmic', title: {{ display: true, text: 'Input size (MB, log scale)' }},
             ticks: {{ callback: {_LOG_TICKS_JS} }} }},
-      y: {{ type: {y_type}, {y_ticks} title: {{ display: true, text: '{y_title}' }} }}
+      y: {{ type: {y_scale}, {y_ticks} title: {{ display: true, text: '{y_title}' }} }}
     }},
-    plugins: {{
-      subtitle: {{ display: true, text: 'One line per library and corpus genre; hover a point for its genre.' }},
-      // One legend entry per library; clicking it shows/hides all of that library's lines.
-      legend: {{ position: 'bottom',
-        labels: {{ filter: function (item, data) {{
-          return item.datasetIndex === data.datasets.findIndex(function (d) {{ return d.label === item.text; }}); }} }},
-        onClick: function (e, item, legend) {{
-          var c = legend.chart, hide = c.isDatasetVisible(item.datasetIndex);
-          c.data.datasets.forEach(function (d, i) {{ if (d.label === item.text) c.setDatasetVisibility(i, !hide); }});
-          c.update();
-        }} }},
-      tooltip: {{ callbacks: {{ label: function (ctx) {{
-        return ctx.dataset.label + ' (' + ctx.raw.genre + '): ' + ctx.formattedValue; }} }} }}
-    }}
+    plugins: {{ legend: {{ position: 'bottom' }} }}
   }}
 }});
 """
@@ -637,16 +643,49 @@ new Chart(document.getElementById('{canvas_id}'), {{
             f"chart-mem-trend-{key}", mem_trend_points,
             "Peak memory (MB, lower is better)", False)
 
-        tp_points = {lib: [] for lib in libs}
-        for r in rows:
-            for lib in libs:
+        # Throughput (MB/s) vs input size: same treatment as the
+        # memory/scaling charts above -- connected lines, not bare dots,
+        # so both the TREND per library (does the rate rise, fall, or
+        # hold flat as files grow) and the comparison BETWEEN libraries
+        # (whose line sits on top) read at a glance from the same plot.
+        tp_datasets = []
+        for lib in libs:
+            tp_points = []
+            for r in rows:
                 cell = r.get(key, {}).get(lib)
                 if cell and cell.get("available") and cell["seconds"] > 0:
                     mb = r["bytes"] / (1024 * 1024)
-                    tp_points[lib].append({"x": round(mb, 4), "y": round(mb / cell["seconds"], 2),
-                                           "genre": r["genre"]})
-        tp_chart_js, has_tp_chart = _trend_chart(
-            f"chart-tp-{key}", tp_points, "Throughput (MB/s, higher is better)", False)
+                    tp_points.append({"x": round(mb, 4), "y": round(mb / cell["seconds"], 2),
+                                      **({"size": r["size"]} if collapse_genres else {})})
+            if collapse_genres:
+                tp_points = _collapse_sizes(tp_points)
+            tp_points.sort(key=lambda p: p["x"])
+            if tp_points:
+                color = LIB_COLORS.get(lib, "#8b93a7")
+                tp_datasets.append({
+                    "label": LIB_LABELS.get(lib, lib), "data": tp_points,
+                    "borderColor": color, "backgroundColor": color,
+                    "pointStyle": LIB_POINT_STYLES.get(lib, "circle"),
+                    "borderDash": LIB_DASH.get(lib, []),
+                    "showLine": True, "tension": 0.25,
+                    "pointRadius": 5, "pointHoverRadius": 8,
+                })
+
+        tp_chart_js = f"""
+new Chart(document.getElementById('chart-tp-{key}'), {{
+  type: 'line',
+  data: {{ datasets: {json.dumps(tp_datasets)} }},
+  options: {{
+    responsive: true, maintainAspectRatio: false,
+    scales: {{
+      x: {{ type: 'logarithmic', title: {{ display: true, text: 'Input size (MB, log scale)' }},
+            ticks: {{ callback: {_LOG_TICKS_JS} }} }},
+      y: {{ title: {{ display: true, text: 'Throughput (MB/s, higher is better)' }} }}
+    }},
+    plugins: {{ legend: {{ position: 'bottom' }} }}
+  }}
+}});
+""" if tp_datasets else ""
 
         ops_out.append({
             "key": key, "title": meta["title"], "note": meta["note"],
@@ -660,7 +699,7 @@ new Chart(document.getElementById('{canvas_id}'), {{
             "time_trend_chart_js": time_trend_chart_js, "has_time_trend": has_time_trend,
             "mem_trend_chart_js": mem_trend_chart_js, "has_mem_trend": has_mem_trend,
             "tp_chart_js": tp_chart_js,
-            "has_tp_chart": has_tp_chart,
+            "has_tp_chart": bool(tp_datasets),
         })
 
     return {"ops": ops_out, "ops_by_key": {o["key"]: o for o in ops_out}, "repeats": repeats}
@@ -935,7 +974,7 @@ def build(results_dir, output_path, chartjs_path):
     thr = _build_throughput_section(throughput, throughput_memory)
     siz = _build_size_section(sizes)
     cli_sec = _build_cli_section(cli)
-    html_sec = _build_throughput_section(html, None, HTML_OP_META)
+    html_sec = _build_throughput_section(html, None, HTML_OP_META, collapse_genres=True)
 
     ops_by_key = thr["ops_by_key"]
     jsonify_narrative = _build_jsonify_narrative(ops_by_key.get("xml_to_json"), mem["o1_note"])
