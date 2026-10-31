@@ -12,12 +12,12 @@
       "bytes": 32122,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.027611580037046224,
+        "seconds": 0.026807988004293293,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.04556428297655657,
+        "seconds": 0.047941736003849655,
         "error": null
       }
     },
@@ -27,12 +27,12 @@
       "bytes": 322067,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.028067466977518052,
+        "seconds": 0.029414763033855706,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.05888735700864345,
+        "seconds": 0.06327933399006724,
         "error": null
       }
     },
@@ -42,12 +42,12 @@
       "bytes": 3249652,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.04684670100687072,
+        "seconds": 0.045285962987691164,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.2031980890315026,
+        "seconds": 0.20301033701980487,
         "error": null
       }
     },
@@ -57,12 +57,12 @@
       "bytes": 39123,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.024642330943606794,
+        "seconds": 0.026050281012430787,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.04834070400102064,
+        "seconds": 0.050994450983125716,
         "error": null
       }
     },
@@ -72,12 +72,12 @@
       "bytes": 389019,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.02771700598532334,
+        "seconds": 0.03002992703113705,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.08549419901100919,
+        "seconds": 0.09434410196263343,
         "error": null
       }
     },
@@ -87,12 +87,12 @@
       "bytes": 3901895,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.0574865160160698,
+        "seconds": 0.05928392696660012,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.4734748959890567,
+        "seconds": 0.4676154869957827,
         "error": null
       }
     },
@@ -102,12 +102,12 @@
       "bytes": 19035,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.024857953016180545,
+        "seconds": 0.027346105023752898,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.04643689299700782,
+        "seconds": 0.05101312801707536,
         "error": null
       }
     },
@@ -117,12 +117,12 @@
       "bytes": 194739,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.02885848400183022,
+        "seconds": 0.03141074802260846,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.06934068299597129,
+        "seconds": 0.07151075504953042,
         "error": null
       }
     },
@@ -132,12 +132,12 @@
       "bytes": 1987163,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.04778804298257455,
+        "seconds": 0.04363865399500355,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.2981173550360836,
+        "seconds": 0.279921862995252,
         "error": null
       }
     },
@@ -147,12 +147,12 @@
       "bytes": 170298,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.029939390951767564,
+        "seconds": 0.02730263100238517,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.06475552800111473,
+        "seconds": 0.06276198796695098,
         "error": null
       }
     },
@@ -162,12 +162,12 @@
       "bytes": 123181,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.02488243003608659,
+        "seconds": 0.028416664979886264,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.05142398696625605,
+        "seconds": 0.05186484701698646,
         "error": null
       }
     },
@@ -177,12 +177,12 @@
       "bytes": 189495,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.02920474502025172,
+        "seconds": 0.02924607298336923,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.052839596988633275,
+        "seconds": 0.055666136962827295,
         "error": null
       }
     },
@@ -192,12 +192,12 @@
       "bytes": 287724,
       "pygixml_cli": {
         "available": true,
-        "seconds": 0.027394394972361624,
+        "seconds": 0.026246007008012384,
         "error": null
       },
       "xq": {
         "available": true,
-        "seconds": 0.0554189610411413,
+        "seconds": 0.05837360897567123,
         "error": null
       }
     }
