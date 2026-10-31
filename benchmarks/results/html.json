@@ -13,53 +13,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00013469101395457983
+          "seconds": 0.00014190096408128738
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00019508099649101496
+          "seconds": 0.00019749195780605078
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.005194314988330007
+          "seconds": 0.005391690006945282
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.0034616240300238132
+          "seconds": 0.0035650449572131038
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.005816034972667694
+          "seconds": 0.006029259006027132
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00012671301374211907
+          "seconds": 0.0001210870104841888
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00017207401106134057
+          "seconds": 0.00017264304915443063
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0002773919841274619
+          "seconds": 0.00027980899903923273
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.005303965008351952
+          "seconds": 0.0055894069955684245
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.0036066569737158716
+          "seconds": 0.003680481982883066
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.005900835036300123
+          "seconds": 0.0061081849853508174
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00016773596871644258
+          "seconds": 0.00017599400598555803
         }
       }
     },
@@ -70,53 +70,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0015837649698369205
+          "seconds": 0.00160382897593081
         },
         "lxml": {
           "available": true,
-          "seconds": 0.001740149047691375
+          "seconds": 0.0018730270094238222
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.06317666498944163
+          "seconds": 0.06480814301175997
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.03463000000920147
+          "seconds": 0.03563641902292147
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.056905739998910576
+          "seconds": 0.05903133604442701
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.0009477559942752123
+          "seconds": 0.0009192510042339563
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0019474780419841409
+          "seconds": 0.0020390250138007104
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0025015840074047446
+          "seconds": 0.0026446260162629187
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.06514787598280236
+          "seconds": 0.06601081899134442
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.03456806094618514
+          "seconds": 0.036564124980941415
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.05683620797935873
+          "seconds": 0.057897067978046834
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.0012847359757870436
+          "seconds": 0.001257304975297302
         }
       }
     },
@@ -127,53 +127,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.01643576700007543
+          "seconds": 0.016722694039344788
         },
         "lxml": {
           "available": true,
-          "seconds": 0.018370732956100255
+          "seconds": 0.02363085700199008
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 2.6788060560356826
+          "seconds": 2.726655633014161
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.3889826519880444
+          "seconds": 0.4138325860258192
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.6136853799689561
+          "seconds": 0.646351894014515
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00859094999032095
+          "seconds": 0.009022547979839146
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.020487481029704213
+          "seconds": 0.02103616198292002
         },
         "lxml": {
           "available": true,
-          "seconds": 0.028600635996554047
+          "seconds": 0.03457465098472312
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 2.741920787957497
+          "seconds": 2.9315368199604563
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.40526817098725587
+          "seconds": 0.4311648840084672
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.6160851339809597
+          "seconds": 0.6503301799530163
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.013577817007899284
+          "seconds": 0.015123734017834067
         }
       }
     },
@@ -184,53 +184,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00023906899150460958
+          "seconds": 0.00023814599262550473
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0003333179629407823
+          "seconds": 0.00033675297163426876
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.008846134995110333
+          "seconds": 0.009187964024022222
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.0068640600075013936
+          "seconds": 0.006948855996597558
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.010424357955344021
+          "seconds": 0.01085567701375112
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00015662796795368195
+          "seconds": 0.00015574699500575662
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00028696900699287653
+          "seconds": 0.00027675600722432137
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00043132202699780464
+          "seconds": 0.00043053104309365153
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.008917769999243319
+          "seconds": 0.009251925977878273
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.006977892015129328
+          "seconds": 0.007235711032990366
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.010364018962718546
+          "seconds": 0.010664970031939447
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00019723601872101426
+          "seconds": 0.000202069990336895
         }
       }
     },
@@ -241,53 +241,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0023659830330871046
+          "seconds": 0.002359672973398119
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0031786959734745324
+          "seconds": 0.0033044080482795835
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.08750243997201324
+          "seconds": 0.08773560397094116
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.06710479198955
+          "seconds": 0.0683057980495505
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.10199572297278792
+          "seconds": 0.11219901801086962
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.0014911689795553684
+          "seconds": 0.0015166159719228745
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0027612930280156434
+          "seconds": 0.002796343993395567
         },
         "lxml": {
           "available": true,
-          "seconds": 0.004063893051352352
+          "seconds": 0.004284579015802592
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.08971649495651945
+          "seconds": 0.08984536700882018
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.06882573099574074
+          "seconds": 0.07208369101863354
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.10117862100014463
+          "seconds": 0.10348470904864371
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.0019001240143552423
+          "seconds": 0.0019358770223334432
         }
       }
     },
@@ -298,53 +298,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.025039345026016235
+          "seconds": 0.02474571199854836
         },
         "lxml": {
           "available": true,
-          "seconds": 0.03888015798293054
+          "seconds": 0.04097222501877695
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 1.0591048559872434
+          "seconds": 1.0559760610340163
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.8482717499719001
+          "seconds": 0.8572347899898887
         },
         "html5lib": {
           "available": true,
-          "seconds": 1.2261432579834945
+          "seconds": 1.2495945559930988
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.02161507203709334
+          "seconds": 0.0221586839761585
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.03015515801962465
+          "seconds": 0.0292090080329217
         },
         "lxml": {
           "available": true,
-          "seconds": 0.05087745899800211
+          "seconds": 0.054777155979536474
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 1.088439011014998
+          "seconds": 1.0919313420308754
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.8450702099944465
+          "seconds": 0.8751344550400972
         },
         "html5lib": {
           "available": true,
-          "seconds": 1.227450634993147
+          "seconds": 1.2453633469995111
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.029855862027034163
+          "seconds": 0.030899724981281906
         }
       }
     },
@@ -355,53 +355,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00021543796174228191
+          "seconds": 0.0002148600178770721
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0002835919731296599
+          "seconds": 0.00028320099227130413
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.0077389689977280796
+          "seconds": 0.007806929002981633
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.005124429997522384
+          "seconds": 0.005175316997338086
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.007872988993767649
+          "seconds": 0.007900145021267235
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00012555602006614208
+          "seconds": 0.00012517499271780252
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00025254598585888743
+          "seconds": 0.0002527139731682837
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00036494701635092497
+          "seconds": 0.0003608829574659467
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.008003118971828371
+          "seconds": 0.007906920975074172
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.005302351026330143
+          "seconds": 0.005448504991363734
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.007791698968503624
+          "seconds": 0.007796999008860439
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.00015966297360137105
+          "seconds": 0.00016157497884705663
         }
       }
     },
@@ -412,53 +412,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0021356030483730137
+          "seconds": 0.0021559809683822095
         },
         "lxml": {
           "available": true,
-          "seconds": 0.002703184960409999
+          "seconds": 0.0026948360027745366
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.08317497099051252
+          "seconds": 0.08252886997070163
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.049406545993406326
+          "seconds": 0.05068246804876253
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.07667196897091344
+          "seconds": 0.0779829400125891
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.0012030609650537372
+          "seconds": 0.0012297850335016847
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0024963459582068026
+          "seconds": 0.0024816570221446455
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0035092479665763676
+          "seconds": 0.0034619630314409733
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 0.08483159000752494
+          "seconds": 0.08456471603130922
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.05104112398112193
+          "seconds": 0.05199663300300017
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.07670977001544088
+          "seconds": 0.07841104199178517
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.0015353189664892852
+          "seconds": 0.0015758469817228615
         }
       }
     },
@@ -469,53 +469,53 @@
       "html_parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.021672489994671196
+          "seconds": 0.02138436702080071
         },
         "lxml": {
           "available": true,
-          "seconds": 0.03276768798241392
+          "seconds": 0.032401529024355114
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 1.766152620955836
+          "seconds": 1.8244125969940796
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.6003589899628423
+          "seconds": 0.6190113510238007
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.9111777640064247
+          "seconds": 0.9399484079913236
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.016817055991850793
+          "seconds": 0.017708286992274225
         }
       },
       "html_extract_links": {
         "pygixml": {
           "available": true,
-          "seconds": 0.025743019010405988
+          "seconds": 0.02548389002913609
         },
         "lxml": {
           "available": true,
-          "seconds": 0.043894562986679375
+          "seconds": 0.04391225299332291
         },
         "bs4_html_parser": {
           "available": true,
-          "seconds": 1.7885638970183209
+          "seconds": 1.9144985629827715
         },
         "bs4_lxml": {
           "available": true,
-          "seconds": 0.6207232140004635
+          "seconds": 0.6384659030009061
         },
         "html5lib": {
           "available": true,
-          "seconds": 0.9139878469868563
+          "seconds": 0.9456463829847053
         },
         "selectolax": {
           "available": true,
-          "seconds": 0.024358419992495328
+          "seconds": 0.025727972970344126
         }
       }
     }
