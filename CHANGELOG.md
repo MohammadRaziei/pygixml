@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   detail sections are gone; charts group trends by genre and the HTML charts show
   one point per size.
 
+### Fixed
+
+- The benchmarks page had no favicon; it now uses the same icon as the landing page.
+  The summary sentence under each chart no longer carries the extra ", not a ratio of
+  medians" clause.
+
 ## [v0.14.1] - 2026-10-30
 
 ### Fixed

@@ -565,8 +565,7 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None, colla
             winner_summary = (
                 f"<strong>{LIB_LABELS.get(ref_lib, ref_lib)}</strong> is the reference "
                 f"(fastest most consistently across the corpus). "
-                f"On average ({_tex_e('other', LIB_LABELS.get(ref_lib, ref_lib), 't')}, mean of each entry's own "
-                f"ratio, not a ratio of medians)"
+                f"On average ({_tex_e('other', LIB_LABELS.get(ref_lib, ref_lib), 't')})"
                 + (f": {rest} as long." if rest else ".")
             )
 
