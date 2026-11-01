@@ -117,6 +117,30 @@ body {
   color: var(--text-dim);
 }
 
+
+/* ---- Sidebar contents + abstract ---- */
+html { scroll-behavior: smooth; }
+section, .abstract { scroll-margin-top: 72px; }
+.layout { max-width: 1340px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 0 24px; }
+.layout .wrap { max-width: 1080px; width: 100%; margin: 0; padding: 0 0 80px; }
+.toc { position: sticky; top: 72px; align-self: start; padding-top: 40px; font-size: 14px; }
+.toc-title { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); font-weight: 700; margin: 0 0 10px 14px; }
+.toc a { display: block; padding: 6px 14px; color: var(--text-dim); text-decoration: none; border-left: 2px solid var(--border); }
+.toc a:hover { color: var(--text); }
+.toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+@media (max-width: 1100px) {
+  .layout { display: block; padding: 0; }
+  .layout .wrap { padding: 0 24px 80px; }
+  .toc { display: none; }
+}
+.abstract { padding: 40px 0 8px; border-bottom: none; }
+.abstract-box { background: var(--bg-panel); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 22px 26px; }
+.abstract-lead { margin: 0 0 14px; font-size: 16px; max-width: 760px; }
+.abstract-points { margin: 0 0 14px; padding-left: 20px; color: var(--text-dim); }
+.abstract-points li { margin: 6px 0; }
+.abstract-points strong, .abstract-caveat strong { color: var(--text); }
+.abstract-caveat { margin: 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 14px; color: var(--text-dim); }
+
 /* ---- Sections ---- */
 section { padding: 64px 0; border-bottom: 1px solid var(--border); }
 section:last-of-type { border-bottom: none; }
@@ -246,8 +270,6 @@ section.major { padding-top: 56px; }
   <div class="meta">{{ meta_line }}</div>
 </div>
 
-<div class="wrap">
-
 {% macro op_body(op) %}
   {% if op.winner_summary %}<p class="op-winner">{{ op.winner_summary | safe }}</p>{% endif %}
   {% if op.memory_summary %}<p class="op-winner">{{ op.memory_summary | safe }}</p>{% endif %}
@@ -277,7 +299,34 @@ section.major { padding-top: 56px; }
   {% endif %}
 {% endmacro %}
 
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <div class="toc-title">Contents</div>
+  {% if abstract %}<a href="#abstract">Abstract</a>{% endif %}
+  {% if has_sizes %}<a href="#size">Package size</a>{% endif %}
+  {% if op_parse or op_iterparse %}<a href="#core-module">parse &amp; iterparse</a>{% endif %}
+  {% if op_objectify %}<a href="#objectify">objectify</a>{% endif %}
+  {% if op_dictify_dom %}<a href="#dictify">dictify</a>{% endif %}
+  {% if op_jsonify %}<a href="#jsonify">jsonify</a>{% endif %}
+  {% if has_html %}<a href="#html">HTML</a>{% endif %}
+  {% if has_cli %}<a href="#cli">CLI vs. xq</a>{% endif %}
+  {% if system_info %}<a href="#environment">Environment</a>{% endif %}
+</nav>
 <div class="wrap">
+
+{% if abstract %}
+<section id="abstract" class="abstract">
+  <div class="abstract-box">
+    <div class="kicker">Abstract</div>
+    <p class="abstract-lead">{{ abstract.lead | safe }}</p>
+    <ul class="abstract-points">
+      {% for point in abstract.points %}<li>{{ point | safe }}</li>
+      {% endfor %}
+    </ul>
+    {% if abstract.caveat %}<p class="abstract-caveat">{{ abstract.caveat | safe }}</p>{% endif %}
+  </div>
+</section>
+{% endif %}
 
 {% if has_sizes %}
 <!-- ========================= PACKAGE SIZE ========================= -->
@@ -627,9 +676,10 @@ section.major { padding-top: 56px; }
 {% endif %}
 
 </div>
+</div>
 
 <footer>
-  For how the corpus was built, why timing uses best-of-N, and the memory-measurement
+  For how the corpus was built, why timing uses a trimmed mean, and the memory-measurement
   gotcha this report ran into, see
   <a href="https://github.com/MohammadRaziei/pygixml/blob/main/benchmarks/README.md">benchmarks/README.md</a>.
   <br>
@@ -691,6 +741,21 @@ async function downloadJSON(name) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+(function () {
+  const links = document.querySelectorAll('.toc a');
+  if (!links.length || !window.IntersectionObserver) return;
+  const byId = {};
+  links.forEach(a => { byId[a.getAttribute('href').slice(1)] = a; });
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      links.forEach(a => a.classList.remove('active'));
+      byId[e.target.id].classList.add('active');
+    });
+  }, { rootMargin: '-72px 0px -65% 0px' });
+  Object.keys(byId).forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+})();
 
 Chart.defaults.color = '#8b93a7';
 Chart.defaults.borderColor = '#232938';

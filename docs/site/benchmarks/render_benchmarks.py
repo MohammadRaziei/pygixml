@@ -960,6 +960,104 @@ KATEX_SRI = {
 }
 
 
+# -------------------------------------------------------------- abstract --
+
+def _ratio(rows, op, other, ref="pygixml"):
+    """E[other/ref] over the entries where both libraries ran."""
+    pairs = []
+    for r in rows:
+        o, p = r.get(op, {}).get(other), r.get(op, {}).get(ref)
+        if o and p and o.get("available") and p.get("available"):
+            pairs.append((o["seconds"], p["seconds"]))
+    return _e_ratio(pairs)
+
+
+def _build_abstract(throughput, html, memory, cli):
+    """The paper-style summary at the top of the page. Every number comes from
+    the result JSONs; a claim is only printed if the data shows pygixml
+    winning, and every loss the data shows goes into the closing caveat."""
+    wins, loses = [], {}
+    # (op, what it measures, competitors); ratios are E[competitor/pygixml].
+    specs = [
+        (throughput, "parse", "building a tree", ["lxml", "elementtree"]),
+        (throughput, "dict_convert", "XML to a dict (dictify)", ["xmltodict"]),
+        (throughput, "xml_to_json", "XML to JSON (jsonify.dumps)", ["xmltodict", "xmljson"]),
+        (throughput, "dict_stream", "streaming dicts (dictify.iterdict)", ["xmltodict"]),
+        (throughput, "xml_to_jsonl", "streaming JSON Lines (jsonify.iterjsonl)", ["xmltodict"]),
+        (throughput, "to_object", "attribute-style access (objectify)", ["lxml"]),
+        (throughput, "iterparse", "iterparse", ["lxml", "elementtree"]),
+        (html, "html_parse", "parsing messy HTML (parse_html)",
+         ["lxml", "bs4_html_parser", "bs4_lxml", "html5lib", "selectolax"]),
+    ]
+    for data, op, what, libs in specs:
+        rows = (data or {}).get("results", [])
+        faster = []
+        for lib in libs:
+            r = _ratio(rows, op, lib)
+            if r is None:
+                continue
+            label = LIB_LABELS.get(lib, lib)
+            if r >= 1.05:
+                faster.append(f"{r:.1f}\u00d7 faster than {label}")
+            elif r <= 0.95:
+                loses.setdefault(what, []).append(f"{label} is {1 / r:.1f}\u00d7 faster")
+        if faster:
+            wins.append(f"<strong>{what}</strong>: " + ", ".join(faster))
+
+    if cli and cli.get("results"):
+        r = _e_ratio([(x["xq"]["seconds"], x["pygixml_cli"]["seconds"]) for x in cli["results"]
+                      if x.get("xq", {}).get("available") and x.get("pygixml_cli", {}).get("available")])
+        if r and r >= 1.05:
+            wins.append(f"<strong>command line</strong> (process startup included): {r:.1f}\u00d7 faster than xq")
+        elif r and r <= 0.95:
+            loses.setdefault("command line", []).append(f"xq is {1 / r:.1f}\u00d7 faster")
+
+    def pts(key):
+        return sorted((p for p in (memory or {}).get(key, {}).get("points", []) if p.get("available")),
+                      key=lambda p: p["n"])
+
+    sd, dom, xd = pts("pygixml_stream_dump"), pts("pygixml_dom"), pts("xmltodict")
+    if len(sd) >= 2:
+        lo, hi = min(p["peak_rss_mb"] for p in sd), max(p["peak_rss_mb"] for p in sd)
+        level = f"about {sum(p['peak_rss_mb'] for p in sd) / len(sd):.0f}\u00a0MB" if hi < lo * 1.15 \
+            else f"{lo:.0f}\u2013{hi:.0f}\u00a0MB"
+        text = (f"<strong>constant memory</strong>: <code>jsonify.stream_dump</code> converts XML to JSON with a "
+                f"peak RSS of {level} while the input grows from {_fmt_bytes(sd[0]['bytes'])} to "
+                f"{_fmt_bytes(sd[-1]['bytes'])}")
+        rivals = []
+        for key, label in (("xmltodict", "xmltodict"), ("lxml_plus_xmljson", "lxml + xmljson")):
+            rp = pts(key)
+            if len(rp) >= 2 and rp[-1]["n"] == sd[-1]["n"]:
+                rivals.append((label, rp[0]["peak_rss_mb"], rp[-1]["peak_rss_mb"]))
+        if rivals:
+            text += "; on the largest input " + " and ".join(f"{l} peaks at {b:.0f}\u00a0MB" for l, a, b in rivals)
+            if all(b >= 2 * a for l, a, b in rivals):
+                text += ", and their peak grows with the input"
+        wins.insert(0, text)
+        # What constant memory costs, and where the DOM mode stands, on the largest input.
+        if dom and dom[-1]["n"] == sd[-1]["n"] and sd[-1]["seconds"] > 1.5 * dom[-1]["seconds"]:
+            loses.setdefault("constant memory", []).append(f"<code>stream_dump</code> needs {sd[-1]['seconds']:.1f}\u00a0s on the "
+                         f"largest input, pygixml's own DOM mode {dom[-1]['seconds']:.1f}\u00a0s")
+        if dom and xd and dom[-1]["n"] == xd[-1]["n"] and dom[-1]["peak_rss_mb"] > xd[-1]["peak_rss_mb"]:
+            loses.setdefault("DOM mode", []).append(f"peak memory on the largest input ({dom[-1]['peak_rss_mb']:.0f}\u00a0MB) is "
+                         f"above xmltodict's ({xd[-1]['peak_rss_mb']:.0f}\u00a0MB)")
+
+    if not wins:
+        return None
+    n_entries = len((throughput or {}).get("results", []))
+    repeats = (throughput or {}).get("repeats", "?")
+    return {
+        "lead": ("pygixml puts pugixml's C++ DOM, an inlined streaming parser and dictify / objectify / jsonify / a CLI "
+                 "into one Python extension with no runtime dependencies. This report measures each of those on its own "
+                 "against the tool people actually use for the job "
+                 f"({n_entries} corpus entries, {repeats} repeats per cell, one machine; "
+                 "ratios are each entry's own time ratio, averaged)."),
+        "points": wins,
+        "caveat": ("<strong>Where it does not win.</strong> "
+                   + "; ".join(f"{k}: {', '.join(v)}" for k, v in loses.items()) + ".") if loses else "",
+    }
+
+
 def build(results_dir, output_path, chartjs_path):
     """results_dir holds one JSON per benchmark (throughput.json, html.json, ...)."""
     if not os.path.isdir(results_dir):
@@ -988,6 +1086,7 @@ def build(results_dir, output_path, chartjs_path):
         "memory": memory, "sizes": sizes, "cli": cli, "system_info": system_info, "html": html,
     }
 
+    abstract = _build_abstract(throughput, html, memory, cli)
     headline = "pygixml, measured honestly"
     subhead = (
         "Every independent way to work with XML this library offers &mdash; the core module, "
@@ -1012,6 +1111,7 @@ def build(results_dir, output_path, chartjs_path):
     html = template.render(
         generated_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         headline=headline,
+        abstract=abstract,
         subhead=subhead,
         meta_line=f"{len(throughput['results']) if throughput else 0} corpus entries &middot; "
                    f"{thr['repeats']} repeats per cell",
