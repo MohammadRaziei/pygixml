@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1.3x faster than lxml.html and far ahead of BeautifulSoup and html5lib.
   `parse_html` is a normaliser, not a full HTML5 tree-construction implementation.
 - Benchmarks page: a sticky table of contents in a left sidebar (the current section
-  is highlighted; hidden on narrow screens) and an abstract at the top. The abstract
+  is highlighted; hidden on narrow screens) and an abstract at the top. The Docs and
+  Benchmarks links now sit next to the logo, on the left; the GitHub button stays right. The abstract
   is generated from the result JSONs, so its numbers are never typed by hand: it
   lists where pygixml is faster, the constant-memory result of `jsonify.stream_dump`,
   and, in a closing "where it does not win" line, every comparison the data shows
