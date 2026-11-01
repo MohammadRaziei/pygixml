@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.15.0] - 2026-11-01
+
+### Added
+
+- HTML benchmark (`benchmarks/python/bench_html.py`): `pygixml.parse_html` against
+  lxml.html, BeautifulSoup (`html.parser` and `lxml`), html5lib and selectolax on a
+  generated messy corpus (article / table / listing, three sizes), for parsing and
+  link extraction. selectolax is faster (about 1.5x on average); pygixml is about
+  1.3x faster than lxml.html and far ahead of BeautifulSoup and html5lib.
+  `parse_html` is a normaliser, not a full HTML5 tree-construction implementation.
+
 ### Changed
 
 - `jsonify.stream_dump` is now linear when sibling tags alternate (`a b a b ...`):
@@ -24,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   straight from yxml's buffers), and `StreamElement.to_json` /
   `jsonify.iterjsonl` are about 2-3x faster (no per-character `str` objects while
   escaping; strings that need no escaping skip the slow path).
+- Benchmark timings are now a trimmed mean over 10 repeats (fastest and slowest tenth
+  dropped) instead of the minimum of a few runs; `bench_scaling.py` no longer times a
+  single run per point. `PYGIXML_BENCH_REPEATS` defaults to 10 (an existing CMake
+  cache keeps its old value: pass `-DPYGIXML_BENCH_REPEATS=10` or delete
+  `benchmarks/build`). The `metric` field of the result JSONs describes this.
+- Benchmark results are one JSON per benchmark in `benchmarks/results/`. The
+  benchmarks page (`docs/benchmarks/index.html`) is no longer produced by the
+  benchmark build: the docs build renders it from those JSONs
+  (`sphinx_docs` target, `docs/site/benchmarks/render_benchmarks.py`). The per-entry
+  detail sections are gone; charts group trends by genre and the HTML charts show
+  one point per size.
 
 ## [v0.14.1] - 2026-10-30
 
