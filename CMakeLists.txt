@@ -196,6 +196,7 @@ add_custom_target(sphinx_docs
         ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results
         ${CMAKE_CURRENT_BINARY_DIR}/docs/benchmarks/index.html
         --chartjs-path ${CHARTJS_UMD_MIN}
+        --version ${PROJECT_VERSION}
     COMMENT "Building documentation with Sphinx (+ benchmarks page)..."
     WORKING_DIRECTORY ${PYTHON_INSTALL_DIR}
     USES_TERMINAL

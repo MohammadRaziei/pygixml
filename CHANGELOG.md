@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Landing and benchmarks pages: Docs and Benchmarks links sit next to the logo on the
   left, the version badge (new on the benchmarks page, read from `pyproject.toml`) and
-  the GitHub button on the right. In the Sphinx docs the sidebar logo now links to the
+  the GitHub button on the right. The benchmarks navbar uses the landing header's exact
+  metrics and web fonts; `render_benchmarks.py --version` (passed by CMake) sets the badge.
+  In the Sphinx docs the sidebar logo now links to the
   landing page (`docs/source/_templates/sidebar/brand.html`, a copy of Furo's with a
   different `href`).
 - `jsonify.stream_dump` keeps the tail of its output in memory (up to 64 KB) and

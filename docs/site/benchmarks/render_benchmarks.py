@@ -1070,7 +1070,7 @@ def _project_version():
         return ""
 
 
-def build(results_dir, output_path, chartjs_path):
+def build(results_dir, output_path, chartjs_path, version=None):
     """results_dir holds one JSON per benchmark (throughput.json, html.json, ...)."""
     if not os.path.isdir(results_dir):
         raise SystemExit(f"render_benchmarks: {results_dir} is not a directory")
@@ -1124,7 +1124,7 @@ def build(results_dir, output_path, chartjs_path):
         generated_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         headline=headline,
         abstract=abstract,
-        version=_project_version(),
+        version=version or _project_version(),
         subhead=subhead,
         meta_line=f"{len(throughput['results']) if throughput else 0} corpus entries &middot; "
                    f"{thr['repeats']} repeats per cell",
@@ -1168,11 +1168,12 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("results_dir", help="benchmarks/results/ (one JSON per benchmark: throughput.json, html.json, ...)")
     p.add_argument("output", help="path to write the standalone benchmarks page (index.html)")
+    p.add_argument("--version", default=None, help="package version for the navbar badge (default: read pyproject.toml)")
     p.add_argument("--chartjs-path", default=os.path.join(HERE, "vendor", "chart.umd.min.js"),
                     help="path to a Chart.js UMD build (CMake fetches this fresh; "
                          "defaults to a local vendor/ copy for running by hand)")
     args = p.parse_args()
 
-    out = build(args.results_dir, args.output, args.chartjs_path)
+    out = build(args.results_dir, args.output, args.chartjs_path, args.version)
     size_kb = os.path.getsize(out) / 1024
     print(f"render_benchmarks: wrote {out} ({size_kb:.0f}KB, standalone)")
