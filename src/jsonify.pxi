@@ -434,15 +434,43 @@ cdef extern from *:
         // buffer is just written to, with no fflush/fseek (each of which
         // was a syscall per tiny write before).
         long  cur;
+        // Bytes [wbase, tail_pos) have not been handed to stdio yet: appends
+        // go here, and a patch that lands in this window (the usual case:
+        // the second sibling shows up a few bytes after the first) is a
+        // memmove, not seek + fread + fwrite + seek.
+        // ponytail: one flat buffer; flush at 64 KB or before any file-level op.
+        std::string wbuf;
+        long  wbase;
 
-        explicit PJFileEditor(FILE* f) : fp(f), tail_pos(0), cur(0) {}
+        explicit PJFileEditor(FILE* f) : fp(f), tail_pos(0), cur(0), wbase(0) {}
+
+        inline void flush_buf() {
+            if (wbuf.empty()) return;
+            if (cur != wbase) { fflush(fp); fseek(fp, wbase, SEEK_SET); }
+            fwrite(wbuf.data(), 1, wbuf.size(), fp);
+            wbuf.clear();
+            wbase = tail_pos;
+            cur = tail_pos;
+        }
 
         inline long pos() {
+            flush_buf();
             fflush(fp);
             return ftell(fp);
         }
 
+        // Copy [start, start+len) of the output so far into `out`.
+        inline void read_range(long start, long len, std::string& out) {
+            out.assign((size_t)len, '\\0');
+            if (len <= 0) return;
+            if (start >= wbase) { out.assign(wbuf, (size_t)(start - wbase), (size_t)len); return; }
+            seek(start);
+            size_t nrd = fread(&out[0], 1, (size_t)len, fp);
+            (void)nrd;
+        }
+
         inline void seek(long off) {
+            flush_buf();
             fflush(fp);
             fseek(fp, off, SEEK_SET);
             cur = -1;   // callers read/write by hand after this
@@ -452,13 +480,13 @@ cdef extern from *:
         inline void seek_tail() {
             seek(tail_pos);
             cur = tail_pos;
+            wbase = tail_pos;
         }
 
         inline void write_at_tail(const char* s, size_t n) {
-            if (cur != tail_pos) seek(tail_pos);
-            fwrite(s, 1, n, fp);
+            wbuf.append(s, n);
             tail_pos += (long)n;
-            cur = tail_pos;
+            if (wbuf.size() >= (1u << 16)) flush_buf();
         }
         inline void write_at_tail(const std::string& s) {
             write_at_tail(s.data(), s.size());
@@ -482,6 +510,11 @@ cdef extern from *:
         bool splice_insert(long gap_start, const char* ins, size_t n) {
             long region_len = tail_pos - gap_start;
             if (region_len < 0) return false;
+            if (gap_start >= wbase) {   // the whole region is still in memory
+                wbuf.insert((size_t)(gap_start - wbase), ins, n);
+                tail_pos += (long)n;
+                return true;
+            }
             if (region_len == 0) {
                 write_at_tail(ins, n);
                 return true;
@@ -533,6 +566,11 @@ cdef extern from *:
             long new_len  = (long)new_content.size();
             long rest_len = tail_pos - old_end;
             if (rest_len < 0 || old_len < 0) return false;
+            if (start >= wbase) {   // the whole region is still in memory
+                wbuf.replace((size_t)(start - wbase), (size_t)old_len, new_content);
+                tail_pos += new_len - old_len;
+                return true;
+            }
 
             if (new_len >= old_len) {
                 long grow = new_len - old_len;
@@ -595,6 +633,7 @@ cdef extern from *:
             for (size_t i = 0; i < ins.size(); ++i) if (ins[i].pos < r0) r0 = ins[i].pos;
             for (size_t i = 0; i < removed.size(); ++i) if (removed[i].first < r0) r0 = removed[i].first;
 
+            flush_buf();
             FILE* tmp = tmpfile();
             if (!tmp) return false;
             std::vector<char> buf(PYGIXML_SHIFT_BUF);
@@ -842,12 +881,8 @@ cdef extern from *:
             // backslash+n), so every literal '\\n' byte here is
             // structural and safe to touch; in compact mode (nl empty)
             // there are none, so this is a no-op.
-            std::string first_val(old_len, '\\0');
-            if (old_len > 0) {
-                ed.seek(old_start);
-                size_t nrd = fread(&first_val[0], 1, (size_t)old_len, fout);
-                (void)nrd;
-            }
+            std::string first_val;
+            ed.read_range(old_start, old_len, first_val);
             std::string reindented;
             reindented.reserve(first_val.size() + 8);
             for (char c : first_val) {
@@ -1210,6 +1245,7 @@ cdef extern from *:
         }
 
         fclose(xin);
+        ed.flush_buf();
         fclose(fout);
 
         if (!ok) return -2;

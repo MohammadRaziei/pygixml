@@ -14,12 +14,10 @@ doesn't flatter pygixml:
      doesn't change, i.e. nobody's showing hidden superlinear cost.
 
   2. For the interleaved-siblings shape specifically (two different
-     repeated tags interleaved at the same level), pygixml's own
-     stream_dump documented complexity caveat (see
-     docs/source/jsonify.rst) predicts time approaching O(n^2). This
-     script draws that curve for real, at the sizes this repo's own
-     test suite already confirmed it at, so the report can show it
-     rather than just cite it.
+     repeated tags interleaved at the same level), stream_dump moves
+     the interleaved values into place in one pass when the parent
+     closes, so its time is linear there too. This script draws that
+     curve for real, so the report shows it rather than just cites it.
 
 DOM-competitors (lxml/xmltodict/xmljson) are included at moderate N
 only -- large enough to see the trend, small enough that this script

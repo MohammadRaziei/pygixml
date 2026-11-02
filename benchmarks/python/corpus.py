@@ -129,10 +129,9 @@ def gen_records(n, seed=4):
 
 
 def gen_interleaved(n, seed=5):
-    """The adversarial shape: two *different* repeated tags interleaved
-    at the same level -- the one documented case where
-    jsonify.stream_dump's time can approach O(n^2). Used only in the
-    'under the hood' scaling story, not the general throughput corpus."""
+    """Two *different* repeated tags interleaved at the same level, the
+    shape that used to make jsonify.stream_dump quadratic (it is linear
+    now). Used only in the scaling story, not the general throughput corpus."""
     parts = ['<?xml version="1.0" encoding="UTF-8"?><root>']
     for i in range(n):
         parts.append(f"<sale>{i}</sale><tax>{i * 0.1:.2f}</tax>")

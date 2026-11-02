@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `jsonify.stream_dump` keeps the tail of its output in memory (up to 64 KB) and
+  patches it there: turning a repeated sibling into an array no longer costs a
+  flush, two seeks and a read per record. Output is byte-identical to 0.14.1;
+  record-shaped input is about 1.7x faster in the sandbox and should gain more on
+  slower filesystems. The documentation no longer calls interleaved siblings a
+  quadratic case: it is linear (128,000 alternating pairs: 6 s in 0.14.1, 0.3 s now).
+
 ## [v0.15.0] - 2026-11-01
 
 ### Added

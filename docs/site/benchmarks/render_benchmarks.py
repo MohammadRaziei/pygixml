@@ -296,7 +296,7 @@ new Chart(document.getElementById('chart-scaling'), {{
     {{ label: 'records shape (realistic)', data: {json.dumps(series(records))},
        borderColor: '#35d0ba', backgroundColor: '#35d0ba', tension: 0.2, pointRadius: 5,
        pointStyle: 'circle', borderDash: [] }},
-    {{ label: 'interleaved shape (adversarial)', data: {json.dumps(series(interleaved))},
+    {{ label: 'interleaved shape (two tags alternating)', data: {json.dumps(series(interleaved))},
        borderColor: '#ff6b81', backgroundColor: '#ff6b81', tension: 0.2, pointRadius: 5,
        pointStyle: 'triangle', borderDash: [6, 3] }}
   ]}},
@@ -317,9 +317,10 @@ new Chart(document.getElementById('chart-scaling'), {{
         n_ratio = records[-1]["n"] / records[0]["n"]
         i_ratio = interleaved[-1]["seconds"] / interleaved[0]["seconds"]
         note = (f"N grew {n_ratio:.0f}\u00d7 ({records[0]['n']:,} \u2192 {records[-1]['n']:,}): "
-                f"records-shape time grew {r_ratio:.1f}\u00d7 (linear, tracks N); "
-                f"interleaved-shape time grew {i_ratio:.1f}\u00d7 (superlinear, approaching the "
-                f"documented O(n\u00b2) case). The slope, not a single ratio, is the finding.")
+                f"records-shape time grew {r_ratio:.1f}\u00d7, "
+                f"interleaved-shape time grew {i_ratio:.1f}\u00d7. "
+                f"A curve parallel to N (slope 1 on these log axes) is linear; "
+                f"the slope, not a single ratio, is the finding.")
 
     dom = scaling.get("dom_competitors_records_shape", {})
     dom_datasets = []

@@ -245,29 +245,22 @@ individual elements, and no ``json`` module anywhere in the call chain.
        the source), the engine inserts the opening ``[`` and the new
        value right where the first value ended: an O(1) operation,
        and the only one this case ever needs.
-     - If a *different* child tag was interleaved in between, the
-       engine splices: it shifts the interleaved bytes forward (in
-       fixed-size chunks) to open room for ``[`` and the new value.
-       Cost is proportional to how much was interleaved *that one
-       time*, not to the file size.
+     - If a *different* child tag was interleaved in between, the new
+       value is left where it was written and its byte range is
+       recorded. When the parent closes, every such range is moved next
+       to its tag's first run in one pass: each byte is read once and
+       written once, however many times the tags alternate.
 
-   **Time complexity in practice.** For the shape almost all
-   record-oriented giant XML actually has: one repeated tag per
-   nesting level, as in ``<orders><order>...</order>...</orders>``:
-   every sibling after the first lands via the O(1) adjacent case
-   above, so the whole conversion is O(n). It degrades towards O(n²)
-   only in an adversarial shape: two or more *different* tags
-   repeating and interleaving at the *same* level for many iterations
-   (e.g. ``<a>1</a><b>1</b><a>2</a><b>2</b>...`` with no wrapping
-   element around each pair): there, every catch-up splice for one
-   tag has to shift past the other tag's *entire, still-growing*
-   field, and that cost compounds across iterations. If that's
-   genuinely your data's shape, :func:`~pygixml.jsonify.stream_jsonl`
-   below sidesteps the problem entirely by not trying to preserve a
-   single JSON document at all. Memory stays O(1): a small fixed
-   scratch buffer plus one bookkeeping entry per currently-open
-   distinct tag: regardless of which case applies; only the *time*
-   bound changes.
+   **Time complexity in practice.** Linear in the size of the input
+   for every shape. Same-tag siblings next to each other (the
+   record-oriented case, ``<orders><order>...</order>...</orders>``)
+   are the cheapest: the new value goes in right after the previous
+   one. Interleaved siblings (``<a>1</a><b>1</b><a>2</a><b>2</b>...``)
+   cost one extra pass over the interleaved region when their parent
+   closes; a level that has such siblings is rewritten once, so deeply
+   nested interleaving pays that once per level. Memory stays O(1): a
+   small fixed scratch buffer plus one bookkeeping entry per
+   currently-open distinct tag, regardless of shape.
 
    .. code-block:: python
 

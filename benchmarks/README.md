@@ -44,7 +44,7 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_sizes` | Compare install footprint via [pip-size](https://github.com/MohammadRaziei/pip-size) |
 | `pygixml_bench_throughput` | Speed for every conversion layer (parse/dictify/objectify/jsonify), every library, every corpus entry |
 | `pygixml_bench_throughput_memory` | Peak memory for the same operations/libraries/entries, one isolated process per (entry, op, library) |
-| `pygixml_bench_scaling` | Time vs. N: the O(n) vs. O(n²) story |
+| `pygixml_bench_scaling` | Time vs. N for record-shaped and interleaved input |
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
 | `pygixml_bench_system_info` | Record the machine's OS, CPU model, core count, and RAM |
 | `pygixml_bench_html` | HTML parsing: `parse_html` vs lxml.html / BeautifulSoup / html5lib / selectolax |

@@ -80,15 +80,10 @@ simply don't have:
 
   The memory guarantee is unconditional (verified: ~17MB peak,
   completely flat from 5K to 640K records, see
-  `benchmarks/adhoc/bench_record_shaped.py`). The **time** guarantee
-  is O(n) for the shape almost all real giant XML actually has: one
-  repeated tag per nesting level (`<orders><order>...</order>...`).
-  It degrades towards O(n²) only in an adversarial shape: two or more
-  *different* tags repeating and interleaving at the *same* level for
-  many iterations (e.g. `<a>1</a><b>1</b><a>2</a><b>2</b>...` with no
-  wrapping element around each pair). If that's genuinely your data
-  shape, `jsonify.stream_jsonl` (below) sidesteps the problem entirely
-  by not trying to preserve a single JSON document at all.
+  `benchmarks/adhoc/bench_record_shaped.py`). The **time** is linear in the input size for every shape, including
+  two or more different tags interleaving at the same level
+  (`<a>1</a><b>1</b><a>2</a><b>2</b>...`): such siblings are moved
+  into place once, in one pass, when their parent closes.
 * **`jsonify.stream_jsonl(xml_path, jsonl_path, tag)`**: the
   file-to-file counterpart of `iterjsonl` (filters by `tag`, unlike
   `stream_dump` which always converts the whole document): streams

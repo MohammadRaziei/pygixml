@@ -88,3 +88,16 @@ def test_stream_dump_interleaved_scales_linearly(tmp_path):
     assert time.perf_counter() - t < 10
     got = json.loads(out.read_text())["r"]
     assert got["a"][:2] == ["0", "1"] and got["b"][-1] == "59999" and len(got["a"]) == len(got["b"]) == 60000
+
+
+def test_stream_dump_second_sibling_after_the_write_buffer_flushed(tmp_path):
+    # The first <a> is bigger than the writer's 64 KB buffer, so it is already
+    # on disk when the second one arrives; the shared parent's <b>/<b> pair is
+    # patched in memory. Both paths must give what the DOM gives.
+    big = "x" * 70000
+    xml = f"<r><a>{big}</a><a>2</a><b><c>1</c><c>2</c></b></r>"
+    src, dst = tmp_path / "in.xml", tmp_path / "out.json"
+    src.write_text(xml)
+    for indent in (0, 2):
+        jsonify.stream_dump(str(src), str(dst), indent=indent)
+        assert json.loads(dst.read_text()) == json.loads(jsonify.dumps(xml))
