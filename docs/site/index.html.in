@@ -77,8 +77,8 @@
       <img src="https://raw.githubusercontent.com/MohammadRaziei/pygixml/master/docs/images/pygixml.svg" alt="pygixml" class="h-6 w-auto">
     </a>
     <div class="flex items-center gap-5 ml-8">
-      <a href="docs/index.html" class="text-sm text-dim hover:text-fg transition-colors">Docs</a>
-      <a href="benchmarks/index.html" class="text-sm text-dim hover:text-fg transition-colors">Benchmarks</a>
+      <a href="docs/" class="text-sm text-dim hover:text-fg transition-colors">Docs</a>
+      <a href="benchmarks/" class="text-sm text-dim hover:text-fg transition-colors">Benchmarks</a>
     </div>
     <div class="flex items-center gap-3 ml-auto">
       <span class="font-mono text-xs text-dim border border-hairline rounded-full px-2.5 py-0.5">v@PROJECT_VERSION@</span>
@@ -110,7 +110,7 @@
       Get started
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </a>
-    <a href="benchmarks/index.html" class="inline-flex items-center gap-2 bg-card border border-hairline text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:border-brand/50 hover:-translate-y-0.5">
+    <a href="benchmarks/" class="inline-flex items-center gap-2 bg-card border border-hairline text-white font-mono text-sm font-semibold px-6 py-3 rounded-lg transition-all hover:border-brand/50 hover:-translate-y-0.5">
       See the benchmarks
     </a>
   </div>
@@ -151,7 +151,7 @@
     refreshed on a schedule, not hand-edited &mdash; on the other.
   </p>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-    <a href="docs/index.html" class="card-hover block bg-card border border-hairline rounded-xl p-6">
+    <a href="docs/" class="card-hover block bg-card border border-hairline rounded-xl p-6">
       <div class="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-brand mb-4">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
       </div>
@@ -161,7 +161,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-3.5 w-3.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </div>
     </a>
-    <a href="benchmarks/index.html" class="card-hover block bg-card border border-hairline rounded-xl p-6">
+    <a href="benchmarks/" class="card-hover block bg-card border border-hairline rounded-xl p-6">
       <div class="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-brand mb-4">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 5-8"/></svg>
       </div>
@@ -215,9 +215,14 @@
       <div class="text-sm text-dim leading-relaxed"><code>iterparse</code> / <code>iterfind</code> over yxml &mdash; process a file too big to ever load whole, one element at a time.</div>
     </div>
     <div>
+      <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><polyline points="8 6 2 12 8 18"/><polyline points="16 6 22 12 16 18"/></svg></div>
+      <div class="font-mono font-semibold text-sm mb-1.5">HTML</div>
+      <div class="text-sm text-dim leading-relaxed"><code>parse_html</code> reads HTML into the same DOM, so XPath, <code>dictify</code> and <code>jsonify</code> work on it too, and <code>to_html</code> writes it back. A tolerant normaliser, not a full HTML5 tree-builder.</div>
+    </div>
+    <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">CLI</div>
-      <div class="text-sm text-dim leading-relaxed"><code>pygixml cat</code>, <code>query</code>, <code>stream</code>, <code>convert</code> &mdash; XML from a shell pipeline.</div>
+      <div class="text-sm text-dim leading-relaxed"><code>pygixml query</code> (XPath), <code>stream --where</code> (a jq/xq-style filter in bounded memory), <code>jsonify</code>, <code>convert</code>, <code>cat</code> &mdash; XML, JSON, YAML and HTML from a shell pipeline.</div>
     </div>
   </div>
 </section>
@@ -344,8 +349,11 @@
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
         </tr>
         <tr class="border-t border-hairline">
-          <td class="text-left px-4 py-3"><div class="text-fg font-medium">Command-line tools</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">cat, query, jsonify, stream, convert</div></td>
+          <td class="text-left px-4 py-3">
+            <div class="text-fg font-medium">Command-line tools</div>
+            <div class="text-xs text-fg0 mt-0.5">Use the library from a shell, with no script around it.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">query (XPath or dotted), stream --where (bounded memory), jsonify, convert (XML / JSON / YAML / TOON / HTML), cat; all read stdin</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
@@ -358,17 +366,6 @@
           <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-fg0 mt-0.5">C accelerator, pure-Python fallback</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">pure Python, over stdlib expat</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">pure Python</div></td>
-        </tr>
-        <tr class="border-t border-hairline">
-          <td class="text-left px-4 py-3">
-            <div class="text-fg font-medium">System libraries to install</div>
-            <div class="text-xs text-fg0 mt-0.5">Anything on the OS besides the wheel itself.</div>
-          </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: pugixml and yxml are compiled in</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none from wheels (libxml2/libxslt bundled); a source build needs their headers</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: ships with Python</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: pure Python</div></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: pure Python</div></td>
         </tr>
         <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
@@ -492,11 +489,11 @@ pygixml convert data.xml data.json</code></pre>
   <div>
     <div class="font-mono text-xs uppercase tracking-wider text-fg0 mb-3">Resources</div>
     <div class="flex flex-col gap-2.5 text-sm">
-      <a href="docs/index.html" class="flex items-center gap-2 hover:text-brand transition-colors">
+      <a href="docs/" class="flex items-center gap-2 hover:text-brand transition-colors">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
         Documentation
       </a>
-      <a href="benchmarks/index.html" class="flex items-center gap-2 hover:text-brand transition-colors">
+      <a href="benchmarks/" class="flex items-center gap-2 hover:text-brand transition-colors">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 5-8"/></svg>
         Benchmarks
       </a>

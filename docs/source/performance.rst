@@ -15,7 +15,7 @@ footprint. Nothing here is manually transcribed or rounded off: the
 interactive report is generated straight from those runs.
 
 That full interactive report lives at its own page, not embedded here --
-`see the benchmark report <../benchmarks/index.html>`_.
+`see the benchmark report <../benchmarks/>`_.
 
 The report itself is refreshed on a schedule
 (``.github/workflows/benchmark.yml``, weekly, plus on-demand), not on every
