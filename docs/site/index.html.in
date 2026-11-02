@@ -274,8 +274,8 @@
         </tr>
         <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
-            <div class="text-fg font-medium">HTML parsing (messy, real-world markup)</div>
-            <div class="text-xs text-fg0 mt-0.5">Turn tag soup into a tree you can query, and a tree back into HTML.</div>
+            <div class="text-fg font-medium">HTML parsing</div>
+            <div class="text-xs text-fg0 mt-0.5">Parse HTML into a tree you can query, and write a tree back out as HTML.</div>
           </td>
           <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">parse_html / xml_to_html: a tolerant normaliser, not full HTML5 tree-building</div></td>
           <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">lxml.html (libxml2&rsquo;s HTML parser)</div></td>
@@ -360,12 +360,15 @@
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">pure Python</div></td>
         </tr>
         <tr class="border-t border-hairline">
-          <td class="text-left px-4 py-3"><div class="text-fg font-medium">Standard library (zero install)</div></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
-          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="text-left px-4 py-3">
+            <div class="text-fg font-medium">System libraries to install</div>
+            <div class="text-xs text-fg0 mt-0.5">Anything on the OS besides the wheel itself.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: pugixml and yxml are compiled in</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none from wheels (libxml2/libxslt bundled); a source build needs their headers</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: ships with Python</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: pure Python</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">none: pure Python</div></td>
         </tr>
         <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
