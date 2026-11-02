@@ -1059,6 +1059,17 @@ def _build_abstract(throughput, html, memory, cli):
     }
 
 
+def _project_version():
+    """The package version from pyproject.toml, or "" if it cannot be read."""
+    try:
+        import tomllib
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "pyproject.toml")
+        with open(path, "rb") as f:
+            return tomllib.load(f)["project"]["version"]
+    except Exception:
+        return ""
+
+
 def build(results_dir, output_path, chartjs_path):
     """results_dir holds one JSON per benchmark (throughput.json, html.json, ...)."""
     if not os.path.isdir(results_dir):
@@ -1113,6 +1124,7 @@ def build(results_dir, output_path, chartjs_path):
         generated_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         headline=headline,
         abstract=abstract,
+        version=_project_version(),
         subhead=subhead,
         meta_line=f"{len(throughput['results']) if throughput else 0} corpus entries &middot; "
                    f"{thr['repeats']} repeats per cell",
