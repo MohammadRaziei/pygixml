@@ -274,6 +274,28 @@
         </tr>
         <tr class="border-t border-hairline">
           <td class="text-left px-4 py-3">
+            <div class="text-fg font-medium">HTML parsing (messy, real-world markup)</div>
+            <div class="text-xs text-fg0 mt-0.5">Turn tag soup into a tree you can query, and a tree back into HTML.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">parse_html / xml_to_html: a tolerant normaliser, not full HTML5 tree-building</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">lxml.html (libxml2&rsquo;s HTML parser)</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span><div class="text-xs text-fg0 mt-0.5">html.parser only tokenizes, no tree</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3">
+            <div class="text-fg font-medium">Tree diff, patch and similarity</div>
+            <div class="text-xs text-fg0 mt-0.5">Edit script between two XML or HTML trees, and a structural similarity score.</div>
+          </td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">diff / patch / is_equal / similarity</div></td>
+          <td class="px-3 py-3"><span class="text-amber-400 font-bold">~</span><div class="text-xs text-fg0 mt-0.5">lxml.html.diff marks up changed text; no XML edit script</div></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+          <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
+        </tr>
+        <tr class="border-t border-hairline">
+          <td class="text-left px-4 py-3">
             <div class="text-fg font-medium">Streaming, item-by-item parse</div>
             <div class="text-xs text-fg0 mt-0.5">Process one element at a time without holding the whole tree.</div>
           </td>

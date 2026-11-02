@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   In the Sphinx docs the sidebar logo now links to the
   landing page (`docs/source/_templates/sidebar/brand.html`, a copy of Furo's with a
   different `href`).
+- Landing page: the capability table ("What each library can actually do") gained two
+  rows that were missing, HTML parsing and tree diff / patch / similarity.
 - `jsonify.stream_dump` keeps the tail of its output in memory (up to 64 KB) and
   patches it there: turning a repeated sibling into an array no longer costs a
   flush, two seeks and a read per record. Output is byte-identical to 0.14.1;
