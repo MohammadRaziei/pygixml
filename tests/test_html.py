@@ -446,3 +446,39 @@ def test_node_to_html_follows_its_document():
     assert "o:p" in h.first_child().to_html()
     p = pygixml.parse_string("<r><a_x003A_b/></r>")
     assert "a_x003A_b" in p.root.child("a_x003A_b").to_html()
+
+
+def test_leading_comment_does_not_hide_the_root_element():
+    # parse_html keeps comments; a comment before the first element used to make
+    # doc.root the comment and doc.to_string() print only that comment.
+    doc = pygixml.parse_html("<!-- saved from url --><html><p>x</p></html><!-- end -->")
+    assert doc.root.name == "html"
+    xml = doc.to_string()
+    assert "<p>x</p>" in xml
+    assert xml.startswith("<!-- saved from url -->") and xml.endswith("<!-- end -->")
+
+
+def test_bogus_doctype_comment_keeps_the_following_element():
+    doc = pygixml.parse_html("<!DOCTYml><p>y</p>")
+    assert doc.root.name == "p"
+    assert "<p>y</p>" in doc.to_string()
+
+
+def test_cdata_in_html_is_a_bogus_comment_and_never_swallows_the_rest():
+    # Outside svg/math "<![CDATA[" is a bogus comment that ends at the first ">",
+    # so what follows must survive (it used to be dropped up to "]]>" or the end).
+    assert pygixml.html_to_xml("<![CDATA[>l") == "<root><!--[CDATA[-->l</root>"
+    assert pygixml.html_to_xml("<![CDATA[x") == "<root><!--[CDATA[x--></root>"
+    doc = pygixml.parse_html("<p>a</p><![CDATA[>b")
+    assert "b" in doc.to_string()
+
+
+def test_nul_follows_the_html_spec():
+    # Ignored in normal text; U+FFFD in RCDATA / raw text, attribute values and comments
+    # (html5lib and Lexbor agree).
+    assert pygixml.html_to_xml("<p>a\x00b</p>") == "<p>ab</p>"
+    assert pygixml.html_to_xml("<title>a\x00b</title>") == "<title>a\ufffdb</title>"
+    assert pygixml.html_to_xml("<textarea>a\x00b</textarea>") == "<textarea>a\ufffdb</textarea>"
+    assert pygixml.html_to_xml("<script>a\x00b</script>") == "<script>a\ufffdb</script>"
+    assert pygixml.html_to_xml("<div title='a\x00b'>x</div>") == '<div title="a\ufffdb">x</div>'
+    assert "a\ufffdb" in pygixml.html_to_xml("<!--a\x00b-->x")

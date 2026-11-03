@@ -200,13 +200,19 @@ API
 ---
 
 .. autofunction:: pygixml.diff
+   :no-index:
 
 .. autofunction:: pygixml.patch
+   :no-index:
 
 .. autofunction:: pygixml.is_equal
+   :no-index:
 
 .. autofunction:: pygixml.signature
+   :no-index:
 
 .. autofunction:: pygixml.similarity
+   :no-index:
 
 .. autoexception:: pygixml.PygiXMLDiffError
+   :no-index:

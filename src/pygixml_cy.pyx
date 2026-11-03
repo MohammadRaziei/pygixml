@@ -605,8 +605,14 @@ cdef class XMLDocument:
             indent_str = indent
             
         cdef bytes indent_bytes = indent_str.encode('utf-8')
-        cdef string s = pugi_serialize_node(self._doc.first_child(), indent_bytes)
-        return s.decode('utf-8')
+        # Every top-level node, not just the first: a leading comment or PI
+        # must not hide the root element (or a trailing comment).
+        cdef xml_node node = self._doc.first_child()
+        cdef list parts = []
+        while node.type() != node_null:
+            parts.append(pugi_serialize_node(node, indent_bytes).decode('utf-8'))
+            node = node.next_sibling()
+        return "\n".join(parts)
 
     def to_html(self, pretty=False, indent="  ", doctype=False, unwrap=None):
         """Serialize to HTML (void tags as ``<br>``, ``<div></div>`` never
@@ -638,8 +644,11 @@ cdef class XMLDocument:
     def root(self):
         """Return the root element of the document.
 
-        Equivalent to calling :meth:`first_child`.  Returns ``None`` if
-        the document is empty.
+        The first *element* child of the document: a comment or
+        processing instruction before it (kept when the parse flags ask
+        for them, as :func:`parse_html` does) is skipped, which
+        :meth:`first_child` does not do.  Returns ``None`` if the document
+        has no element.
 
         Returns:
             XMLNode | None: The root element, or ``None``.
@@ -650,7 +659,10 @@ cdef class XMLDocument:
             >>> doc.root.name
             'root'
         """
-        return self.first_child()
+        cdef xml_node node = self._doc.first_child()
+        while node.type() != node_null and node.type() != node_element:
+            node = node.next_sibling()
+        return XMLNode.create_from_cpp(node, self._holder)
 
 
 cdef class XMLNode:

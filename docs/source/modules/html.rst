@@ -197,19 +197,26 @@ API
 ---
 
 .. autofunction:: pygixml.html_to_xml
+   :no-index:
 
 .. autofunction:: pygixml.parse_html
+   :no-index:
 
 .. autofunction:: pygixml.xml_to_html
+   :no-index:
 
 .. autofunction:: pygixml.encode_name
+   :no-index:
 
 .. autofunction:: pygixml.decode_name
+   :no-index:
 
 .. autoclass:: pygixml.XMLNameCodec
+   :no-index:
    :members:
 
 .. autoexception:: pygixml.PygiXMLHTMLError
+   :no-index:
 
 
 Names on the way back

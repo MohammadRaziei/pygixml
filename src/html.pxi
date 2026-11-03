@@ -2355,6 +2355,17 @@ static inline bool starts_ci(const char* s, size_t n, const char* lit) {
 }
 
 // XML-illegal characters (control chars except \t \n \r, U+FFFE, U+FFFF) are dropped.
+// NUL: in normal text the HTML spec ignores it (append_clean drops it, as before); in
+// RCDATA / raw text, attribute values and comments it becomes U+FFFD. Call this where
+// the spec says so, before the text is escaped.
+static inline void nul_to_fffd(std::string& s) {
+    if (s.find('\0') == std::string::npos) return;
+    std::string r;
+    r.reserve(s.size() + 8);
+    for (char c : s) { if (c == '\0') r += "\357\277\275"; else r += c; }
+    s.swap(r);
+}
+
 static inline void append_clean(std::string& out, const char* s, size_t n) {
     for (size_t i = 0; i < n; ++i) {
         unsigned char c = static_cast<unsigned char>(s[i]);
@@ -2395,8 +2406,9 @@ static inline void escape(std::string& out, const char* s, size_t n, bool attr, 
 
 // XML comments can't contain "--" or end with "-".
 static inline void append_comment(std::string& out, const char* s, size_t n) {
-    std::string clean;
-    append_clean(clean, s, n);
+    std::string raw(s, n), clean;
+    nul_to_fffd(raw);
+    append_clean(clean, raw.data(), raw.size());
     out += "<!--";
     for (size_t i = 0; i < clean.size(); ++i) {
         out += clean[i];
@@ -2740,6 +2752,7 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
                         j = e;
                     }
                 }
+                nul_to_fffd(value);
                 attrs.emplace_back(std::move(name), std::move(value));
             }
             if (!closed) break;                                       // EOF inside a tag: dropped (HTML5)
@@ -2762,6 +2775,7 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
                     std::string t;
                     if (tag == "script" || tag == "style") t.assign(s + i, e - i);
                     else decode_entities(t, s + i, e - i, false);
+                    nul_to_fffd(t);
                     b.data(std::move(t));
                 }
                 i = e;
@@ -2801,11 +2815,7 @@ static inline std::string to_xml(const std::string& input, const std::string& ro
             } else if (starts_ci(s + i + 2, n - i - 2, "doctype")) {
                 const char* gt = static_cast<const char*>(std::memchr(s + i, '>', n - i));
                 i = gt ? static_cast<size_t>(gt - s) + 1 : n;         // dropped
-            } else if (n - i >= 9 && std::memcmp(s + i, "<![CDATA[", 9) == 0) {
-                size_t e = i + 9;
-                while (e + 2 < n && !(s[e] == ']' && s[e + 1] == ']' && s[e + 2] == '>')) ++e;
-                i = e + 2 < n ? e + 3 : n;                            // dropped
-            } else {                                                  // bogus comment
+            } else {   // bogus comment; this includes "<![CDATA[", which outside svg/math is one too
                 const char* gt = static_cast<const char*>(std::memchr(s + i + 2, '>', n - i - 2));
                 size_t e = gt ? static_cast<size_t>(gt - s) : n;
                 b.comment(s + i + 2, e - (i + 2));

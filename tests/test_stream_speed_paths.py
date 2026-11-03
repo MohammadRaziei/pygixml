@@ -101,3 +101,30 @@ def test_stream_dump_second_sibling_after_the_write_buffer_flushed(tmp_path):
     for indent in (0, 2):
         jsonify.stream_dump(str(src), str(dst), indent=indent)
         assert json.loads(dst.read_text()) == json.loads(jsonify.dumps(xml))
+
+
+def test_pullparser_plain_text_fast_path_matches_byte_by_byte_feeding():
+    # Long runs of plain text are copied in bulk; entities, CRLF, CDATA and non-ASCII
+    # must still come out exactly as when every byte goes through yxml on its own,
+    # wherever the chunk boundaries fall.
+    item = ("<a>plain text caf\u00e9 \u4e2d\u6587 &amp; x &#233; \r\nline2\rline3\nend"
+            "<![CDATA[ <raw> ]]> tail</a>")
+    doc = ("<r>" + item * 3 + "</r>").encode("utf-8")
+
+    def events(chunks):
+        p = pygixml.PullParser(events=("end",))
+        out, i = [], 0
+        for c in chunks:
+            p.feed(doc[i:i + c])
+            i += c
+        p.feed(doc[i:])
+        p.close()
+        for _ev, e in p.read_events():
+            out.append((e.tag, e.text, e.tail))
+        return out, p.line, p.position
+
+    whole = events([])
+    assert events([1] * len(doc)) == whole
+    assert events([5, 1, 17, 2, 64]) == whole
+    # CRLF, lone CR and LF are each one line break: 3 per item, 3 items -> line 10.
+    assert whole[1] == 10

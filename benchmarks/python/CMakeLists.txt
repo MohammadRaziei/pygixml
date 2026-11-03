@@ -297,6 +297,19 @@ add_custom_command(
 )
 add_custom_target(pygixml_bench_html DEPENDS "${HTML_JSON}")
 
+# Peak RSS of the same pages (one fresh process per page and library), in the shape of
+# throughput_memory.json so the report draws it next to the speed charts.
+set(HTML_MEMORY_JSON "${RESULTS_DIR}/html_memory.json")
+
+add_custom_command(
+  OUTPUT "${HTML_MEMORY_JSON}"
+  COMMAND "${VENV_PYTHON}" -W "ignore::RuntimeWarning:site" "${PY_DIR}/bench_html_memory.py" "${HTML_MEMORY_JSON}"
+  DEPENDS "${VENV_STAMP}" "${PY_DIR}/bench_html_memory.py" "${PY_DIR}/bench_html_memory_one.py" "${PY_DIR}/bench_html.py"
+  COMMENT "pygixml benchmarks: html memory -- peak RSS of parse_html vs lxml.html / BeautifulSoup / html5lib / selectolax"
+  USES_TERMINAL
+)
+add_custom_target(pygixml_bench_html_memory DEPENDS "${HTML_MEMORY_JSON}")
+
 # Note: the "what each library can actually do" feature matrix used to
 # be generated here (features.py -> features.json -> a table in the
 # report). It's static, hand-curated content -- nothing to run, no
@@ -324,5 +337,5 @@ set(PYGIXML_BENCH_RESULTS_SCRATCH_DIR "${RESULTS_DIR}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_PYTHON "${VENV_PYTHON}" PARENT_SCOPE)
 set(PYGIXML_BENCH_VENV_STAMP "${VENV_STAMP}" PARENT_SCOPE)
 set(PYGIXML_BENCH_ALL_RESULT_JSONS
-    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${CLI_JSON}" "${HTML_JSON}" "${SYSTEM_INFO_JSON}"
+    "${THROUGHPUT_JSON}" "${THROUGHPUT_MEMORY_JSON}" "${SCALING_JSON}" "${MEMORY_JSON}" "${SIZES_JSON}" "${CLI_JSON}" "${HTML_JSON}" "${HTML_MEMORY_JSON}" "${SYSTEM_INFO_JSON}"
     PARENT_SCOPE)

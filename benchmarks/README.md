@@ -48,6 +48,7 @@ Every operation is its own target, independently runnable
 | `pygixml_bench_memory` | Peak RSS vs. input size, one isolated process per data point |
 | `pygixml_bench_system_info` | Record the machine's OS, CPU model, core count, and RAM |
 | `pygixml_bench_html` | HTML parsing: `parse_html` vs lxml.html / BeautifulSoup / html5lib / selectolax |
+| `pygixml_bench_html_memory` | Peak RSS of the same HTML pages, one fresh process per page and library (`html_memory.json`) |
 | `pygixml_bench_report` | Copy every JSON above into `results/` |
 
 `cmake --build build --target help` lists all of these plus CMake's

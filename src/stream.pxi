@@ -1166,6 +1166,27 @@ cdef extern from *:
     }
 
 
+    /* Fast path for plain character data. In element content, every byte except
+    * '<', '&', CR, LF and NUL is returned by yxml_parse() as YXML_CONTENT with
+    * the byte itself and nothing else changing (no state change, no line break).
+    * So the wrapper may copy such a run straight out of its input; this only
+    * accounts for it (total / byte). Returns the length of the run (0 if yxml is not
+    * in plain content, or right after a CR). */
+    static inline size_t yxml_skip_text(yxml_t *x, const unsigned char *s, size_t n) {
+        if(x->state != YXMLS_misc2 || x->ignore)
+            return 0;
+        size_t k = 0;
+        while(k < n) {
+            unsigned char c = s[k];
+            if(c == 0 || c == '<' || c == '&' || c == '\\r' || c == '\\n')
+                break;
+            ++k;
+        }
+        x->total += k;
+        x->byte += k;
+        return k;
+    }
+
     yxml_ret_t yxml_eof(yxml_t *x) {
         if(x->state != YXMLS_misc3)
             return YXML_EEOF;
@@ -1198,6 +1219,7 @@ cdef extern from *:
     int yxml_parse(yxml_t *x, int ch)
     int yxml_eof(yxml_t *x)
     size_t yxml_symlen(yxml_t *x, const char *s)
+    size_t yxml_skip_text(yxml_t *x, const unsigned char *s, size_t n)
 
 
 # ==========================================================================
@@ -1895,8 +1917,11 @@ cdef class PullParser:
         cdef StreamElement elem
         cdef object top
 
-        for i in range(n):
+        cdef size_t skip
+        i = 0
+        while i < n:
             ret = yxml_parse(&self._x, buf[i])
+            i += 1
 
             if ret == YXML_OK:
                 continue
@@ -1930,6 +1955,12 @@ cdef class PullParser:
                     _cbuf_add(&self._text_buf, cdata, strlen(cdata))
                 # else: content inside a not-built (skipped) element --
                 # nothing references it, so don't bother decoding/copying it.
+                # ponytail: one run of plain text per call instead of one yxml_parse() per byte.
+                skip = yxml_skip_text(&self._x, buf + i, <size_t>(n - i))
+                if skip:
+                    if self._content_ok:
+                        _cbuf_add(&self._text_buf, <const char*>(buf + i), skip)
+                    i += <Py_ssize_t>skip
 
             elif ret == YXML_ELEMEND:
                 self._finalize_pending()

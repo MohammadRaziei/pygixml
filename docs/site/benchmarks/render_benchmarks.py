@@ -588,7 +588,7 @@ def _build_throughput_section(throughput, throughput_memory, op_meta=None, colla
             rest_mem = ", ".join(f"{LIB_LABELS.get(lib, lib)} {e:.1f}\u00d7" for lib, e in ranked_mem_ratios)
             memory_summary = (
                 f"<strong>{LIB_LABELS.get(mem_ref_lib, mem_ref_lib)}</strong> uses the least memory "
-                f"(uses the least memory most consistently across the corpus). "
+                f"most consistently across the corpus. "
                 f"On average ({_tex_e('other', LIB_LABELS.get(mem_ref_lib, mem_ref_lib), 'm')})"
                 + (f": {rest_mem} as much." if rest_mem else ".")
             )
@@ -973,7 +973,7 @@ def _ratio(rows, op, other, ref="pygixml"):
     return _e_ratio(pairs)
 
 
-def _build_abstract(throughput, html, memory, cli):
+def _build_abstract(throughput, html, memory, cli, html_memory=None):
     """The paper-style summary at the top of the page. Every number comes from
     the result JSONs; a claim is only printed if the data shows pygixml
     winning, and every loss the data shows goes into the closing caveat."""
@@ -1012,6 +1012,23 @@ def _build_abstract(throughput, html, memory, cli):
             wins.append(f"<strong>command line</strong> (process startup included): {r:.1f}\u00d7 faster than xq")
         elif r and r <= 0.95:
             loses.setdefault("command line", []).append(f"xq is {1 / r:.1f}\u00d7 faster")
+
+    hm_rows = (html_memory or {}).get("html_parse", [])
+    hm_wins = []
+    for lib in ("lxml", "bs4_html_parser", "bs4_lxml", "html5lib", "selectolax"):
+        pairs = [(r["libraries"][lib]["peak_rss_mb"], r["libraries"]["pygixml"]["peak_rss_mb"]) for r in hm_rows
+                 if r.get("libraries", {}).get(lib, {}).get("available")
+                 and r["libraries"].get("pygixml", {}).get("available")]
+        ratio = _e_ratio(pairs)
+        if ratio is None:
+            continue
+        label = LIB_LABELS.get(lib, lib)
+        if ratio >= 1.05:
+            hm_wins.append(f"{ratio:.1f}\u00d7 less than {label}")
+        elif ratio <= 0.95:
+            loses.setdefault("HTML memory", []).append(f"{label} uses {1 / ratio:.1f}\u00d7 less")
+    if hm_wins:
+        wins.append("<strong>HTML memory</strong> (peak RSS of <code>parse_html</code>): " + ", ".join(hm_wins))
 
     def pts(key):
         return sorted((p for p in (memory or {}).get(key, {}).get("points", []) if p.get("available")),
@@ -1074,16 +1091,17 @@ def build(results_dir, output_path, chartjs_path, version=None):
     """results_dir holds one JSON per benchmark (throughput.json, html.json, ...)."""
     if not os.path.isdir(results_dir):
         raise SystemExit(f"render_benchmarks: {results_dir} is not a directory")
-    throughput, throughput_memory, scaling, memory, sizes, cli, system_info, html = (
+    throughput, throughput_memory, scaling, memory, sizes, cli, system_info, html, html_memory = (
         _load(os.path.join(results_dir, n + ".json"))
-        for n in ("throughput", "throughput_memory", "scaling", "memory", "sizes", "cli", "system_info", "html"))
+        for n in ("throughput", "throughput_memory", "scaling", "memory", "sizes", "cli", "system_info", "html",
+                  "html_memory"))
 
     mem = _build_memory_section(memory)
     scl = _build_scaling_section(scaling)
     thr = _build_throughput_section(throughput, throughput_memory)
     siz = _build_size_section(sizes)
     cli_sec = _build_cli_section(cli)
-    html_sec = _build_throughput_section(html, None, HTML_OP_META, collapse_genres=True)
+    html_sec = _build_throughput_section(html, html_memory, HTML_OP_META, collapse_genres=True)
 
     ops_by_key = thr["ops_by_key"]
     jsonify_narrative = _build_jsonify_narrative(ops_by_key.get("xml_to_json"), mem["o1_note"])
@@ -1096,9 +1114,10 @@ def build(results_dir, output_path, chartjs_path, version=None):
     embedded = {
         "throughput": throughput, "throughput_memory": throughput_memory, "scaling": scaling,
         "memory": memory, "sizes": sizes, "cli": cli, "system_info": system_info, "html": html,
+        "html_memory": html_memory,
     }
 
-    abstract = _build_abstract(throughput, html, memory, cli)
+    abstract = _build_abstract(throughput, html, memory, cli, html_memory)
     headline = "pygixml, measured honestly"
     subhead = (
         "Every independent way to work with XML this library offers &mdash; the core module, "

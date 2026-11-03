@@ -29,5 +29,6 @@ add_dependencies(pygixml_bench_report
   pygixml_bench_sizes
   pygixml_bench_cli
   pygixml_bench_html
+  pygixml_bench_html_memory
   pygixml_bench_system_info
 )
