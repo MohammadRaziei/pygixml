@@ -8,28 +8,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.15.1] - 2026-11-02
+## [v0.15.2] - 2026-11-03
 
+### Added
+
+- `tests/test_html_robustness.py`: `parse_html` gives well-formed XML, a stable
+  `html -> xml -> html -> xml` round trip and the right text for 51 nasty inputs, and
+  decodes all 2,231 HTML5 named entities (Python's own table) to their values. Run once
+  against html5lib-tests' tokenizer corpus as well (6,821 inputs, 5,040 of them pure
+  text/entity cases): no exceptions, no malformed output, every text case right except
+  whitespace-only documents (leading whitespace is dropped) and lone surrogates (which
+  Python cannot pass as UTF-8).
+- HTML memory benchmark (`benchmarks/python/bench_html_memory.py`, target
+  `pygixml_bench_html_memory`, result `html_memory.json`): peak RSS of `parse_html` and
+  the other HTML parsers on the same pages as `bench_html.py`, one fresh process per page
+  and library. The benchmarks page shows it with the HTML speed charts and the abstract
+  quotes it. In a first run (2 MB pages) `parse_html` used the least memory in every row:
+  about 1.5x less than lxml.html and Lexbor, 2x less than html5lib, 3x less than
+  BeautifulSoup.
 
 ### Changed
 
-- Landing and benchmarks pages: Docs and Benchmarks links sit next to the logo on the
-  left, the version badge (new on the benchmarks page, read from `pyproject.toml`) and
-  the GitHub button on the right. The benchmarks navbar uses the landing header's exact
-  metrics and web fonts; `render_benchmarks.py --version` (passed by CMake) sets the badge.
-  In the Sphinx docs the sidebar logo now links to the
-  landing page (`docs/source/_templates/sidebar/brand.html`, a copy of Furo's with a
-  different `href`).
-- Landing page: the capability table ("What each library can actually do") gained two
-  rows that were missing (HTML parsing, tree diff / patch / similarity) and a fuller
-  command-line row; "One package, every way to read XML" gained an HTML card. Links to
-  the docs and the benchmarks point at the folder, not at `index.html`.
+- `PullParser` (so `iterparse`, `iterfind`, `dictify.iterdict`, `jsonify.iterjsonl`)
+  copies runs of plain text in bulk instead of calling the tokenizer once per byte. Events,
+  text, line numbers and error messages are identical to 0.14.1 (compared on 18,000
+  chunked runs, 5,000 of them ending in an error); on a 2.5 MB RSS feed `iterfind` went
+  from 56 ms to 31 ms in the sandbox, now level with lxml's `iterparse`.
+
+### Fixed
+
+- The Sphinx build no longer warns about duplicate object descriptions (the diff and HTML
+  module pages now use `:no-index:`; the API reference keeps the index entries).
+- `XMLDocument.to_string()` printed only the document's first top-level node, so a
+  comment or processing instruction before the root element (kept by `parse_html`,
+  and by any parse with the comment/PI flags) hid the whole document, and a trailing
+  comment was lost. It now prints every top-level node.
+- `XMLDocument.root` is now the first *element* child, as its docstring always said;
+  it used to return a leading comment or PI. `first_child()` is unchanged.
+- `parse_html` / `html_to_xml`: `<![CDATA[` outside svg/math is a bogus comment that
+  ends at the first `>` (as in browsers). It used to be dropped up to `]]>`, which
+  swallowed the rest of the document when there was no `]]>`.
+- `parse_html` / `html_to_xml`: a NUL character is now U+FFFD inside `<title>` /
+  `<textarea>`, `<script>` / `<style>`, attribute values and comments, as the HTML
+  spec (and html5lib and Lexbor) do; in normal text it is still ignored. It used to
+  be dropped everywhere.
+
+## [v0.15.1] - 2026-11-02
+
+### Added
+
+- Benchmarks page: a sticky table of contents in a left sidebar (the current section
+  is highlighted; hidden on narrow screens) and an abstract at the top. The abstract
+  is generated from the result JSONs, so its numbers are never typed by hand: it
+  lists where pygixml is faster, the constant-memory result of `jsonify.stream_dump`
+  and, in a closing "where it does not win" line, every comparison the data shows
+  pygixml losing.
+- Landing page: the capability table ("What each library can actually do") gained
+  HTML parsing and tree diff / patch / similarity rows and a fuller command-line row;
+  "One package, every way to read XML" gained an HTML card.
+
+### Changed
+
 - `jsonify.stream_dump` keeps the tail of its output in memory (up to 64 KB) and
   patches it there: turning a repeated sibling into an array no longer costs a
   flush, two seeks and a read per record. Output is byte-identical to 0.14.1;
   record-shaped input is about 1.7x faster in the sandbox and should gain more on
   slower filesystems. The documentation no longer calls interleaved siblings a
   quadratic case: it is linear (128,000 alternating pairs: 6 s in 0.14.1, 0.3 s now).
+- Landing and benchmarks pages: Docs and Benchmarks links sit next to the logo on the
+  left, the version badge (new on the benchmarks page, read from `pyproject.toml`) and
+  the GitHub button on the right. The benchmarks navbar uses the landing header's exact
+  metrics and web fonts; `render_benchmarks.py --version` (passed by CMake) sets the
+  badge. Links to the docs and the benchmarks point at the folder, not at `index.html`.
+  In the Sphinx docs the sidebar logo now links to the landing page
+  (`docs/source/_templates/sidebar/brand.html`, a copy of Furo's with a different `href`).
+
+### Fixed
+
+- The benchmarks page had no favicon; it now uses the same icon as the landing page.
+  The summary sentence under each chart no longer carries the extra ", not a ratio of
+  medians" clause.
 
 ## [v0.15.0] - 2026-11-01
 
@@ -41,13 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   link extraction. selectolax is faster (about 1.5x on average); pygixml is about
   1.3x faster than lxml.html and far ahead of BeautifulSoup and html5lib.
   `parse_html` is a normaliser, not a full HTML5 tree-construction implementation.
-- Benchmarks page: a sticky table of contents in a left sidebar (the current section
-  is highlighted; hidden on narrow screens) and an abstract at the top. The Docs and
-  Benchmarks links now sit next to the logo, on the left; the GitHub button stays right. The abstract
-  is generated from the result JSONs, so its numbers are never typed by hand: it
-  lists where pygixml is faster, the constant-memory result of `jsonify.stream_dump`,
-  and, in a closing "where it does not win" line, every comparison the data shows
-  pygixml losing.
 
 ### Changed
 
@@ -76,12 +127,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`sphinx_docs` target, `docs/site/benchmarks/render_benchmarks.py`). The per-entry
   detail sections are gone; charts group trends by genre and the HTML charts show
   one point per size.
-
-### Fixed
-
-- The benchmarks page had no favicon; it now uses the same icon as the landing page.
-  The summary sentence under each chart no longer carries the extra ", not a ratio of
-  medians" clause.
 
 ## [v0.14.1] - 2026-10-30
 
