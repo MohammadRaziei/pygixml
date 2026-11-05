@@ -37,7 +37,7 @@ xmltodict, and xmljson in a full, reproducible benchmark suite (see
 numbers that inevitably go stale the moment the code changes. The
 live, interactive report (refreshed on a schedule, not hand-edited)
 is on the
-**[Performance page](https://mohammadraziei.github.io/pygixml/performance.html)**.
+**[benchmarks page](https://mohammadraziei.github.io/pygixml/benchmarks/)**.
 
 Two things worth knowing going in, because they're structural (true
 regardless of which exact numbers the report shows this week), not a
@@ -78,9 +78,9 @@ simply don't have:
   buffering the document, the output, or both, and without crashing
   the process once the file gets genuinely large.
 
-  The memory guarantee is unconditional (verified: ~17MB peak,
-  completely flat from 5K to 640K records, see
-  `benchmarks/adhoc/bench_record_shaped.py`). The **time** is linear in the input size for every shape, including
+  The memory guarantee is unconditional (measured: ~17MB peak,
+  completely flat from 5K to 320K records, see the memory panel of the
+  [benchmarks page](https://mohammadraziei.github.io/pygixml/benchmarks/)). The **time** is linear in the input size for every shape, including
   two or more different tags interleaving at the same level
   (`<a>1</a><b>1</b><a>2</a><b>2</b>...`): such siblings are moved
   into place once, in one pass, when their parent closes.
@@ -104,7 +104,7 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 
 * **Fast parsing**: pugixml's C++ DOM parser, consistently at or near
   the front across the benchmark suite (see the
-  [Performance page](https://mohammadraziei.github.io/pygixml/performance.html))
+  [benchmarks page](https://mohammadraziei.github.io/pygixml/benchmarks/))
 * **Constant-memory streaming**: `jsonify.stream_dump` holds flat
   regardless of input size; nothing else compared here does
 * **Small footprint**: well under a megabyte installed, no bundled
@@ -362,7 +362,7 @@ print(xml_out)
 ```python
 import pygixml
 
-# Messy HTML -> well-formed XML, and back
+# HTML -> well-formed XML, and back
 pygixml.html_to_xml("<ul><li>a<li>b<br></ul>")
 # '<ul><li>a</li><li>b<br/></li></ul>'
 doc = pygixml.parse_html("<ul><li>a<li>b<br></ul>")      # a normal XMLDocument
@@ -388,6 +388,13 @@ pygixml.is_equal(a, b)                                     # True
 A document from `parse_html` remembers it came from HTML, so `to_html()`
 restores the original names; a document from `parse_string` keeps its names as
 they are.
+
+> [!NOTE]
+> `parse_html` is a tolerant normaliser, not an HTML5 tree-builder. It always
+> returns well-formed XML and keeps the text, but it does not reshape the tree
+> the way a browser does: no implied `<html>` / `<body>` / `<tbody>`, no
+> reordering of misnested formatting tags, no foster parenting of table text.
+> If you need exactly the browser's DOM, use html5lib or selectolax.
 
 > [!NOTE]
 > Text next to CDATA or comments is one run, and `dictify` / `jsonify` read it
@@ -711,7 +718,9 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
 | `pygixml cat`, `pygixml query`, `pygixml jsonify`, `pygixml convert`, `pygixml stream` | CLI tools: see [Command Line Tools](#command-line-tools) |
 
-Module-level functions: `parse_string(xml)`, `parse_file(path)`.
+Module-level functions: `parse_string(xml)`, `parse_file(path)`, `parse_html(html)`,
+`html_to_xml(html)`, `xml_to_html(doc)`, and `diff` / `patch` / `is_equal` /
+`similarity` / `signature` (see [HTML, diff and patch](#html-diff-and-patch)).
 
 ---
 
@@ -724,12 +733,14 @@ cmake --build benchmarks/build --target pygixml_bench_report
 
 Compares pygixml's parse/`dictify`/`objectify`/`jsonify` against
 **lxml**, **ElementTree**, **xmltodict**, and **xmljson**: speed,
-memory at scale, and install size. Writes the raw numbers to
+memory at scale, and install size; `parse_html` against **lxml.html**,
+**BeautifulSoup**, **html5lib** and **selectolax** (speed and peak memory);
+and the command-line tools against **xq**. Writes the raw numbers to
 `benchmarks/results/*.json`; the docs build (`sphinx_docs`) renders
 the interactive page from it. See
 [`benchmarks/README.md`](benchmarks/README.md) for the full
 methodology, or the live copy on the
-[Performance page](https://mohammadraziei.github.io/pygixml/performance.html).
+[benchmarks page](https://mohammadraziei.github.io/pygixml/benchmarks/).
 
 ---
 

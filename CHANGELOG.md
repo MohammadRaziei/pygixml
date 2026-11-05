@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- README: `parse_html` is described as a tolerant normaliser (not an HTML5 tree-builder), the
+  module-level functions table lists the HTML and diff functions, the benchmarks section
+  covers the HTML and CLI comparisons, and the links point at the benchmarks page. A path
+  that does not exist (`benchmarks/adhoc/...`) and a record count the report does not
+  reach (640K, the report goes to 320K) are gone.
+
 ## [v0.15.2] - 2026-11-03
 
 ### Added
