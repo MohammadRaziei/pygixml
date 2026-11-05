@@ -1,5 +1,6 @@
 """Tests for the `pygixml diff` and `pygixml similarity` CLI subcommands."""
 import json
+import os
 import subprocess
 import sys
 
@@ -11,9 +12,12 @@ OLD = "<ul class='m'><li>Home<li>About us<li>Blog</ul>"
 NEW = "<ul class='m'><li>Home<li>About<li>Blog<li>Contact</ul>"
 
 
-def run(*args, input=None):
+def run(*args, input=None, env=None):
+    # The child writes UTF-8 and we read it as UTF-8: the platform default (cp1252 on
+    # Windows) is neither what pygixml promises nor what a pipe to jq expects.
     return subprocess.run(
-        [sys.executable, "-m", "pygixml", *args], capture_output=True, text=True, input=input,
+        [sys.executable, "-m", "pygixml", *args], capture_output=True, text=True,
+        encoding="utf-8", input=input, env=env,
     )
 
 
@@ -84,12 +88,16 @@ def test_diff_xml_with_ignore_attrs(tmp_path):
     assert run("diff", str(a), str(b), "--ignore-attrs", "data-*", "--exit-code").returncode == 0
 
 
-def test_diff_unicode_and_multiline_stay_on_one_line_each(tmp_path):
+def test_diff_unicode_output_does_not_depend_on_the_locale(tmp_path):
     a, b = tmp_path / "a.html", tmp_path / "b.html"
     a.write_text("<p>سلام دنیا</p>", encoding="utf-8")
     b.write_text("<p>سلام</p>", encoding="utf-8")
-    r = run("diff", str(a), str(b))
-    assert r.returncode == 0 and "سلام" in r.stdout and len(r.stdout.splitlines()) == 1
+    # cp1252 is what a Windows pipe uses by default; it cannot encode Persian.
+    legacy = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    for env in (None, legacy):
+        r = run("diff", str(a), str(b), env=env)
+        assert r.returncode == 0, r.stderr
+        assert "سلام" in r.stdout and len(r.stdout.splitlines()) == 1
 
 
 def test_similarity_matches_the_api(pages):

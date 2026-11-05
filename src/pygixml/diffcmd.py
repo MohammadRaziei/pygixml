@@ -90,6 +90,13 @@ def _load_both(args, parser):
     return _load(args.a, args, parser), _load(args.b, args, parser)
 
 
+def _utf8_stdout() -> None:
+    """Write UTF-8 whatever the locale says. A Windows pipe is cp1252 by default, and the
+    paths, text and attribute values in a diff may be in any script."""
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
+
 def _q(s) -> str:
     return json.dumps(s, ensure_ascii=False)
 
@@ -144,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--quiet", "-q", action="store_true",
                         help="Print nothing; exit 0 when equal, 1 when they differ.")
     args = parser.parse_args(argv)
+    _utf8_stdout()
 
     try:
         a, b = _load_both(args, parser)
@@ -176,6 +184,7 @@ def similarity_main(argv: list[str] | None = None) -> int:
     parser.add_argument("--content", action="store_true",
                         help="Let text count too; by default only the structure does.")
     args = parser.parse_args(argv)
+    _utf8_stdout()
 
     try:
         a, b = _load_both(args, parser)
