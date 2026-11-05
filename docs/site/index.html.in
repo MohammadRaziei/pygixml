@@ -222,7 +222,7 @@
     <div>
       <div class="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-brand mb-3.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4.5 w-4.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
       <div class="font-mono font-semibold text-sm mb-1.5">CLI</div>
-      <div class="text-sm text-dim leading-relaxed"><code>pygixml query</code> (XPath), <code>stream --where</code> (a jq/xq-style filter in bounded memory), <code>jsonify</code>, <code>convert</code>, <code>cat</code> &mdash; XML, JSON, YAML and HTML from a shell pipeline.</div>
+      <div class="text-sm text-dim leading-relaxed"><code>pygixml query</code> (XPath), <code>stream --where</code> (a jq/xq-style filter in bounded memory), <code>jsonify</code>, <code>convert</code>, <code>diff</code>, <code>cat</code> &mdash; XML, JSON, YAML and HTML from a shell pipeline.</div>
     </div>
   </div>
 </section>
@@ -353,7 +353,7 @@
             <div class="text-fg font-medium">Command-line tools</div>
             <div class="text-xs text-fg0 mt-0.5">Use the library from a shell, with no script around it.</div>
           </td>
-          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">query (XPath or dotted), stream --where (bounded memory), jsonify, convert (XML / JSON / YAML / TOON / HTML), cat; all read stdin</div></td>
+          <td class="px-3 py-3"><span class="text-emerald-400 font-bold">&#10003;</span><div class="text-xs text-fg0 mt-0.5">query (XPath or dotted), stream --where (bounded memory), jsonify, convert (XML / JSON / YAML / TOON / HTML), diff and similarity (two files), cat; all read stdin</div></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>
           <td class="px-3 py-3"><span class="text-rose-400 font-bold">&#10007;</span></td>

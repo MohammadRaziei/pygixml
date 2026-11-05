@@ -3,9 +3,9 @@
 Command Line Tools
 ===================
 
-pygixml installs one entry point, ``pygixml``, with five subcommands:
+pygixml installs one entry point, ``pygixml``, with seven subcommands:
 no Python code required for one-off queries, conversions, pretty-printing,
-or filtering giant files from a shell pipeline. Every subcommand also
+comparing two files, or filtering giant files from a shell pipeline. Every subcommand also
 works spelled out as ``python -m pygixml <subcommand>``, which is handy
 when ``pygixml`` isn't on your ``PATH`` (e.g. inside a virtualenv you
 haven't activated).
@@ -35,7 +35,13 @@ haven't activated).
      - converting a whole file to JSON, ``.json`` in / out
    * - ``pygixml convert``
      - full DOM
-     - converting between XML, JSON, YAML, and TOON, any direction
+     - converting between XML, JSON, YAML, TOON, and HTML, any direction
+   * - ``pygixml diff``
+     - two full DOMs
+     - the edit script between two XML or HTML files
+   * - ``pygixml similarity``
+     - two full DOMs
+     - one number, 0..1, for how alike two files are structurally
    * - ``pygixml stream``
      - one record at a time
      - filtering matches out of a file **too big to load**, bounded
@@ -46,7 +52,7 @@ load the whole document, same as :func:`pygixml.parse_file` would:
 fine for anything that comfortably fits in RAM. ``jsonify`` switches to
 a constant-memory streamed conversion automatically once a file crosses
 64MB (see :doc:`/modules/jsonify`). ``stream`` never loads more than one matched
-element at a time, so it's the only one of the five safe for a file
+element at a time, so it's the only one of the seven safe for a file
 that's genuinely too large to fit in memory: see :doc:`/core/stream-parser` for
 the underlying constant-memory parsing layer it's built on.
 
@@ -340,6 +346,63 @@ big to fit in memory, convert with ``pygixml jsonify --stream`` or
 
 ----
 
+``pygixml diff`` and ``pygixml similarity``
+-------------------------------------------
+
+Compare two XML or HTML files: the command-line face of :func:`pygixml.diff`
+and :func:`pygixml.similarity` (see :doc:`/modules/diff`).
+
+.. code-block:: bash
+
+   pygixml diff old.html new.html
+   # insert   /ul[1] @3  <li>Contact</li>
+   # update   /ul[1]/li[2]/text()[1]  "About us" -> "About"
+
+   pygixml diff old.html new.html --text-diff      # About[- us-]
+   pygixml diff a.xml b.xml --ignore-attrs 'data-*' --key id
+   pygixml diff a.xml b.xml --json | jq '.[] | select(.action == "Delete")'
+   pygixml diff a.html b.html -q || echo "changed"
+
+   pygixml similarity page1.html page2.html        # 0.889
+   pygixml similarity a.html b.html --content --method paths
+
+``A`` and ``B`` are files; the format comes from the extension (``.xml``,
+``.html``, ``.htm``) or ``--from xml|html``, and ``-`` reads stdin for one of
+them. ``diff`` prints one line per action (``insert``, ``delete``, ``move``,
+``update``, ``set``, ``unset``), or the same actions as a JSON list with
+``--json``.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 72
+
+   * - Option
+     - Effect
+   * - ``--ignore-attrs NAME``
+     - ignore an attribute; ``data-*`` is a prefix; repeat for several
+   * - ``--keep-whitespace``, ``--keep-comments``
+     - compare blank text / comments instead of ignoring them
+   * - ``--no-class-set``
+     - ``class="b a"`` and ``class="a b"`` differ
+   * - ``--key ATTR``
+     - attribute that identifies an element wherever it sits (default ``id``)
+   * - ``--no-moves``
+     - do not pair subtrees across parents (no ``move`` lines)
+   * - ``--text-diff``
+     - changed text as a word-level diff, ``keep[-gone-]{+new+}``
+   * - ``--json``
+     - the actions as a JSON list, ``{"action": "Insert", ...}``
+   * - ``--exit-code``, ``-q``
+     - exit 1 when the documents differ (``-q`` also prints nothing)
+   * - ``--case lower|keep|escape``
+     - HTML input: how names are written (see :func:`pygixml.html_to_xml`)
+   * - ``--method pqgram|paths``, ``--content``
+     - ``similarity`` only: the embedding, and whether text counts
+
+Both load the two documents in memory, like ``query``.
+
+----
+
 Exit codes
 ----------
 
@@ -361,3 +424,8 @@ Exit codes
    * - ``3``
      - A required optional dependency is missing (``convert`` asked
        for YAML/TOON without PyYAML/ctoon installed)
+
+``diff`` and ``similarity`` follow ``diff(1)`` instead: ``0`` = done (and, with
+``--exit-code`` or ``-q``, no differences), ``1`` = the documents differ (only
+with ``--exit-code`` or ``-q``), ``2`` = trouble (unreadable file, input that
+does not parse, bad option).

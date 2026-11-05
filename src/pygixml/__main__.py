@@ -9,7 +9,10 @@ Subcommands:
                     too large to load as a whole
     cat             Pretty-print (and colorize, if colorama is installed) an
                     XML file for the terminal
-    convert         Convert a file between XML, JSON, YAML, and TOON
+    convert         Convert a file between XML, JSON, YAML, TOON, and HTML
+    diff            Edit script between two XML or HTML files (insert, delete, move,
+                    update text, set/unset attribute); --json, --text-diff, -q
+    similarity      Structural similarity of two XML or HTML files, 0..1
 """
 
 import sys
@@ -44,6 +47,14 @@ def main():
         from pygixml.convertcmd import main as convert_main
         sys.exit(convert_main())
 
+    elif subcommand == "diff":
+        from pygixml.diffcmd import main as diff_main
+        sys.exit(diff_main())
+
+    elif subcommand == "similarity":
+        from pygixml.diffcmd import similarity_main
+        sys.exit(similarity_main())
+
     elif subcommand in ("-h", "--help", "help"):
         sys.stdout.write(__doc__.strip() + "\n")
         sys.exit(0)
@@ -55,7 +66,7 @@ def main():
 
     else:
         sys.stderr.write(f"pygixml: unknown subcommand {subcommand!r}\n")
-        sys.stderr.write("Available subcommands: query, jsonify, stream, cat, convert\n")
+        sys.stderr.write("Available subcommands: query, jsonify, stream, cat, convert, diff, similarity\n")
         sys.exit(1)
 
 

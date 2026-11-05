@@ -8,9 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `pygixml diff A B` and `pygixml similarity A B`: the command-line face of `diff` and
+  `similarity` for XML and HTML files. `diff` prints one line per action (or a JSON list
+  with `--json`, a word-level diff with `--text-diff`) and takes the normalisation
+  options as flags (`--ignore-attrs`, `--keep-whitespace`, `--keep-comments`,
+  `--no-class-set`, `--key`, `--no-moves`); exit codes follow `diff(1)` (`--exit-code` /
+  `-q`: 1 when they differ, 2 for trouble). `similarity` prints the score.
+
 ### Changed
 
-- README: `parse_html` is described as a tolerant normaliser (not an HTML5 tree-builder), the
+- README: new "Diff, patch and structural similarity" section (the seven edit actions, the
+  normalisation options, `patch` / `is_equal`, `signature` / `similarity`), the HTML part
+  split into its own section, and a "What is where" table that maps every capability to its
+  API and section. `parse_html` is described as a tolerant normaliser (not an HTML5 tree-builder), the
   module-level functions table lists the HTML and diff functions, the benchmarks section
   covers the HTML and CLI comparisons, and the links point at the benchmarks page. A path
   that does not exist (`benchmarks/adhoc/...`) and a record count the report does not

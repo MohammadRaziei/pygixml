@@ -100,6 +100,20 @@ jsonify.stream_dump("huge_export.xml", "huge_export.json")
 jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 ```
 
+### What is where
+
+| Capability | API | Section |
+|------------|-----|---------|
+| In-memory DOM, XPath 1.0 | `parse_string`, `parse_file`, `XMLDocument`, `XMLNode`, `XPathQuery` | [Quick Start](#quick-start), [XPath Support](#xpath-support) |
+| Dotted navigation | `objectify` | [objectify](#objectify-dotted-navigation) |
+| XML to dict (xmltodict-compatible) | `dictify` | [dictify](#dictify-xml-to-dict) |
+| XML to JSON, JSON Lines, constant memory | `jsonify` (`dumps*`, `stream_dump`, `stream_jsonl`) | [Built for big XML](#built-for-big-xml) |
+| Streaming parse | `iterparse`, `iterfind`, `dictify.iterdict`, `jsonify.iterjsonl`, `PullParser` | [Built for big XML](#built-for-big-xml) |
+| HTML to XML and back | `parse_html`, `html_to_xml`, `xml_to_html`, `encode_name`, `decode_name` | [HTML to XML and back](#html-to-xml-and-back) |
+| Tree diff, patch, equality | `diff`, `patch`, `is_equal` | [Diff, patch and structural similarity](#diff-patch-and-structural-similarity) |
+| Structural embeddings | `signature`, `similarity` | [Diff, patch and structural similarity](#diff-patch-and-structural-similarity) |
+| Command line | `pygixml cat`, `query`, `jsonify`, `stream`, `convert`, `diff`, `similarity` | [Command Line Tools](#command-line-tools) |
+
 ### Features
 
 * **Fast parsing**: pugixml's C++ DOM parser, consistently at or near
@@ -118,14 +132,21 @@ jsonify.stream_jsonl("huge_export.xml", "huge_export.jsonl", "record")
 * **HTML ↔ XML**: `parse_html` / `html_to_xml` turn real-world HTML into
   well-formed XML you can query with XPath, `xml_to_html` goes back; names
   XML can't hold are mapped reversibly (`encode_name` / `decode_name`)
-* **Tree `diff` / `patch`**: a minimal edit script between two documents
-  (HTML or XML), plus `similarity` / `signature` for structural comparison
+* **Tree `diff` / `patch`**: an edit script between two XML or HTML
+  documents (insert, delete, move, update text with an optional word-level
+  diff, set/delete attribute), `patch` to apply it in place, `is_equal` for a
+  one-pass "did anything change?": see
+  [Diff, patch and structural similarity](#diff-patch-and-structural-similarity)
+* **Structural embeddings**: `signature` (a pq-gram or path bag as a sparse
+  `{hash: count}` vector) and `similarity` (Dice, 0..1) for near-duplicate and
+  template detection, or as a cheap pre-filter before `diff`
 * **Streaming (`iterfind`, `iterdict`, `iterjsonl`)**: constant-memory,
   yxml-based incremental parsing for documents too big to load whole
 * **CLI tools**: `pygixml cat` (pretty-print/colorize), `pygixml
   query` (XPath/dotted query), `pygixml jsonify` (convert to JSON),
   `pygixml convert` (XML/JSON/YAML/TOON, any direction), `pygixml
-  stream` (filter giant files in bounded memory): see
+  stream` (filter giant files in bounded memory), `pygixml diff` and
+  `pygixml similarity` (compare two XML/HTML files): see
   [Command Line Tools](#command-line-tools)
 * **Cross-platform**: Windows, Linux, macOS
 * **Text extraction**: recursive text gathering with configurable joins
@@ -357,7 +378,7 @@ print(xml_out)
 
 ---
 
-## HTML, diff and patch
+## HTML to XML and back
 
 ```python
 import pygixml
@@ -374,20 +395,12 @@ pygixml.xml_to_html(doc, unwrap="root")
 pygixml.html_to_xml("<o:p @Click=1>x</o:p>", case="keep")
 # '<o_x003A_p _x0040_Click="1">x</o_x003A_p>'
 pygixml.decode_name("_x0040_Click")                       # '@Click'
-
-# Edit script between two documents, and applying it
-a = pygixml.parse_html("<ul><li>one</li></ul>")
-b = pygixml.parse_html("<ul><li>one</li><li>two</li></ul>")
-actions = pygixml.diff(a, b)
-# [Insert(parent='/ul[1]', position=1, xml='<li>two</li>')]
-pygixml.similarity(a, b)                                   # 0.72
-pygixml.patch(a, actions)
-pygixml.is_equal(a, b)                                     # True
 ```
 
 A document from `parse_html` remembers it came from HTML, so `to_html()`
 restores the original names; a document from `parse_string` keeps its names as
-they are.
+they are. Because it is an ordinary `XMLDocument`, XPath, `dictify`, `jsonify`,
+`objectify` and `diff` work on it too.
 
 > [!NOTE]
 > `parse_html` is a tolerant normaliser, not an HTML5 tree-builder. It always
@@ -401,17 +414,122 @@ they are.
 > the same way in every engine: `<p>a<![CDATA[b]]>c</p>` gives `'abc'`. This
 > changed in 0.14.0 (it used to give `'a'`), see the [changelog](CHANGELOG.md).
 
-See the HTML and diff pages of the documentation for the options
-(`ignore_whitespace`, `ignore_comments`, `class_as_set`, `keys`,
-`ignore_attrs`, moves, `text_diff`).
+See the HTML page of the documentation for the options.
+
+---
+
+## Diff, patch and structural similarity
+
+Compare two *ordered trees* (XML, or HTML parsed with `parse_html`), apply the
+difference, or measure how alike their structure is. Everything runs in C++
+inside the extension, one call per function, with no extra dependency.
+
+```python
+import pygixml
+
+a = pygixml.parse_html("<ul class='m'><li>Home<li>About us<li>Blog</ul>")
+b = pygixml.parse_html("<ul class='m'><li>Home<li>About<li>Blog<li>Contact</ul>")
+
+for action in pygixml.diff(a, b, text_diff=True):
+    print(action)
+# Insert(parent='/ul[1]', position=3, xml='<li>Contact</li>')
+# UpdateText(path='/ul[1]/li[2]/text()[1]', text='About', old='About us',
+#            diff=[(0, 'About'), (-1, ' us')])
+
+pygixml.is_equal(a, b)           # False
+pygixml.patch(a, pygixml.diff(a, b))     # applies the script to `a`, in place
+pygixml.is_equal(a, b)           # True
+```
+
+### `diff`: an edit script
+
+`diff(a, b)` returns a list, empty when the trees are equivalent, of these
+actions, in the order they must be applied:
+
+| Action | Meaning |
+|--------|---------|
+| `Insert(parent, position, xml)` | add a node (a wholly new subtree is **one** action) |
+| `InsertText(parent, position, text)` | add a text node |
+| `Delete(path)` | remove a node with everything under it |
+| `Move(path, parent, position)` | move a subtree to another place |
+| `UpdateText(path, text, old, diff)` | change a text or comment node; `diff` is a word-level diff when `text_diff=True` |
+| `SetAttrib(path, name, value, old)` | set an attribute (`old` is `None` when it is new) |
+| `DeleteAttrib(path, name, old)` | remove an attribute |
+
+Paths look like `/ul[1]/li[2]/text()[1]` and refer to the tree as it is when
+that action runs. The script is verified inside the call: applying it to `a`
+must give `b`, otherwise `PygiXMLDiffError` is raised.
+
+What counts as "the same" is a normalisation step, not a different algorithm:
+
+| Option | Default | Effect |
+|--------|---------|--------|
+| `ignore_whitespace` | `True` | drop blank text, trim and collapse runs of whitespace |
+| `ignore_comments` | `True` | comments are not compared |
+| `ignore_attrs` | `()` | attribute names to ignore; `"data-*"` is a prefix |
+| `class_as_set` | `True` | `class="b a a"` equals `class="a b"` |
+| `keys` | `("id",)` | attributes that identify an element wherever it sits |
+| `moves` | `True` | pair unmatched subtrees across parents (`Move`) |
+| `text_diff` | `False` | attach a word-level diff (also CJK and Persian) to `UpdateText` |
+
+Attribute order never matters, and elements are never renamed (a different tag
+is a delete plus an insert).
+
+```python
+x = pygixml.parse_string("<r><i id='1'>a</i><i id='2'>b</i><i id='3'>c</i></r>")
+y = pygixml.parse_string("<r><i id='3'>c</i><i id='1'>a2</i><i id='2'>b</i></r>")
+pygixml.diff(x, y)
+# [Move(path='/r[1]/i[3]', parent='/r[1]', position=0),
+#  UpdateText(path='/r[1]/i[2]/text()[1]', text='a2', old='a', diff=None)]
+```
+
+### `patch` and `is_equal`
+
+* `patch(doc, actions)` applies a script to a document **in place**. Every
+  action checks what it expects (the path exists, the old text, the old
+  attribute value), so a script is refused with `PygiXMLDiffError` when the
+  document is not the one it was made for. Pass the same normalisation options
+  you gave `diff`. It may leave the document partly patched: patch a copy if
+  you need all-or-nothing.
+* `is_equal(a, b, **options)` answers "did anything change?" in one pass by
+  comparing subtree hashes, so it is the cheap check in front of a `diff`.
+
+### Structural embeddings: `signature` and `similarity`
+
+`signature(node)` turns the *structure* of a tree into a sparse vector,
+`{hash: count}`, in time linear in the size of the tree. `similarity(a, b)` is
+the Dice coefficient of two such vectors, from `0` (nothing shared) to `1` (same
+structure), computed in one C++ call without building the dicts.
+
+```python
+pygixml.similarity(a, b)                      # 0.889: structure only
+pygixml.similarity(a, b, content=True)        # 0.711: text counts too
+pygixml.similarity(a, b, method="paths")      # 0.889: cruder and cheaper
+
+sig = pygixml.signature(a)                    # {330417701356879974: 1, ...}
+```
+
+* `method="pqgram"` (default): pq-grams, windows of `p` ancestors and `q`
+  consecutive children around every node (Augsten, Bohlen, Gamper, 2010). Their
+  distance approximates the tree edit distance.
+* `method="paths"`: the bag of root-to-node tag paths. Cruder, good for telling
+  page templates apart.
+* Text is one constant label unless `content=True`, so by default two pages
+  built from the same template are as similar as can be, whatever they say.
+
+Typical uses: near-duplicate and template detection across many pages, and a
+cheap pre-filter before an expensive `diff`.
+
+The matching algorithm (Chawathe et al., 1996), the limits and measured speeds
+are in the [diff documentation](https://mohammadraziei.github.io/pygixml/docs/modules/diff.html).
 
 ---
 
 ## Command Line Tools
 
-pygixml installs one CLI entry point, `pygixml`, with three
+pygixml installs one CLI entry point, `pygixml`, with seven
 subcommands: no Python code required for one-off queries,
-conversions, or filtering giant files from a shell pipeline. Every
+conversions, comparing two files, or filtering giant files from a shell pipeline. Every
 subcommand also works as `python -m pygixml <subcommand>`.
 
 | Subcommand | Loads | Use it for |
@@ -421,6 +539,8 @@ subcommand also works as `python -m pygixml <subcommand>`.
 | `pygixml jsonify` (`json` alias) | DOM *or* streamed | converting a whole file to JSON, `.json` in / out |
 | `pygixml stream` | one record at a time | filtering matches out of a file **too big to load**, bounded memory |
 | `pygixml convert` | full DOM | converting between XML, JSON, YAML, TOON and HTML, any direction (`--case` for HTML names) |
+| `pygixml diff` | two full DOMs | the edit script between two XML or HTML files, like `diff` for trees |
+| `pygixml similarity` | two full DOMs | one number, 0..1, for how alike two files are structurally |
 
 ### `pygixml cat`: pretty-print and colorize
 
@@ -554,6 +674,34 @@ pip install pygixml[all]   # colorama (for `cat`) + PyYAML + ctoon
 
 Like `cat`/`query`, this loads the whole document: for XML too big to
 fit in memory, convert with `pygixml jsonify --stream` instead.
+
+### `pygixml diff` and `pygixml similarity`: compare two files
+
+```bash
+pygixml diff old.html new.html
+# insert   /ul[1] @3  <li>Contact</li>
+# update   /ul[1]/li[2]/text()[1]  "About us" -> "About"
+
+pygixml diff old.html new.html --text-diff     # About[- us-]: a word-level diff
+pygixml diff a.xml b.xml --ignore-attrs 'data-*' --key id
+pygixml diff a.xml b.xml --json | jq '.[] | select(.action == "Delete")'
+pygixml diff a.html b.html -q || echo "changed"   # no output, exit 1 when they differ
+
+pygixml similarity page1.html page2.html          # 0.889: structure only
+pygixml similarity a.html b.html --content --method paths
+```
+
+A and B are XML or HTML files (the format comes from the extension, or
+`--from xml|html`; `-` reads stdin for one of them). `diff` prints one line per
+action (`insert`, `delete`, `move`, `update`, `set`, `unset`), or the same
+actions as a JSON list with `--json`. The normalisation options of the Python
+[`diff`](#diff-patch-and-structural-similarity) are flags: `--ignore-attrs`,
+`--keep-whitespace`, `--keep-comments`, `--no-class-set`, `--key`, `--no-moves`.
+
+Exit codes of `diff`: `0` when done, `1` for "they differ" only with
+`--exit-code` or `-q`, `2` for trouble (unreadable file, input that does not
+parse, bad option). `similarity` prints the score with three decimals.
+Both load the two documents in memory.
 
 ## Advanced Features
 
@@ -716,11 +864,11 @@ print(f"Has Orwell books: {has_orwell}")       # Has Orwell books: True
 | `dictify`        | xmltodict-compatible XML → dict conversion                 |
 | `jsonify`        | Direct XML → JSON: in-memory `dumps*`, or constant-memory `stream_dump`/`stream_jsonl` |
 | `iterfind` / `iterparse` | yxml-based constant-memory streaming parser, `ElementTree`-style |
-| `pygixml cat`, `pygixml query`, `pygixml jsonify`, `pygixml convert`, `pygixml stream` | CLI tools: see [Command Line Tools](#command-line-tools) |
+| `pygixml cat`, `query`, `jsonify`, `convert`, `stream`, `diff`, `similarity` | CLI tools: see [Command Line Tools](#command-line-tools) |
 
 Module-level functions: `parse_string(xml)`, `parse_file(path)`, `parse_html(html)`,
 `html_to_xml(html)`, `xml_to_html(doc)`, and `diff` / `patch` / `is_equal` /
-`similarity` / `signature` (see [HTML, diff and patch](#html-diff-and-patch)).
+`similarity` / `signature` (see [HTML to XML and back](#html-to-xml-and-back) and [Diff, patch and structural similarity](#diff-patch-and-structural-similarity)).
 
 ---
 
