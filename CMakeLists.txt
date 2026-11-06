@@ -161,26 +161,6 @@ add_custom_target(run_full_benchmarks
     DEPENDS build_python
 )
 
-# Chart.js for the benchmarks page: fetched fresh from the npm registry
-# into the build dir (nothing vendored), then embedded into the page.
-set(CHARTJS_VERSION "4.5.1" CACHE STRING "Chart.js version to embed in the benchmarks page")
-set(CHARTJS_DL_DIR "${CMAKE_CURRENT_BINARY_DIR}/_chartjs")
-set(CHARTJS_ARCHIVE "${CHARTJS_DL_DIR}/chart.js-${CHARTJS_VERSION}.tgz")
-set(CHARTJS_UMD_MIN "${CHARTJS_DL_DIR}/extracted/package/dist/chart.umd.min.js")
-file(MAKE_DIRECTORY "${CHARTJS_DL_DIR}/extracted")
-
-add_custom_command(
-    OUTPUT "${CHARTJS_UMD_MIN}"
-    COMMAND ${CMAKE_COMMAND} -DURL=https://registry.npmjs.org/chart.js/-/chart.js-${CHARTJS_VERSION}.tgz
-                             -DDEST=${CHARTJS_ARCHIVE}
-                             -P "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/cmake/Download.cmake"
-    COMMAND ${CMAKE_COMMAND} -E tar xzf "${CHARTJS_ARCHIVE}"
-    WORKING_DIRECTORY "${CHARTJS_DL_DIR}/extracted"
-    COMMENT "Fetching Chart.js ${CHARTJS_VERSION} (for the benchmarks page)"
-    USES_TERMINAL
-)
-add_custom_target(pygixml_chartjs DEPENDS "${CHARTJS_UMD_MIN}")
-
 # Define a custom target for building the documentation: Sphinx, plus
 # the benchmarks page (docs/benchmarks/index.html), which is rendered from
 # the JSON files the benchmark suite commits, benchmarks/results/*.json.
@@ -195,14 +175,12 @@ add_custom_target(sphinx_docs
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/docs/site/benchmarks/render_benchmarks.py
         ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/results
         ${CMAKE_CURRENT_BINARY_DIR}/docs/benchmarks/index.html
-        --chartjs-path ${CHARTJS_UMD_MIN}
         --version ${PROJECT_VERSION}
     COMMENT "Building documentation with Sphinx (+ benchmarks page)..."
     WORKING_DIRECTORY ${PYTHON_INSTALL_DIR}
     USES_TERMINAL
     DEPENDS build_python
 )
-add_dependencies(sphinx_docs pygixml_chartjs)
 
 # --------------------------------------------------------------- landing --
 # The single public entry point: mohammadraziei.github.io/pygixml/ --

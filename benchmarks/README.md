@@ -162,9 +162,9 @@ cmake -S benchmarks -B benchmarks/build -DPYGIXML_BENCH_REPEATS=15
 - CMake ≥ 3.18
 - Python 3 (used to create the venv; nothing needs to be pre-installed
   into your system Python)
-- Internet access (competitors + pygixml from PyPI/GitHub, the real
-  corpus, and Chart.js are all fetched at build time: nothing is
-  vendored in this repository)
+- Internet access (competitors + pygixml from PyPI/GitHub, and the real
+  corpus are fetched at build time: nothing is vendored in this
+  repository; the report page loads Chart.js from a CDN when opened)
 
 ## On fairness
 

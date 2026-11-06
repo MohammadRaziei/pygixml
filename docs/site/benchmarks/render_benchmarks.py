@@ -4,8 +4,8 @@ the benchmark suite commits (benchmarks/results/*.json, one per benchmark).
 
 Called by the documentation build (`cmake --build build --target
 sphinx_docs`), which writes docs/benchmarks/index.html. The output is a
-single standalone HTML file: Chart.js and the raw data are embedded, so
-it needs no server, no network and no sibling files.
+single HTML file: the raw data is embedded and Chart.js / KaTeX come from a
+CDN (pinned version + SRI), so it needs no server and no sibling files.
 
 What this file deliberately does NOT contain: how the corpus was
 generated, why timing uses best-of-N, or the ru_maxrss/execve bug we
@@ -950,8 +950,11 @@ new Chart(document.getElementById('chart-cli-trend'), {{
             "commands": commands}
 
 
-# KaTeX comes from a CDN (pinned version + SRI hashes, so a changed file is refused),
-# not embedded: it would add ~400KB to the page. Chart.js and the data stay embedded.
+# KaTeX and Chart.js come from a CDN (pinned version + SRI hashes, so a changed file is
+# refused), not embedded. Only the data stays embedded.
+CHARTJS_VERSION = "4.5.1"
+CHARTJS_URL = "https://cdn.jsdelivr.net/npm/chart.js@" + CHARTJS_VERSION + "/dist/chart.umd.min.js"
+CHARTJS_SRI = "sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ"
 KATEX_VERSION = "0.19.0"
 KATEX_CDN = "https://cdn.jsdelivr.net/npm/katex@" + KATEX_VERSION + "/dist/"
 KATEX_SRI = {
@@ -1087,7 +1090,7 @@ def _project_version():
         return ""
 
 
-def build(results_dir, output_path, chartjs_path, version=None):
+def build(results_dir, output_path, version=None):
     """results_dir holds one JSON per benchmark (throughput.json, html.json, ...)."""
     if not os.path.isdir(results_dir):
         raise SystemExit(f"render_benchmarks: {results_dir} is not a directory")
@@ -1107,9 +1110,6 @@ def build(results_dir, output_path, chartjs_path, version=None):
     jsonify_narrative = _build_jsonify_narrative(ops_by_key.get("xml_to_json"), mem["o1_note"])
     dictify_mode_chart_js, has_dictify_mode_chart = _build_dictify_mode_chart(
         ops_by_key.get("dict_convert"), ops_by_key.get("dict_stream"))
-
-    with open(chartjs_path, "r", encoding="utf-8") as f:
-        chartjs_source = f.read()
 
     embedded = {
         "throughput": throughput, "throughput_memory": throughput_memory, "scaling": scaling,
@@ -1170,7 +1170,7 @@ def build(results_dir, output_path, chartjs_path, version=None):
         has_sizes=bool(sizes), size_rows=siz["rows"],
         has_cli=bool(cli_sec["trend_chart_js"] or cli_sec["summary"]), cli=cli_sec,
         system_info=system_info,
-        chartjs_source=chartjs_source,
+        chartjs_url=CHARTJS_URL, chartjs_sri=CHARTJS_SRI,
         katex_cdn=KATEX_CDN, katex_sri=KATEX_SRI,
         embedded_json=json.dumps(embedded),
         chart_scripts="\n".join(chart_scripts),
@@ -1188,11 +1188,8 @@ if __name__ == "__main__":
     p.add_argument("results_dir", help="benchmarks/results/ (one JSON per benchmark: throughput.json, html.json, ...)")
     p.add_argument("output", help="path to write the standalone benchmarks page (index.html)")
     p.add_argument("--version", default=None, help="package version for the navbar badge (default: read pyproject.toml)")
-    p.add_argument("--chartjs-path", default=os.path.join(HERE, "vendor", "chart.umd.min.js"),
-                    help="path to a Chart.js UMD build (CMake fetches this fresh; "
-                         "defaults to a local vendor/ copy for running by hand)")
     args = p.parse_args()
 
-    out = build(args.results_dir, args.output, args.chartjs_path, args.version)
+    out = build(args.results_dir, args.output, args.version)
     size_kb = os.path.getsize(out) / 1024
-    print(f"render_benchmarks: wrote {out} ({size_kb:.0f}KB, standalone)")
+    print(f"render_benchmarks: wrote {out} ({size_kb:.0f}KB)")

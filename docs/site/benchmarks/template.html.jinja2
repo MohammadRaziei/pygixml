@@ -715,9 +715,7 @@ window.addEventListener("load", function () {
 </script>
 
 <script>window.PYGIXML_CHART_LIB_LOADING = true;</script>
-<script>
-{{ chartjs_source | safe }}
-</script>
+<script src="{{ chartjs_url }}" integrity="{{ chartjs_sri }}" crossorigin="anonymous"></script>
 
 <script id="pygixml-data" type="application/json">
 {{ embedded_json | safe }}
