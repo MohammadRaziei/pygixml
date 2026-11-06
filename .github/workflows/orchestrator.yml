@@ -92,11 +92,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # The artifact name carries the attempt number: "Re-run jobs" starts a new attempt in the
+      # same run, the old github-pages artifact stays, and deploy-pages then refuses to pick one
+      # of two ("Multiple artifacts named github-pages were unexpectedly found").
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./pages
+          name: github-pages-${{ github.run_attempt }}
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
