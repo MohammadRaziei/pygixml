@@ -193,13 +193,7 @@ class TestErrorHandling:
         doc = pygixml.XMLDocument()
         root = doc.append_child("test")
         
-        # Note: save_file may not raise ValueError for invalid paths
-        # This depends on the underlying pugixml implementation
-        # For now, we'll test that the operation doesn't crash
-        try:
-            doc.save_file("/invalid/path/test.xml")
-        except Exception:
-            pass  # Some exceptions are expected
+        assert doc.save_file("/invalid/path/test.xml") is False
 
 
 class TestPerformance:

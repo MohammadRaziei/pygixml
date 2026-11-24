@@ -48,7 +48,7 @@ class TestXMLDocument:
         
         try:
             # Save file
-            doc.save_file(temp_file)
+            assert doc.save_file(temp_file) is True
             assert os.path.exists(temp_file)
             
             # Load file

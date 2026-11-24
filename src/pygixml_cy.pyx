@@ -48,7 +48,7 @@ cdef extern from "pugixml.hpp" namespace "pugi":
         # Keep the original default-arg overloads
         xml_parse_result load_string(const char* contents)
         xml_parse_result load_file(const char* path)
-        void save_file(const char* path, const char* indent) except +
+        bool save_file(const char* path, const char* indent) except +
         void reset()
         
     cdef cppclass xml_node:
@@ -490,15 +490,21 @@ cdef class XMLDocument:
                 Defaults to two spaces.  Pass an empty string for compact
                 output with no indentation.
 
+        Returns:
+            bool: ``True`` on success, ``False`` if the file cannot be
+            opened, written or closed.
+
         Example::
 
             >>> doc = pygixml.parse_string('<root><item>value</item></root>')
             >>> doc.save_file('output.xml')              # 2-space indent
+            True
             >>> doc.save_file('compact.xml', indent='')  # no indent
+            True
         """
         cdef bytes path_bytes = path.encode('utf-8')
         cdef bytes indent_bytes = indent.encode('utf-8')
-        self._doc.save_file(path_bytes, indent_bytes)
+        return <bool>self._doc.save_file(path_bytes, indent_bytes)
 
     def reset(self):
         """Clear all content, returning the document to its initial empty state.
