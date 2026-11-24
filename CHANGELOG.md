@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `XMLDocument.save_file` returns pugixml's success flag: `True` on success, `False` if the file
+  cannot be opened, written or closed (it returned `None` before, also on failure).
 - README: new "Diff, patch and structural similarity" section (the seven edit actions, the
   normalisation options, `patch` / `is_equal`, `signature` / `similarity`), the HTML part
   split into its own section, and a "What is where" table that maps every capability to its
