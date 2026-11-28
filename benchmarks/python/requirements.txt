@@ -10,5 +10,5 @@ yq                   # provides the `xq` command, benchmarked in bench_cli.py
 untangle             # objectify-style XML->object mapper, sizes-only comparison in bench_sizes.py
 
 # Benchmark tooling
-pip-size            # github.com/MohammadRaziei/pip-size -- real install-size comparison
+pip-size>=0.4       # github.com/MohammadRaziei/pip-size -- real install-size comparison
 tqdm                 # progress bars for the longer-running sweeps (throughput, scaling)

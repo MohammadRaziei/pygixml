@@ -16,7 +16,6 @@ fair, reportable data point (the "free" option), not something
 pip-size can meaningfully quantify.
 """
 import argparse
-import asyncio
 import json
 import sys
 
@@ -34,26 +33,20 @@ PACKAGES = {
 }
 
 
-async def _resolve(spec):
-    from packaging.requirements import Requirement
-    from pip_size import DependencyResolver, Printer
-    from pip_size.core import PyPIClient
+def _resolve(spec):
+    # pip-size >= 0.4: the stable public entry point is pip_size.resolve()
+    # (sync wrapper around resolve_async). The old pip_size.core.PyPIClient
+    # import path no longer exists.
+    from pip_size import Printer, resolve
 
-    req = Requirement(spec)
-    async with PyPIClient() as client:
-        resolver = DependencyResolver(client=client, quiet=True)
-        pkg = await resolver.resolve(req)
+    res = resolve(spec)
+    pkg = res.root
 
-    if pkg is None:
-        return {"available": False, "error": "pip-size could not resolve this package on PyPI"}
-
-    def _flatten(p):
-        out = [{"name": p.name, "version": p.version, "size": Printer.format_size(p.size)}]
-        for d in p.dependencies:
-            out.extend(_flatten(d))
-        return out
-
-    deps = _flatten(pkg)[1:]  # everything but the package itself
+    deps = [
+        {"name": d.name, "version": d.version, "size": Printer.format_size(d.size)}
+        for d in pkg.walk()
+        if d is not pkg
+    ]  # transitive, flattened -- what total_size() actually sums
     return {
         "available": True,
         "name": pkg.name,
@@ -61,15 +54,19 @@ async def _resolve(spec):
         "size": Printer.format_size(pkg.size),
         "total_size": Printer.format_size(pkg.total_size()),
         "filename": pkg.filename,
-        "dependencies": deps,  # transitive, flattened -- what total_size() actually sums
+        "dependencies": deps,
     }
 
 
 def _pip_size(spec):
     try:
-        return asyncio.run(_resolve(spec))
-    except ImportError:
-        return {"available": False, "error": "pip-size is not installed"}
+        return _resolve(spec)
+    except ModuleNotFoundError as e:
+        # Only claim "not installed" when pip_size itself is missing; any other
+        # missing module is a real error that must not be hidden.
+        if e.name == "pip_size":
+            return {"available": False, "error": "pip-size is not installed"}
+        return {"available": False, "error": f"{type(e).__name__}: {e}"}
     except Exception as e:
         return {"available": False, "error": f"{type(e).__name__}: {e}"}
 
