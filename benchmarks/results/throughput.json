@@ -19,83 +19,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 1.93619925994426e-05
+          "seconds": 1.9076875105383806e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00013063375081401318
+          "seconds": 0.00012371149932732806
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0002033588825725019
+          "seconds": 0.0002086569984385278
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0006335982398013584
+          "seconds": 0.000420147247496061
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0004473352601053193
+          "seconds": 0.0002949785030068597
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.00074825113551924
+          "seconds": 0.000390484001400182
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00016910261183511466
+          "seconds": 0.0001789016223483486
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.000871644624567125
+          "seconds": 0.000850325881401659
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0005409052537288517
+          "seconds": 0.0005867861218575854
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0008422364990110509
+          "seconds": 0.0008404188702115789
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 1.9136998162139207e-05
+          "seconds": 1.8910250219050795e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00012220750795677304
+          "seconds": 0.00012213637455715798
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00011584212916204706
+          "seconds": 0.00012134187636547722
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0009229589995811693
+          "seconds": 0.0009120334998442559
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.0012012398656224832
+          "seconds": 0.0011710200014931615
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0007066701218718663
+          "seconds": 0.000684865124640055
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0010228565006400459
+          "seconds": 0.0010316661246179137
         }
       }
     },
@@ -107,83 +107,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0004370559909148142
+          "seconds": 0.0004890782511211
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0014721107363584451
+          "seconds": 0.001602887630724581
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0018057039706036448
+          "seconds": 0.0018049049976980314
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.004023637004138436
+          "seconds": 0.003202363373929984
         },
         "lxml": {
           "available": true,
-          "seconds": 0.002372081005887594
+          "seconds": 0.0021898016275372356
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.002661047998117283
+          "seconds": 0.002523500124880229
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0016511731228092685
+          "seconds": 0.0018180998758907663
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.008045834249060135
+          "seconds": 0.008198250619898317
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.004965873864421155
+          "seconds": 0.00447908324895252
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.008666163863381371
+          "seconds": 0.00792654687211325
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00042705250962171704
+          "seconds": 0.0003985551247751573
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0014496072471956722
+          "seconds": 0.001418142999682459
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0014085999937378801
+          "seconds": 0.0015437202509929193
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.00852447562647285
+          "seconds": 0.008526563871782855
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.011600833509874064
+          "seconds": 0.011537996122569893
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.006350212264806032
+          "seconds": 0.006364865621435456
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.009485817630775273
+          "seconds": 0.00968687750173558
         }
       }
     },
@@ -195,83 +195,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.004873170008067973
+          "seconds": 0.004923623748254613
         },
         "lxml": {
           "available": true,
-          "seconds": 0.015434068882314023
+          "seconds": 0.015713416625658283
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.02033719150495017
+          "seconds": 0.02038144687503518
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.03443586974753998
+          "seconds": 0.02858936049597105
         },
         "lxml": {
           "available": true,
-          "seconds": 0.019451360109087545
+          "seconds": 0.019628365876997123
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.023034808618831448
+          "seconds": 0.023208326874737395
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.020052780615515076
+          "seconds": 0.021134007372893393
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.09052464964042883
+          "seconds": 0.08313492387424049
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.04452235200733412
+          "seconds": 0.04176692312648811
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.08709254262794275
+          "seconds": 0.07970266712436569
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.005090175742225256
+          "seconds": 0.004717816376796691
         },
         "lxml": {
           "available": true,
-          "seconds": 0.015744973505206872
+          "seconds": 0.014875514250888955
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.015723947748483624
+          "seconds": 0.015470825623197015
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.08972391287534265
+          "seconds": 0.08783949887583731
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.12262898474000394
+          "seconds": 0.12064304749765142
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.05965741310501471
+          "seconds": 0.056906729623733554
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.10906297436304158
+          "seconds": 0.09769829899960314
         }
       }
     },
@@ -283,83 +283,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 3.533474955474958e-05
+          "seconds": 2.9463877581292763e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00027584052440943196
+          "seconds": 0.000268146000962588
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0004516476401477121
+          "seconds": 0.00041872587280522566
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0009456471307203174
+          "seconds": 0.0006607801224163268
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0008098257603705861
+          "seconds": 0.0005595013753918465
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0008183023674064316
+          "seconds": 0.0006478863761003595
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.000341496619512327
+          "seconds": 0.0003598022522055544
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0016926543830777518
+          "seconds": 0.0016412443765148055
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0012651371289393865
+          "seconds": 0.0010028160031652078
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0015995163848856464
+          "seconds": 0.001648565499635879
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 3.167413524352014e-05
+          "seconds": 3.080650276388042e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0002671032489161007
+          "seconds": 0.00028475937506300397
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0002041509942500852
+          "seconds": 0.0002278869997098809
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0018731598611338995
+          "seconds": 0.0018636552504176507
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.0014618818822782487
+          "seconds": 0.0014559778755938169
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.001631776634894777
+          "seconds": 0.001300408628594596
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.002031183750659693
+          "seconds": 0.0020421142489794875
         }
       }
     },
@@ -371,83 +371,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00024808774469420314
+          "seconds": 0.00025047012422874104
         },
         "lxml": {
           "available": true,
-          "seconds": 0.002424383128527552
+          "seconds": 0.0024755497524893144
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0039594448753632605
+          "seconds": 0.0039634528766328
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.005636115376546513
+          "seconds": 0.006094300000768271
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0045467421296052635
+          "seconds": 0.0041816752491286024
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.004903562745312229
+          "seconds": 0.004733631247290759
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0033709634953993373
+          "seconds": 0.003510351245495258
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.016514935130544472
+          "seconds": 0.016044819125454524
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.007499280123738572
+          "seconds": 0.009167559872366837
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.01599068349605659
+          "seconds": 0.015574577373627108
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00025210850435541943
+          "seconds": 0.0002326279991393676
         },
         "lxml": {
           "available": true,
-          "seconds": 0.002560489003371913
+          "seconds": 0.002482599627910531
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.001909238133521285
+          "seconds": 0.0018606416197144426
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.018341534239880275
+          "seconds": 0.017439077997551067
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.013878192126867361
+          "seconds": 0.013713297499634791
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.010268963495036587
+          "seconds": 0.01184656150144292
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.019017359489225782
+          "seconds": 0.018652051619937993
         }
       }
     },
@@ -459,83 +459,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00746315301512368
+          "seconds": 0.006804481003200635
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0353988347487757
+          "seconds": 0.03578145800020138
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.050711249008600134
+          "seconds": 0.04945420012336399
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.049457271001301706
+          "seconds": 0.05595025837465073
         },
         "lxml": {
           "available": true,
-          "seconds": 0.039560079501825385
+          "seconds": 0.04036346387329104
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.04668940986448433
+          "seconds": 0.04652107874608191
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.04946915824984899
+          "seconds": 0.05071353362654918
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.1965547020008671
+          "seconds": 0.17682073999822023
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.07290731113607762
+          "seconds": 0.08470847400349157
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.1690149379937793
+          "seconds": 0.15506301749883278
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.007114958731108345
+          "seconds": 0.006901031501911348
         },
         "lxml": {
           "available": true,
-          "seconds": 0.03594143224472646
+          "seconds": 0.03594603287820064
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.027344592730514705
+          "seconds": 0.026949798628265853
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.19850655800109962
+          "seconds": 0.19327007912397676
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.15771160225995118
+          "seconds": 0.1543618761261314
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.10100395562767517
+          "seconds": 0.11288716212584404
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.2007120630078134
+          "seconds": 0.18694725900058984
         }
       }
     },
@@ -547,83 +547,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 2.3461252567358315e-05
+          "seconds": 2.281025081174448e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00016855237481649965
+          "seconds": 0.00016201350081246346
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0002458956223563291
+          "seconds": 0.00024413987375737634
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0007089456339599565
+          "seconds": 0.000569564623219776
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0005434104896266945
+          "seconds": 0.00033849999999802094
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.000809454133559484
+          "seconds": 0.0004525817494140938
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00018936612468678504
+          "seconds": 0.0001979140033654403
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0012259994982741773
+          "seconds": 0.0011958467493968783
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0006460808799602091
+          "seconds": 0.0007851207519706804
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0011652834946289659
+          "seconds": 0.0012064455022482434
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 1.8114624253939837e-05
+          "seconds": 1.847987914516125e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.00015646125393686816
+          "seconds": 0.00016004099961719476
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00011461151734692976
+          "seconds": 0.0001173971268144669
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0012764248676830903
+          "seconds": 0.0013015366275794804
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.001362185132165905
+          "seconds": 0.0013399088729784125
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0011063208658015355
+          "seconds": 0.0009488744981354102
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0013967289924039505
+          "seconds": 0.0013878507543267915
         }
       }
     },
@@ -635,83 +635,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00015882125444477424
+          "seconds": 0.000131364873595885
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0014457202414632775
+          "seconds": 0.0014111702494119527
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0022895832371432334
+          "seconds": 0.002240059498944902
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0036937928598490544
+          "seconds": 0.004322499502450228
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0032044893741840497
+          "seconds": 0.0028618549986276776
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0036118548741796985
+          "seconds": 0.003404966120797326
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0018106217466993257
+          "seconds": 0.001980847373488359
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.011513455261592753
+          "seconds": 0.011651812123091077
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.005484487512148917
+          "seconds": 0.006530771377583733
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.01128135761973681
+          "seconds": 0.011265819375694264
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00013743424642598256
+          "seconds": 0.0001284417467104504
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0014217023781384341
+          "seconds": 0.0014181785045366269
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0010691490097087808
+          "seconds": 0.0010489576252439292
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.01229040924954461
+          "seconds": 0.012426541001332225
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.013146093238901813
+          "seconds": 0.013006858873268357
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.006552647864737082
+          "seconds": 0.007420562129482278
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.013355096249142662
+          "seconds": 0.01334871612561983
         }
       }
     },
@@ -723,83 +723,83 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00447919599537272
+          "seconds": 0.004475939123949502
         },
         "lxml": {
           "available": true,
-          "seconds": 0.020686957977886777
+          "seconds": 0.020296031876569032
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.025250243750633672
+          "seconds": 0.02547886600223137
         }
       },
       "iterparse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.03326775063032983
+          "seconds": 0.04074393787595909
         },
         "lxml": {
           "available": true,
-          "seconds": 0.027062411114457063
+          "seconds": 0.026102843126864173
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.03275359549297718
+          "seconds": 0.0324235288771888
         }
       },
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.025423158738703933
+          "seconds": 0.026277726125044865
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.13064730361656984
+          "seconds": 0.11695205237265327
         }
       },
       "dict_stream": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0472658000071533
+          "seconds": 0.059843322125743725
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.12055256962776184
+          "seconds": 0.11456105724755616
         }
       },
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.004588417868944816
+          "seconds": 0.004340565998063539
         },
         "lxml": {
           "available": true,
-          "seconds": 0.020430951735761482
+          "seconds": 0.020505172624325496
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.015325715503422543
+          "seconds": 0.014789047248996212
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.12564211988501484
+          "seconds": 0.12452589550230186
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.14291062951087952
+          "seconds": 0.14023825875119655
         }
       },
       "xml_to_jsonl": {
         "pygixml": {
           "available": true,
-          "seconds": 0.05909561937005492
+          "seconds": 0.0733131466240593
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.13906313825282268
+          "seconds": 0.1317261195035826
         }
       }
     },
@@ -811,51 +811,51 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00015582427295157686
+          "seconds": 0.00015046150292619132
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0009092542532016523
+          "seconds": 0.0009047905023180647
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0024562811231589876
+          "seconds": 0.0025374033757543657
         }
       },
       "iterparse": {},
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0010099425053340383
+          "seconds": 0.0011467889999039471
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0074577993582352065
+          "seconds": 0.007537424002293847
         }
       },
       "dict_stream": {},
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0001352356339339167
+          "seconds": 0.00013710949860978872
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0008985366221168078
+          "seconds": 0.0009003310024127131
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0007901320059318095
+          "seconds": 0.0007736404986644629
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.008030946875805967
+          "seconds": 0.008145269623128115
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.006034547994204331
+          "seconds": 0.006850714251413592
         }
       },
       "xml_to_jsonl": {}
@@ -868,51 +868,51 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 6.573987775482237e-05
+          "seconds": 5.97168746026e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0007996153653948568
+          "seconds": 0.0007759633735986426
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0009543052583467215
+          "seconds": 0.0009986758723243838
         }
       },
       "iterparse": {},
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0004530738733592443
+          "seconds": 0.00047945424739737064
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.002061026265437249
+          "seconds": 0.0020900141244055703
         }
       },
       "dict_stream": {},
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 6.345250585582107e-05
+          "seconds": 5.6148244766518474e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0007388377489405684
+          "seconds": 0.0006984433730394812
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00033032724604709074
+          "seconds": 0.0003449609939707443
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.002428180741844699
+          "seconds": 0.002486732622855925
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.0015862747459323145
+          "seconds": 0.0014457648740062723
         }
       },
       "xml_to_jsonl": {}
@@ -925,51 +925,51 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 8.357450133189559e-05
+          "seconds": 7.639999967068434e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0009632797373342328
+          "seconds": 0.0009154606268566567
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.001299506999203004
+          "seconds": 0.0012187876236566808
         }
       },
       "iterparse": {},
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0005141710062162019
+          "seconds": 0.0005334322468115715
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0024282301164930686
+          "seconds": 0.0024289109987876145
         }
       },
       "dict_stream": {},
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 7.127649587346241e-05
+          "seconds": 7.241300409077667e-05
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0009440072535653599
+          "seconds": 0.0008856188742356608
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00043903674668399617
+          "seconds": 0.0004326461257733172
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.002897210004448425
+          "seconds": 0.0028782233748643193
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.0017678762451396324
+          "seconds": 0.0017052969997166656
         }
       },
       "xml_to_jsonl": {}
@@ -982,51 +982,51 @@
       "parse": {
         "pygixml": {
           "available": true,
-          "seconds": 0.00011203924805158749
+          "seconds": 0.00010520962496229913
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0011796577455243096
+          "seconds": 0.0011784677517425735
         },
         "elementtree": {
           "available": true,
-          "seconds": 0.0016398649895563722
+          "seconds": 0.0016598862457612995
         }
       },
       "iterparse": {},
       "dict_convert": {
         "pygixml": {
           "available": true,
-          "seconds": 0.000644647516310215
+          "seconds": 0.000637334625935182
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.002968189997773152
+          "seconds": 0.0028705945005640388
         }
       },
       "dict_stream": {},
       "to_object": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0001481623767176643
+          "seconds": 0.00010127574932994321
         },
         "lxml": {
           "available": true,
-          "seconds": 0.0012800337572116405
+          "seconds": 0.0011031771264242707
         }
       },
       "xml_to_json": {
         "pygixml": {
           "available": true,
-          "seconds": 0.0005717021340387873
+          "seconds": 0.0005803581261716317
         },
         "xmltodict": {
           "available": true,
-          "seconds": 0.0034582174994284287
+          "seconds": 0.003412919624679489
         },
         "xmljson": {
           "available": true,
-          "seconds": 0.002046903631708119
+          "seconds": 0.001978922253329074
         }
       },
       "xml_to_jsonl": {}

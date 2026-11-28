@@ -1,0 +1,445 @@
+{
+  "html_parse": [
+    {
+      "genre": "article",
+      "size": "large",
+      "bytes": 2000312,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 2000312,
+          "available": true,
+          "peak_rss_mb": 39.0546875
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 2000312,
+          "available": true,
+          "peak_rss_mb": 65.890625
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 2000312,
+          "available": true,
+          "peak_rss_mb": 158.44921875
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 2000312,
+          "available": true,
+          "peak_rss_mb": 143.24609375
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 2000312,
+          "available": true,
+          "peak_rss_mb": 94.1953125
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 2000312,
+          "available": true,
+          "peak_rss_mb": 67.81640625
+        }
+      }
+    },
+    {
+      "genre": "article",
+      "size": "medium",
+      "bytes": 200440,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 200440,
+          "available": true,
+          "peak_rss_mb": 19.125
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 200440,
+          "available": true,
+          "peak_rss_mb": 24.0703125
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 200440,
+          "available": true,
+          "peak_rss_mb": 49.53515625
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 200440,
+          "available": true,
+          "peak_rss_mb": 44.39453125
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 200440,
+          "available": true,
+          "peak_rss_mb": 35.73828125
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 200440,
+          "available": true,
+          "peak_rss_mb": 21.4296875
+        }
+      }
+    },
+    {
+      "genre": "article",
+      "size": "small",
+      "bytes": 20503,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 20503,
+          "available": true,
+          "peak_rss_mb": 16.80859375
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 20503,
+          "available": true,
+          "peak_rss_mb": 19.8046875
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 20503,
+          "available": true,
+          "peak_rss_mb": 34.1484375
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 20503,
+          "available": true,
+          "peak_rss_mb": 33.4296875
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 20503,
+          "available": true,
+          "peak_rss_mb": 24.30078125
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 20503,
+          "available": true,
+          "peak_rss_mb": 16.31640625
+        }
+      }
+    },
+    {
+      "genre": "listing",
+      "size": "large",
+      "bytes": 2000104,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 2000104,
+          "available": true,
+          "peak_rss_mb": 45.8671875
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 2000104,
+          "available": true,
+          "peak_rss_mb": 88.4140625
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 2000104,
+          "available": true,
+          "peak_rss_mb": 225.69921875
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 2000104,
+          "available": true,
+          "peak_rss_mb": 206.96484375
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 2000104,
+          "available": true,
+          "peak_rss_mb": 141.76953125
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 2000104,
+          "available": true,
+          "peak_rss_mb": 96.67578125
+        }
+      }
+    },
+    {
+      "genre": "listing",
+      "size": "medium",
+      "bytes": 200114,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 200114,
+          "available": true,
+          "peak_rss_mb": 19.5234375
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 200114,
+          "available": true,
+          "peak_rss_mb": 26.1953125
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 200114,
+          "available": true,
+          "peak_rss_mb": 55.42578125
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 200114,
+          "available": true,
+          "peak_rss_mb": 54.640625
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 200114,
+          "available": true,
+          "peak_rss_mb": 38.7265625
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 200114,
+          "available": true,
+          "peak_rss_mb": 24.6015625
+        }
+      }
+    },
+    {
+      "genre": "listing",
+      "size": "small",
+      "bytes": 20248,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 20248,
+          "available": true,
+          "peak_rss_mb": 16.81640625
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 20248,
+          "available": true,
+          "peak_rss_mb": 19.92578125
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 20248,
+          "available": true,
+          "peak_rss_mb": 34.06640625
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 20248,
+          "available": true,
+          "peak_rss_mb": 34.26171875
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 20248,
+          "available": true,
+          "peak_rss_mb": 25.578125
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 20248,
+          "available": true,
+          "peak_rss_mb": 16.8671875
+        }
+      }
+    },
+    {
+      "genre": "table",
+      "size": "large",
+      "bytes": 2000156,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 2000156,
+          "available": true,
+          "peak_rss_mb": 54.69140625
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 2000156,
+          "available": true,
+          "peak_rss_mb": 101.37890625
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 2000156,
+          "available": true,
+          "peak_rss_mb": 266.89453125
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 2000156,
+          "available": true,
+          "peak_rss_mb": 245.53515625
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 2000156,
+          "available": true,
+          "peak_rss_mb": 176.47265625
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 2000156,
+          "available": true,
+          "peak_rss_mb": 114.484375
+        }
+      }
+    },
+    {
+      "genre": "table",
+      "size": "medium",
+      "bytes": 200236,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 200236,
+          "available": true,
+          "peak_rss_mb": 20.359375
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 200236,
+          "available": true,
+          "peak_rss_mb": 27.703125
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 200236,
+          "available": true,
+          "peak_rss_mb": 57.1875
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 200236,
+          "available": true,
+          "peak_rss_mb": 60.5546875
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 200236,
+          "available": true,
+          "peak_rss_mb": 46.0625
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 200236,
+          "available": true,
+          "peak_rss_mb": 26.28515625
+        }
+      }
+    },
+    {
+      "genre": "table",
+      "size": "small",
+      "bytes": 20170,
+      "libraries": {
+        "pygixml": {
+          "operation": "html_parse",
+          "library": "pygixml",
+          "bytes": 20170,
+          "available": true,
+          "peak_rss_mb": 17.04296875
+        },
+        "lxml": {
+          "operation": "html_parse",
+          "library": "lxml",
+          "bytes": 20170,
+          "available": true,
+          "peak_rss_mb": 20.40625
+        },
+        "bs4_html_parser": {
+          "operation": "html_parse",
+          "library": "bs4_html_parser",
+          "bytes": 20170,
+          "available": true,
+          "peak_rss_mb": 35.21484375
+        },
+        "bs4_lxml": {
+          "operation": "html_parse",
+          "library": "bs4_lxml",
+          "bytes": 20170,
+          "available": true,
+          "peak_rss_mb": 35.3359375
+        },
+        "html5lib": {
+          "operation": "html_parse",
+          "library": "html5lib",
+          "bytes": 20170,
+          "available": true,
+          "peak_rss_mb": 26.66015625
+        },
+        "selectolax": {
+          "operation": "html_parse",
+          "library": "selectolax",
+          "bytes": 20170,
+          "available": true,
+          "peak_rss_mb": 17.19140625
+        }
+      }
+    }
+  ]
+}

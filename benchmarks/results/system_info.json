@@ -1,6 +1,6 @@
 {
-  "os": "Linux 7.0.0-38-generic",
-  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "os": "Linux 7.0.0-44-generic",
+  "platform": "Linux-7.0.0-44-generic-x86_64-with-glibc2.43",
   "architecture": "x86_64",
   "cpu_model": "13th Gen Intel(R) Core(TM) i7-13620H",
   "logical_cores": 16,
